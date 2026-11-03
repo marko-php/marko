@@ -91,6 +91,7 @@ readonly class CommandDiscovery
                 aliases: $attribute->aliases,
                 flags: $attribute->flags,
                 destructive: $attribute->destructive,
+                options: $attribute->options,
             );
         }
 

@@ -29,6 +29,7 @@ use Marko\Scheduler\ScheduledCommand;
 #[Command(
     name: self::NAME,
     description: 'Internal: run a background scheduled command while holding its overlap mutex',
+    options: [self::MUTEX_OPTION, self::EXPIRY_OPTION],
 )]
 readonly class RunBackgroundCommand implements CommandInterface
 {

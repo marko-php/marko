@@ -31,7 +31,7 @@ use Psr\Clock\ClockInterface;
 class SchedulerFactory
 {
     /**
-     * A command registry and runner holding one RecordingCommand per name.
+     * A command registry and runner holding one RecordingCommand per name. Each command accepts a `--days` option.
      *
      * @param array<string, Closure(Input, Output): int> $commands Handlers keyed by command name
      * @return array{CommandRegistry, CommandRunner}
@@ -46,7 +46,7 @@ class SchedulerFactory
         foreach ($commands as $name => $handler) {
             $id = "scheduler.test.command.$name";
             $container->instance($id, new RecordingCommand($handler));
-            $registry->register(new CommandDefinition(commandClass: $id, name: $name));
+            $registry->register(new CommandDefinition(commandClass: $id, name: $name, options: ['days']));
         }
 
         return [$registry, new CommandRunner($container, $registry)];

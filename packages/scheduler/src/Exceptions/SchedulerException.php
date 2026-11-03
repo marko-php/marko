@@ -127,6 +127,27 @@ class SchedulerException extends MarkoException
         );
     }
 
+    /**
+     * @param list<string> $undeclaredOptions The refused options, as written (`--day`)
+     * @param list<string> $acceptedOptions The options the command accepts, as typed (`--days=<value>`)
+     */
+    public static function undeclaredCommandOptions(
+        string $command,
+        array $undeclaredOptions,
+        array $acceptedOptions,
+    ): self {
+        $noun = count($undeclaredOptions) === 1 ? 'option' : 'options';
+        $quoted = implode(', ', array_map(fn (string $option): string => "'$option'", $undeclaredOptions));
+        $pronoun = count($undeclaredOptions) === 1 ? 'it' : 'them';
+
+        return new self(
+            message: "Schedule::command() was given the $noun $quoted for '$command', which does not accept $pronoun.",
+            context: 'While registering a scheduled command task',
+            suggestion: "'$command' accepts: " . implode(', ', $acceptedOptions) . '. Fix the option name, or'
+                . ' declare it on the command in #[Command(options: [...])], or in flags: [...] when it takes no value.',
+        );
+    }
+
     public static function invalidCommandArgument(
         string $command,
         string $givenType,

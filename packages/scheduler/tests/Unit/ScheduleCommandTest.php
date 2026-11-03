@@ -45,6 +45,21 @@ it('throws when the schedule is built with an unknown command', function (): voi
     expect($this->schedule->tasks())->toBe([]);
 });
 
+it('throws when the schedule is built with an option the command does not declare', function (): void {
+    try {
+        $this->schedule->command('app:prune', ['--day=30', 'users', '--', '--not-checked']);
+        $thrown = null;
+    } catch (SchedulerException $e) {
+        $thrown = $e;
+    }
+
+    expect($thrown)->toBeInstanceOf(SchedulerException::class)
+        ->and($thrown->getMessage())
+        ->toBe("Schedule::command() was given the option '--day' for 'app:prune', which does not accept it.")
+        ->and($thrown->getSuggestion())->toContain('--days=<value>')
+        ->and($this->schedule->tasks())->toBe([]);
+});
+
 it('throws when a command argument is not a string', function (): void {
     expect(fn () => $this->schedule->command('app:prune', ['--days', 30]))
         ->toThrow(SchedulerException::class, "Scheduled command 'app:prune' was given a int argument");

@@ -467,3 +467,118 @@ it('passes Input and Output when invoked via alias', function (): void {
     expect($receivedInput)->toBe($input)
         ->and($receivedOutput)->toBe($output);
 });
+
+/**
+ * A runner with one 'account:purge' command that records whether it executed.
+ *
+ * @return array{runner: CommandRunner, command: object{executed: bool}}
+ */
+function purgeCommandRunner(): array
+{
+    $command = new class () implements CommandInterface
+    {
+        public bool $executed = false;
+
+        public function execute(
+            Input $input,
+            Output $output,
+        ): int {
+            $this->executed = true;
+
+            return 0;
+        }
+    };
+
+    $registry = new CommandRegistry();
+    $registry->register(new CommandDefinition(
+        commandClass: $command::class,
+        name: 'account:purge',
+        description: 'Delete test accounts',
+        aliases: ['purge'],
+        flags: ['dry-run', 'f'],
+        destructive: true,
+        options: ['older-than'],
+    ));
+
+    $container = new Container();
+    $container->instance($command::class, $command);
+
+    return ['runner' => new CommandRunner($container, $registry), 'command' => $command];
+}
+
+/**
+ * @param resource $stream
+ */
+function readOutputStream(
+    mixed $stream,
+): string {
+    rewind($stream);
+
+    return (string) stream_get_contents($stream);
+}
+
+it('fails loudly on an undeclared option before the command executes', function (): void {
+    ['runner' => $runner, 'command' => $command] = purgeCommandRunner();
+    $input = new Input(['marko', 'account:purge', '--dryrun', '-x', '5']);
+
+    try {
+        $runner->run('account:purge', $input, new Output(fopen('php://memory', 'w')));
+        $thrown = null;
+    } catch (CommandException $e) {
+        $thrown = $e;
+    }
+
+    expect($thrown)->toBeInstanceOf(CommandException::class)
+        ->and($thrown->getMessage())->toBe("Command 'account:purge' does not accept the options '--dryrun', '-x'")
+        ->and($thrown->getSuggestion())->toContain('--older-than=<value>, --dry-run, -f, --no-interaction, --help')
+        ->and($thrown->getSuggestion())->toContain('marko account:purge --help')
+        ->and($command->executed)->toBeFalse();
+});
+
+it('names a single undeclared option in the singular', function (): void {
+    ['runner' => $runner] = purgeCommandRunner();
+
+    expect(fn () => $runner->run(
+        'purge',
+        new Input(['marko', 'purge', '--all']),
+        new Output(fopen('php://memory', 'w')),
+    ))->toThrow(CommandException::class, "Command 'account:purge' does not accept the option '--all'");
+});
+
+it('runs a command given only declared options, flags and global flags', function (): void {
+    ['runner' => $runner, 'command' => $command] = purgeCommandRunner();
+    $input = new Input(['marko', 'account:purge', '--older-than=30', '--dry-run', '-f', '--no-interaction']);
+
+    $exitCode = $runner->run('account:purge', $input, new Output(fopen('php://memory', 'w')));
+
+    expect($exitCode)->toBe(0)
+        ->and($command->executed)->toBeTrue();
+});
+
+it('prints the command help for --help instead of executing the command', function (): void {
+    ['runner' => $runner, 'command' => $command] = purgeCommandRunner();
+    $stream = fopen('php://memory', 'w+');
+
+    $exitCode = $runner->run('purge', new Input(['marko', 'purge', '--help', '--unknown']), new Output($stream));
+
+    expect($exitCode)->toBe(0)
+        ->and($command->executed)->toBeFalse()
+        ->and(readOutputStream($stream))->toBe(
+            <<<'TEXT'
+            account:purge (purge)
+              Delete test accounts
+              Changes or deletes stored state.
+
+            Usage:
+              marko account:purge [options] [arguments]
+
+            Options:
+              --older-than=<value>
+              --dry-run
+              -f
+              --no-interaction
+              --help
+
+            TEXT,
+        );
+});

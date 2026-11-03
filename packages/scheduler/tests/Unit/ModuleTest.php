@@ -132,7 +132,11 @@ it('resolves schedule:run-background from the container', function (): void {
 it('runs a command scheduled in a module boot callback when schedule:run runs', function (): void {
     $ran = [];
     $registry = new CommandRegistry();
-    $registry->register(new CommandDefinition(commandClass: RecordingCommand::class, name: 'app:prune'));
+    $registry->register(new CommandDefinition(
+        commandClass: RecordingCommand::class,
+        name: 'app:prune',
+        options: ['days'],
+    ));
     $container = bootSchedulerContainer(
         $this->basePath,
         function (Schedule $schedule): void {

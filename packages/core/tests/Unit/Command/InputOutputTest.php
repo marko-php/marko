@@ -289,3 +289,43 @@ describe('interactivity', function (): void {
         },
     );
 });
+
+describe('option names', function (): void {
+    it('lists the given options by the names hasOption takes, in first-seen order', function (): void {
+        $input = new Input(['marko', 'queue:work', '--queue', 'emails', '-d', 'x', '--sleep=3', '--queue', 'sms']);
+
+        expect($input->optionNames())->toBe(['queue', 'd', 'sleep']);
+    });
+
+    it('returns an empty list when no options were given', function (): void {
+        $input = new Input(['marko', 'db:seed', 'UserSeeder', '--', '--not-an-option']);
+
+        expect($input->optionNames())->toBe([]);
+    });
+
+    it('keeps the prefix on option tokens hasOption cannot address', function (): void {
+        $input = new Input(['marko', 'cmd', '--x', '-ab']);
+
+        expect($input->optionNames())->toBe(['--x', '-ab']);
+    });
+
+    it('lists a numeric short option as a string name', function (): void {
+        $input = new Input(['marko', 'db:rollback', '-1']);
+
+        expect($input->optionNames())->toBe(['1'])
+            ->and($input->undeclaredOptions([]))->toBe(['-1']);
+    });
+
+    it('lists the options missing from the accepted names, as they were typed', function (): void {
+        $input = new Input(['marko', 'cmd', '--help', '--force', '-d', '--x', '--dry-run=1']);
+
+        expect($input->undeclaredOptions(['force', 'x', 'dry-run']))->toBe(['--help', '-d', '--x']);
+    });
+
+    it('treats --help as a global flag that never consumes the next argument', function (): void {
+        $input = new Input(['marko', 'db:seed', '--help', 'UserSeeder']);
+
+        expect($input->hasOption(Input::HELP))->toBeTrue()
+            ->and($input->getArgument(0))->toBe('UserSeeder');
+    });
+});

@@ -54,6 +54,7 @@ return [
 ```
 
 - **Unknown commands fail at registration.** The name (or an alias) is checked against core's `CommandRegistry` when the schedule is built. An unknown name throws `SchedulerException` naming it, so a typo surfaces on the next boot, not when the task first comes due. An argument that is not a string also throws.
+- **Undeclared options fail at registration too.** Every option in the arguments must be one the command declares in its `#[Command]` `options` or `flags` (or a global flag such as `--no-interaction`). `->command('app:prune', ['--day=30'])` throws `SchedulerException` naming `--day` and listing what `app:prune` accepts, since the command runner would refuse it when the task came due. Arguments after `--` are positionals and are not checked.
 - **Commands run in the scheduler process.** A due command task goes through core's `CommandRunner`, with no subprocess. Its output is written to the scheduler's output, and its exit code decides the result: `0` prints `Executed: {description}`, anything else prints `Failed: {description} - Command '{name}' exited with code {code}.` and counts as a failure. A command that throws is a failure too.
 - **The command is the default description.** Without a `description()`, a command task is described by its name and arguments (`app:prune --days=30 sessions`), so `withoutOverlapping()` works without one. An explicit `description()` still wins.
 

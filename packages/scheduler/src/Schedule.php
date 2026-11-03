@@ -7,6 +7,7 @@ namespace Marko\Scheduler;
 use Closure;
 use DateTimeInterface;
 use Marko\Core\Command\CommandRegistry;
+use Marko\Core\Command\Input;
 use Marko\Scheduler\Exceptions\SchedulerException;
 
 class Schedule
@@ -31,17 +32,32 @@ class Schedule
      * Schedule a registered console command, e.g. command('app:prune', ['--days=30']).
      *
      * @param array<mixed> $arguments Argv-style tokens, as you would type them after the command name
-     * @throws SchedulerException When the command is not registered, or an argument is not a string
+     * @throws SchedulerException When the command is not registered, an argument is not a string, or an option is
+     *                            one the command does not declare
      */
     public function command(
         string $name,
         array $arguments = [],
     ): ScheduledTask {
-        if (!$this->commandRegistry->has($name)) {
+        $definition = $this->commandRegistry->get($name);
+
+        if ($definition === null) {
             throw SchedulerException::unknownCommand($name);
         }
 
-        $task = new ScheduledTask(new ScheduledCommand($name, $arguments));
+        $command = new ScheduledCommand($name, $arguments);
+        $undeclaredOptions = new Input(['marko', $name, ...$command->arguments], $definition->flags)
+            ->undeclaredOptions($definition->acceptedOptions());
+
+        if ($undeclaredOptions !== []) {
+            throw SchedulerException::undeclaredCommandOptions(
+                $name,
+                $undeclaredOptions,
+                $definition->acceptedOptionUsages(),
+            );
+        }
+
+        $task = new ScheduledTask($command);
         $this->tasks[] = $task;
 
         return $task;

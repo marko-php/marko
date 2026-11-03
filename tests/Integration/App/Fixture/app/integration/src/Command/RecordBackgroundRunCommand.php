@@ -15,7 +15,7 @@ use Marko\Core\Path\ProjectPaths;
  * process id to storage/background-command.txt so a test can see that a separate
  * process ran it to completion (#565).
  */
-#[Command(name: 'integration:record-background-run', description: 'Record a background scheduled run')]
+#[Command(name: 'integration:record-background-run', description: 'Record a background scheduled run', options: ['note'])]
 readonly class RecordBackgroundRunCommand implements CommandInterface
 {
     public function __construct(

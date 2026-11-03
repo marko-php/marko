@@ -10,6 +10,7 @@ use Marko\Cli\Exceptions\ProjectNotFoundException;
 use Marko\Core\Application;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
+use Marko\Core\Exceptions\MarkoException;
 use Throwable;
 
 readonly class CliKernel
@@ -48,7 +49,7 @@ readonly class CliKernel
     ): int {
         try {
             return $this->doRun($argv);
-        } catch (CliException $e) {
+        } catch (CliException|MarkoException $e) {
             $this->displayCliException($e);
 
             return 1;
@@ -92,7 +93,7 @@ readonly class CliKernel
     }
 
     private function displayCliException(
-        CliException $e,
+        CliException|MarkoException $e,
     ): void {
         $this->output->writeLine('');
         $this->output->writeLine("Error: {$e->getMessage()}");

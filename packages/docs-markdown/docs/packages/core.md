@@ -306,7 +306,7 @@ Current implementors: `Session` ([marko/session](/docs/packages/session/)), `Ses
 
 ### Registering Console Commands
 
-Mark a class implementing `CommandInterface` with `#[Command]` and it is discovered automatically. Declare value-less boolean options in `flags` so they never swallow the positional argument that follows them:
+Mark a class implementing `CommandInterface` with `#[Command]` and it is discovered automatically. Declare every option the command reads: options that take a value in `options`, and value-less boolean options in `flags` so they never swallow the positional argument that follows them:
 
 ```php title="app/billing/src/Command/RefundCommand.php"
 use Marko\Core\Attributes\Command;
@@ -314,7 +314,7 @@ use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 
-#[Command(name: 'billing:refund', description: 'Refund an order', flags: ['force'])]
+#[Command(name: 'billing:refund', description: 'Refund an order', flags: ['force'], options: ['reason'])]
 class RefundCommand implements CommandInterface
 {
     public function execute(Input $input, Output $output): int
@@ -331,6 +331,8 @@ class RefundCommand implements CommandInterface
 ```
 
 `marko billing:refund --force 1001 --reason late` and `marko billing:refund 1001 --reason=late --force` are equivalent. Arguments and options can come in any order, `--` ends option parsing, and repeated options are read with `getOptionValues()`. See [marko/cli](/docs/packages/cli/#arguments-and-options) for the full option syntax.
+
+The command runner refuses any option the command does not declare, before the command runs: `marko billing:refund 1001 --forse` throws a `CommandException` naming `--forse` and listing the accepted options, instead of refunding without `--force`. The global flags `--no-interaction` and `--help` are always accepted; `--help` prints the command's help and never runs it. See [Declaring Options and Flags](/docs/packages/cli/#declaring-options-and-flags).
 
 The running command's `Input` and `Output` are also registered in the container, so a console service the command depends on reads the same options and writes to the same stream.
 
@@ -677,7 +679,7 @@ Every framework setting that takes a filesystem path resolves it this way, inclu
 #[After]                                        // Run after target method
 #[Observer(event: EventClass::class)]           // React to events (synchronous)
 #[Observer(event: EventClass::class, async: true)] // Queue it (needs marko/queue; throws EventException without it)
-#[Command(name: 'cmd:name', description: '', aliases: [], flags: [])] // Register CLI command; flags never take a value
+#[Command(name: 'cmd:name', description: '', aliases: [], flags: [], options: [])] // Register CLI command; flags never take a value, options do; any other option is refused
 #[Command(name: 'cmd:wipe', destructive: true)]  // Changes or deletes stored state (MCP refuses it by default)
 ```
 
@@ -710,8 +712,12 @@ interface ConfirmationPrompterInterface
 readonly class Input
 {
     public const string NO_INTERACTION = 'no-interaction';
+    public const string HELP = 'help';
+    public const array GLOBAL_FLAGS = [self::NO_INTERACTION, self::HELP]; // accepted by every command
 
     public function isInteractive(): bool; // false when --no-interaction is passed
+    public function optionNames(): array; // list<string>: names of the given options ('queue' for --queue)
+    public function undeclaredOptions(array $acceptedNames): array; // list<string>: given options not accepted, as typed
     // getCommand(), getArguments(), getArgument(), hasOption(), getOption(), getOptionValues(), withFlags()
 }
 ```
