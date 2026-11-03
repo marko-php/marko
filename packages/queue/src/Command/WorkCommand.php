@@ -17,7 +17,12 @@ use Marko\Queue\WorkerInterface;
 use Marko\Queue\WorkerOptions;
 
 /** @noinspection PhpUnused */
-#[Command(name: 'queue:work', description: 'Process jobs from the queue', flags: ['once'])]
+#[Command(
+    name: 'queue:work',
+    description: 'Process jobs from the queue',
+    flags: ['once'],
+    options: ['queue', 'sleep', 'timeout', 'memory', 'max-jobs', 'max-time'],
+)]
 class WorkCommand implements CommandInterface
 {
     private const int DEFAULT_SLEEP = 3;

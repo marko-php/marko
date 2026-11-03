@@ -19,8 +19,9 @@ namespace Marko\Core\Command;
  *
  * Single-character names refer to short options (`-d`), longer names to long options (`--detach`).
  *
- * `--no-interaction` is a global flag: every command accepts it, it never takes a value,
- * and it makes isInteractive() false so nothing asks the person running the command a question.
+ * `--no-interaction` and `--help` are global flags: every command accepts them and they never take
+ * a value. `--no-interaction` makes isInteractive() false so nothing asks the person running the
+ * command a question; `--help` makes the command runner print the command's help instead of running it.
  */
 readonly class Input
 {
@@ -29,9 +30,11 @@ readonly class Input
     /**
      * Flags every command accepts, whether or not it declares them.
      */
-    public const array GLOBAL_FLAGS = [self::NO_INTERACTION];
+    public const array GLOBAL_FLAGS = [self::NO_INTERACTION, self::HELP];
 
     public const string NO_INTERACTION = 'no-interaction';
+
+    public const string HELP = 'help';
 
     /**
      * @var list<string>
@@ -181,6 +184,56 @@ readonly class Input
         string $name,
     ): array {
         return $this->options[$this->optionKey($name)] ?? [];
+    }
+
+    /**
+     * Returns the names of the options that were given, in first-seen order, in the form hasOption() takes:
+     * `--queue` is `queue`, `-d` is `d`.
+     *
+     * A token hasOption() cannot address (`--x`, a long option with a one-character name, or `-ab`, a short
+     * option with a longer name) keeps its prefix, so it never matches a declared option name.
+     *
+     * @return list<string>
+     */
+    public function optionNames(): array
+    {
+        return array_map(
+            fn (string $token): string => $this->optionName($token),
+            $this->optionTokens(),
+        );
+    }
+
+    /**
+     * Returns the given options whose names are not in $acceptedNames, as they were typed (`--dry-run`, `-x`).
+     *
+     * @param list<string> $acceptedNames Option names in the form hasOption() takes
+     * @return list<string>
+     */
+    public function undeclaredOptions(
+        array $acceptedNames,
+    ): array {
+        return array_values(array_filter(
+            $this->optionTokens(),
+            fn (string $token): bool => !in_array($this->optionName($token), $acceptedNames, true),
+        ));
+    }
+
+    /**
+     * The given option tokens. PHP turns a numeric array key such as `-1` into an int, so each is cast back.
+     *
+     * @return list<string>
+     */
+    private function optionTokens(): array
+    {
+        return array_map(strval(...), array_keys($this->options));
+    }
+
+    private function optionName(
+        string $token,
+    ): string {
+        $name = ltrim($token, '-');
+
+        return $this->optionKey($name) === $token ? $name : $token;
     }
 
     private function optionKey(

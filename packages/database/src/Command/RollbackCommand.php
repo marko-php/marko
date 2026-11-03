@@ -17,6 +17,7 @@ use Marko\Database\Migration\Migrator;
     description: 'Rollback the last batch of migrations',
     flags: ['force'],
     destructive: true,
+    options: ['step'],
 )]
 readonly class RollbackCommand implements CommandInterface
 {

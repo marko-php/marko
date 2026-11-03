@@ -12,7 +12,7 @@ use Marko\Routing\RouteCollection;
 use Marko\Routing\RouteDefinition;
 
 /** @noinspection PhpUnused */
-#[Command(name: 'route:list', description: 'Show all registered routes')]
+#[Command(name: 'route:list', description: 'Show all registered routes', options: ['method', 'path'])]
 readonly class RouteListCommand implements CommandInterface
 {
     public function __construct(

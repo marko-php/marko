@@ -27,6 +27,7 @@ use Throwable;
     description: 'Start the development environment',
     aliases: ['up'],
     flags: ['foreground', 'f', 'detach', 'd'],
+    options: ['port', 'p', 'host'],
 )]
 readonly class DevUpCommand implements CommandInterface
 {

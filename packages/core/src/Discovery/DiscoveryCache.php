@@ -28,7 +28,7 @@ use Marko\Core\Support\ErrorCapture;
  */
 class DiscoveryCache
 {
-    public const int CACHE_VERSION = 4;
+    public const int CACHE_VERSION = 5;
 
     private const array REQUIRED_KEYS = [
         'fingerprint',
@@ -152,6 +152,7 @@ class DiscoveryCache
                     'aliases' => $d->aliases,
                     'flags' => $d->flags,
                     'destructive' => $d->destructive,
+                    'options' => $d->options,
                 ],
                 $payload['commands'],
             ),
@@ -558,6 +559,7 @@ class DiscoveryCache
             $this->assertArrayField($path, $record, 'commands', $i, 'aliases');
             $this->assertArrayField($path, $record, 'commands', $i, 'flags');
             $this->assertBoolField($path, $record, 'commands', $i, 'destructive');
+            $this->assertArrayField($path, $record, 'commands', $i, 'options');
 
             $result[] = new CommandDefinition(
                 commandClass: $record['commandClass'],
@@ -566,6 +568,7 @@ class DiscoveryCache
                 aliases: $record['aliases'],
                 flags: $record['flags'],
                 destructive: $record['destructive'],
+                options: $record['options'],
             );
         }
 

@@ -22,6 +22,7 @@ use Marko\DevAi\Process\CommandRunnerInterface;
     description: 'Install Marko AI development tooling for selected agents',
     flags: ['force', 'update-gitignore', 'skip-lsp-deps', 'yes'],
     destructive: true,
+    options: ['agents'],
 )]
 readonly class InstallCommand implements CommandInterface
 {

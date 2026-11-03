@@ -15,7 +15,11 @@ use Marko\Roadrunner\Exceptions\RoadRunnerException;
 use Marko\Roadrunner\Process\ProcessRunnerInterface;
 
 /** @noinspection PhpUnused */
-#[Command(name: 'rr:serve', description: 'Start the application under the RoadRunner application server')]
+#[Command(
+    name: 'rr:serve',
+    description: 'Start the application under the RoadRunner application server',
+    options: ['config'],
+)]
 readonly class ServeCommand implements CommandInterface
 {
     private const string DEFAULT_CONFIG_FILE = '.rr.yaml';

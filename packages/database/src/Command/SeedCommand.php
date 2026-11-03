@@ -15,7 +15,13 @@ use Marko\Database\Seed\SeederDiscoveryInterface;
 use Marko\Database\Seed\SeederRunner;
 
 /** @noinspection PhpUnused */
-#[Command(name: 'db:seed', description: 'Run database seeders', flags: ['force'], destructive: true)]
+#[Command(
+    name: 'db:seed',
+    description: 'Run database seeders',
+    flags: ['force'],
+    destructive: true,
+    options: ['class'],
+)]
 readonly class SeedCommand implements CommandInterface
 {
     public function __construct(

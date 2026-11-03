@@ -73,6 +73,7 @@ function samplePayload(): array
                 aliases: ['cc'],
                 flags: ['force'],
                 destructive: true,
+                options: ['store'],
             ),
         ],
     ];
@@ -196,7 +197,8 @@ describe('DiscoveryCache', function (): void {
                 ->and($loaded['commands'][0]->description)->toBe('Clears the cache')
                 ->and($loaded['commands'][0]->aliases)->toBe(['cc'])
                 ->and($loaded['commands'][0]->flags)->toBe(['force'])
-                ->and($loaded['commands'][0]->destructive)->toBeTrue();
+                ->and($loaded['commands'][0]->destructive)->toBeTrue()
+                ->and($loaded['commands'][0]->options)->toBe(['store']);
         },
     );
 
@@ -404,6 +406,13 @@ describe('DiscoveryCache', function (): void {
             file_put_contents(
                 $path,
                 "<?php return ['version' => $version, 'preferences' => [], 'plugins' => [], 'observers' => [], 'commands' => [['commandClass' => 'App\\\\Cmd', 'name' => 'cmd', 'description' => '', 'aliases' => [], 'flags' => [], 'destructive' => 'yes']]];",
+            );
+            expect(fn () => $cache->load())->toThrow(DiscoveryCacheException::class);
+
+            // Command options missing (cache written before declared options existed)
+            file_put_contents(
+                $path,
+                "<?php return ['version' => $version, 'preferences' => [], 'plugins' => [], 'observers' => [], 'commands' => [['commandClass' => 'App\\\\Cmd', 'name' => 'cmd', 'description' => '', 'aliases' => [], 'flags' => [], 'destructive' => false]]];",
             );
             expect(fn () => $cache->load())->toThrow(DiscoveryCacheException::class);
 

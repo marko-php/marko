@@ -12,7 +12,7 @@ use Marko\Log\Config\LogConfig;
 use Psr\Clock\ClockInterface;
 
 /** @noinspection PhpUnused */
-#[Command(name: 'log:clear', description: 'Clear old log files', destructive: true)]
+#[Command(name: 'log:clear', description: 'Clear old log files', destructive: true, options: ['days'])]
 readonly class ClearCommand implements CommandInterface
 {
     public function __construct(

@@ -14,7 +14,7 @@ use Marko\Mail\Exception\TransportException;
 use Marko\Mail\Message;
 
 /** @noinspection PhpUnused */
-#[Command(name: 'mail:test', description: 'Send a test email to verify mail configuration')]
+#[Command(name: 'mail:test', description: 'Send a test email to verify mail configuration', options: ['subject'])]
 readonly class TestCommand implements CommandInterface
 {
     public function __construct(

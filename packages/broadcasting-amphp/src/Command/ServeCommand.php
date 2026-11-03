@@ -23,7 +23,11 @@ use Revolt\EventLoop\UnsupportedFeatureException;
  *
  * @noinspection PhpUnused
  */
-#[Command(name: 'broadcasting:serve', description: 'Start the native async SSE broadcasting server')]
+#[Command(
+    name: 'broadcasting:serve',
+    description: 'Start the native async SSE broadcasting server',
+    options: ['host', 'port'],
+)]
 readonly class ServeCommand implements CommandInterface
 {
     public function __construct(

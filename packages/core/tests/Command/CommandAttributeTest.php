@@ -81,6 +81,18 @@ it('defaults flags to an empty list when not provided', function (): void {
     expect($command->flags)->toBe([]);
 });
 
+it('accepts value-taking options in Command attribute', function (): void {
+    $command = new Command(name: 'queue:work', options: ['queue', 'sleep']);
+
+    expect($command->options)->toBe(['queue', 'sleep']);
+});
+
+it('defaults options to an empty list when not provided', function (): void {
+    $command = new Command(name: 'test:cmd');
+
+    expect($command->options)->toBe([]);
+});
+
 it('accepts the destructive marker in Command attribute', function (): void {
     $command = new Command(name: 'cache:clear', destructive: true);
 

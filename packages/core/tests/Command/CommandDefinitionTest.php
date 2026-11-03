@@ -72,6 +72,39 @@ it('defaults command flags to an empty list', function (): void {
     expect($definition->flags)->toBe([]);
 });
 
+it('stores declared value-taking options in CommandDefinition', function (): void {
+    $definition = new CommandDefinition(
+        commandClass: 'App\Command\TestCommand',
+        name: 'db:seed',
+        options: ['class'],
+    );
+
+    expect($definition->options)->toBe(['class']);
+});
+
+it('accepts its options, its flags and the global flags', function (): void {
+    $definition = new CommandDefinition(
+        commandClass: 'App\Command\TestCommand',
+        name: 'db:seed',
+        flags: ['force'],
+        options: ['class', 'force'],
+    );
+
+    expect($definition->acceptedOptions())->toBe(['class', 'force', 'no-interaction', 'help']);
+});
+
+it('shows each accepted option the way it is typed', function (): void {
+    $definition = new CommandDefinition(
+        commandClass: 'App\Command\TestCommand',
+        name: 'dev:up',
+        flags: ['d'],
+        options: ['port', 'p'],
+    );
+
+    expect($definition->acceptedOptionUsages())
+        ->toBe(['--port=<value>', '-p=<value>', '-d', '--no-interaction', '--help']);
+});
+
 it('stores the destructive marker in CommandDefinition', function (): void {
     $definition = new CommandDefinition(
         commandClass: 'App\Command\TestCommand',

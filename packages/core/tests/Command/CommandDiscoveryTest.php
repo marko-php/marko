@@ -385,7 +385,7 @@ PHP;
     rmdir($tempDir);
 });
 
-it('discovers declared flags from the Command attribute', function (): void {
+it('discovers declared flags and options from the Command attribute', function (): void {
     $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
@@ -401,7 +401,7 @@ use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 
-#[Command(name: 'app:flagged', description: 'Has flags', flags: ['force', 'f'])]
+#[Command(name: 'app:flagged', description: 'Has flags', flags: ['force', 'f'], options: ['queue'])]
 class FlaggedCommand implements CommandInterface
 {
     public function execute(
@@ -424,7 +424,8 @@ PHP;
     $commands = $discovery->discover([$manifest]);
 
     expect($commands)->toHaveCount(1)
-        ->and($commands[0]->flags)->toBe(['force', 'f']);
+        ->and($commands[0]->flags)->toBe(['force', 'f'])
+        ->and($commands[0]->options)->toBe(['queue']);
 
     // Cleanup
     unlink($tempDir . '/src/FlaggedCommand.php');

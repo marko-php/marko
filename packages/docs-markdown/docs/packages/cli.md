@@ -80,9 +80,9 @@ marko greet Mark
 
 Single-character names refer to short options (`-d`), longer names to long options (`--detach`). `hasOption('d')` does not match `--detach`, so check both when a command offers both forms.
 
-### Declaring Flags
+### Declaring Options and Flags
 
-A bare option followed by a non-dash token takes that token as its value. For a value-less boolean flag that is wrong: in `marko queue:retry --force 5`, an undeclared `--force` would swallow `5`. Declare boolean flags on the `#[Command]` attribute so they never consume the next token:
+A command accepts only the options it declares on its `#[Command]` attribute. Declare options that take a value in `options` and value-less boolean flags in `flags`:
 
 ```php
 use Marko\Core\Attributes\Command;
@@ -90,7 +90,7 @@ use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 
-#[Command(name: 'report:send', description: 'Send a report', flags: ['force', 'f'])]
+#[Command(name: 'report:send', description: 'Send a report', flags: ['force', 'f'], options: ['to'])]
 class SendReportCommand implements CommandInterface
 {
     public function execute(Input $input, Output $output): int
@@ -106,11 +106,44 @@ class SendReportCommand implements CommandInterface
 }
 ```
 
-With `force` declared, `marko report:send --force 42 --to a@example.com --to b@example.com` and `marko report:send 42 --force --to=a@example.com --to=b@example.com` behave the same: argument `0` is `'42'`, `force` is set, and `to` has both addresses. Every option that is not declared as a flag is treated as a value option.
+A bare option followed by a non-dash token takes that token as its value, so a flag must be declared in `flags`: otherwise, in `marko report:send --force 42`, `--force` would swallow `42`. With `force` declared, `marko report:send --force 42 --to a@example.com --to b@example.com` and `marko report:send 42 --force --to=a@example.com --to=b@example.com` behave the same: argument `0` is `'42'`, `force` is set, and `to` has both addresses.
 
-Declared flags are applied by the command runner, so they take effect when the command runs through `marko` or the `CommandRunner`. In unit tests that call `execute()` directly, pass the same flags to `Input`: `new Input(['marko', 'report:send', '--force', '42'], ['force', 'f'])`.
+Any other option fails the command before it runs. A typo such as `--forse`, or an option the command never supported, is an error, never an option the command silently ignores:
 
-`--no-interaction` is a global flag: every command accepts it without declaring it, and it never takes a value. It tells commands not to ask questions; see [Asking for Confirmation](/docs/packages/core/#asking-for-confirmation).
+```text
+$ marko report:send 42 --forse
+
+Error: Command 'report:send' does not accept the option '--forse'
+  Context: While checking the options given to command 'report:send', before running it
+  Suggestion: It accepts: --to=<value>, --force, -f, --no-interaction, --help. Run 'marko report:send --help' for usage. If the command reads this option, declare it in #[Command(options: [...])], or in flags: [...] when it takes no value.
+```
+
+Short and long forms are separate names, so declare both when a command offers both (`flags: ['force', 'f']`). Arguments after `--` are positionals and are never checked.
+
+Declared options and flags are applied by the command runner, so they take effect when the command runs through `marko` or the `CommandRunner` (the scheduler and the MCP `run_console_command` tool use it too). In unit tests that call `execute()` directly, pass the same flags to `Input`: `new Input(['marko', 'report:send', '--force', '42'], ['force', 'f'])`. To check options yourself, `$input->optionNames()` lists the names of the options that were given, and `$input->undeclaredOptions(['force', 'to'])` lists the ones not in your list, as they were typed.
+
+Two global flags are accepted by every command without declaring them, and never take a value:
+
+- `--no-interaction` tells commands not to ask questions; see [Asking for Confirmation](/docs/packages/core/#asking-for-confirmation).
+- `--help` prints the command's name, aliases, description and accepted options, then exits `0` without running the command:
+
+```text
+$ marko report:send --help
+report:send
+  Send a report
+
+Usage:
+  marko report:send [options] [arguments]
+
+Options:
+  --to=<value>
+  --force
+  -f
+  --no-interaction
+  --help
+```
+
+A destructive command's help also says `Changes or deletes stored state.`
 
 ### Command Namespacing
 
@@ -168,6 +201,8 @@ class Input
     public function getOption(string $name): ?string;   // Last value, 'true' for a bare flag, null if absent
     public function getOptionValues(string $name): array; // list<string> of every value given
     public function hasOption(string $name): bool;
+    public function optionNames(): array;               // list<string> of the given options' names ('queue', 'd')
+    public function undeclaredOptions(array $acceptedNames): array; // Given options not in the list, as typed
     public function isInteractive(): bool;              // false when --no-interaction is passed
 }
 ```
@@ -195,6 +230,7 @@ use Marko\Core\Attributes\Command;
     aliases: ['alias'],          // Optional alternative names
     flags: ['force', 'f'],       // Optional value-less options that never consume the next token
     destructive: true,           // Optional: the command changes or deletes stored state (default false)
+    options: ['queue', 'p'],     // Optional options that take a value; any undeclared option is refused
 )]
 ```
 
@@ -222,4 +258,4 @@ The CLI provides rich error messages with context and suggestions via `CliExcept
 - `CommandNotFoundException` --- thrown when the requested command does not exist. Suggests running `marko list`.
 - `BootstrapException` --- thrown when the application fails to boot.
 
-All CLI exceptions extend `CliException`, which includes `getContext()` and `getSuggestion()` methods for helpful error output.
+All CLI exceptions extend `CliException`, which includes `getContext()` and `getSuggestion()` methods for helpful error output. The context and suggestion of a `MarkoException` thrown by a command (such as the `CommandException` for an undeclared option) are printed the same way.

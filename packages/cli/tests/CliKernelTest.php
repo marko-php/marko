@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\Cli\CliKernel;
 use Marko\Cli\ProjectFinder;
 use Marko\Core\Command\Output;
+use Marko\Core\Exceptions\MarkoException;
 
 function createTempProjectDir(): string
 {
@@ -395,6 +396,53 @@ it('catches and displays exceptions with helpful messages', function () {
         // Check exit code is non-zero and error message was written
         expect($exitCode)->toBe(1)
             ->and($errorOutput)->toContain('Something went wrong');
+
+        fclose($outputStream);
+    } finally {
+        cleanupTempDir($projectRoot);
+    }
+});
+
+it('shows the context and suggestion of a MarkoException thrown by a command', function () {
+    $projectRoot = createTempProjectDir();
+    file_put_contents($projectRoot . '/vendor/autoload.php', '<?php return null;');
+
+    try {
+        $projectFinder = new TestProjectFinder();
+        $projectFinder->findResult = $projectRoot;
+        $outputStream = fopen('php://memory', 'r+');
+
+        $mockCommandRunner = new class ()
+        {
+            public function run(
+                string $name,
+                object $input,
+                object $output,
+            ): int {
+                throw new MarkoException(
+                    message: "Command 'test' does not accept the option '--bogus'",
+                    context: "While checking the options given to command 'test'",
+                    suggestion: 'It accepts: --force',
+                );
+            }
+        };
+
+        $kernel = new CliKernel(
+            projectFinder: $projectFinder,
+            applicationFactory: createMockApplicationFactory(commandRunner: $mockCommandRunner),
+            output: new Output($outputStream),
+        );
+
+        $exitCode = $kernel->run(['marko', 'test', '--bogus']);
+
+        rewind($outputStream);
+
+        expect($exitCode)->toBe(1)
+            ->and(stream_get_contents($outputStream))->toBe(
+                "\nError: Command 'test' does not accept the option '--bogus'\n"
+                . "  Context: While checking the options given to command 'test'\n"
+                . "  Suggestion: It accepts: --force\n\n",
+            );
 
         fclose($outputStream);
     } finally {
