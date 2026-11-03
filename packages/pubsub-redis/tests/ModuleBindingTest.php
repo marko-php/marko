@@ -6,6 +6,7 @@ namespace Marko\PubSub\Redis\Tests;
 
 use Amp\Redis\RedisConfig;
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Core\Container\Container;
 use Marko\PubSub\Redis\Driver\RedisSubscriber;
 use Marko\PubSub\Redis\RedisPubSubConnection;
@@ -65,11 +66,11 @@ describe('pubsub-redis module bindings', function (): void {
         expect($config['scheme'])->toBe('tcp');
     });
 
-    it('treats a pubsub-redis password removed by a null app override as no password', function (): void {
-        $connection = createPubSubRedisContainer(without: ['pubsub-redis.password'])
-            ->get(RedisPubSubConnection::class);
+    it('fails loudly when pubsub-redis.password is missing from config', function (): void {
+        $container = createPubSubRedisContainer(without: ['pubsub-redis.password']);
 
-        expect($connection->password)->toBeNull();
+        expect(fn () => $container->get(RedisPubSubConnection::class))
+            ->toThrow(ConfigNotFoundException::class);
     });
 
     it('takes the connection prefix from pubsub.prefix', function (): void {

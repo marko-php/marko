@@ -148,7 +148,6 @@ describe('QueueConfig', function (): void {
     });
 
     it('returns null for backoff when the key is null or absent', function (): void {
-        // An app override of null removes the key in ConfigMerger, so absent means null too
         $nullConfig = new QueueConfig(new FakeConfigRepository(['queue.backoff' => null]));
         $absentConfig = new QueueConfig(new FakeConfigRepository());
 

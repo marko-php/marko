@@ -39,7 +39,7 @@ return [
 |---|---|---|---|
 | `host` | `REDIS_HOST` | `127.0.0.1` | Redis server host |
 | `port` | `REDIS_PORT` | `6379` | Redis server port (1-65535) |
-| `password` | `REDIS_PASSWORD` | `null` | Password for `AUTH`; `null`, empty or removed means no authentication |
+| `password` | `REDIS_PASSWORD` | `null` | Password for `AUTH`; `null` or empty means no authentication |
 | `database` | `REDIS_DATABASE` | `0` | Redis database index (0 or higher) |
 | `scheme` | `REDIS_SCHEME` | `tcp` | `tcp` for plain text, or `tls` to encrypt the connection and verify the server certificate against `host`. Any other value throws `RedisConnectionException` |
 

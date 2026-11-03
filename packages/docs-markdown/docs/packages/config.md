@@ -347,14 +347,22 @@ return [
 ];
 ```
 
-To remove a key defined by a lower-priority config, set it to `null`:
+`null` is an ordinary value. Setting a key to `null` overrides the lower-priority value with `null` and keeps the key, so `has()` returns `true` and `get()` returns `null`. This is what an `Env::nullableString()` that reads an unset variable produces, and what package defaults such as `'secure' => null` rely on.
+
+To remove a key defined by a lower-priority config, set it to `new RemoveKey()`:
 
 ```php title="app/config/blog.php"
 <?php
+
+use Marko\Config\RemoveKey;
+
 return [
-    'deprecated_feature' => null, // Removes this key entirely
+    'deprecated_feature' => new RemoveKey(), // Removes this key entirely
+    'cache_ttl' => null, // Keeps the key, with the value null
 ];
 ```
+
+The merger drops every `RemoveKey` marker, including ones for keys no lower-priority file defines, so a marker is never stored as a config value. Reading a removed key throws `ConfigNotFoundException`, the same as any key that was never defined.
 
 ## Config Caching
 
@@ -483,6 +491,16 @@ Load errors throw `ConfigLoadException`, whose message ends with `[file: <path>]
 public function merge(array $base, array $override): array
 public function mergeAll(array ...$configs): array
 ```
+
+Associative arrays merge recursively; any other value, `null` included, replaces the base value. A `RemoveKey` value removes the key (see [Merge Priority](#merge-priority)).
+
+### RemoveKey
+
+```php
+new \Marko\Config\RemoveKey()
+```
+
+A marker for a config value that deletes the key from the lower-priority config. It never appears in the merged config.
 
 ### ConfigDiscovery
 

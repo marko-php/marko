@@ -28,9 +28,9 @@ readonly class ConfigDiscovery
         foreach ($this->files($modulePaths, $rootConfigPath) as $file) {
             $key = pathinfo($file, PATHINFO_FILENAME);
             $config = $this->loader->load($file);
-            $result[$key] = isset($result[$key])
-                ? $this->merger->merge($result[$key], $config)
-                : $config;
+            // The first file of a name is merged into [] too, so RemoveKey
+            // markers in it are dropped rather than stored as values.
+            $result[$key] = $this->merger->merge($result[$key] ?? [], $config);
         }
 
         return $result;

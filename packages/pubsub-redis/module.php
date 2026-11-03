@@ -16,9 +16,7 @@ return [
         SubscriberInterface::class => RedisSubscriber::class,
         RedisPubSubConnection::class => static function (ContainerInterface $container): RedisPubSubConnection {
             $config = $container->get(ConfigRepositoryInterface::class);
-            // An app config that sets a key to null removes it (ConfigMerger
-            // unsets null overrides), so a missing key also means "no password".
-            $password = $config->has(key: 'pubsub-redis.password') ? $config->get(key: 'pubsub-redis.password') : null;
+            $password = $config->get(key: 'pubsub-redis.password');
 
             return new RedisPubSubConnection(
                 host: $config->getString(key: 'pubsub-redis.host'),

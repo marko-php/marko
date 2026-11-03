@@ -41,9 +41,7 @@ class RedisConnectionFactory implements RedisConnectionFactoryInterface
         }
 
         $key = "redis.connections.$name";
-        // An app config that sets a key to null removes it (ConfigMerger
-        // unsets null overrides), so a missing key also means "no password".
-        $password = $this->config->has("$key.password") ? $this->config->get("$key.password") : null;
+        $password = $this->config->get("$key.password");
 
         return new RedisConnection(
             host: $this->config->getString("$key.host"),

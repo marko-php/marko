@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Queue\Rabbitmq\Tests;
 
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Core\Container\Container;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Rabbitmq\Exceptions\RabbitmqException;
@@ -96,10 +97,11 @@ describe('queue-rabbitmq module bindings', function (): void {
         expect($connection->tlsOptions)->toBeNull();
     });
 
-    it('treats a tls key removed by a null app override as no TLS options', function (): void {
-        $connection = createRabbitmqContainer(without: ['queue-rabbitmq.tls'])->get(RabbitmqConnection::class);
+    it('fails loudly when queue-rabbitmq.tls is missing from config', function (): void {
+        $container = createRabbitmqContainer(without: ['queue-rabbitmq.tls']);
 
-        expect($connection->tlsOptions)->toBeNull();
+        expect(fn () => $container->get(RabbitmqConnection::class))
+            ->toThrow(ConfigNotFoundException::class);
     });
 
     it('refuses the shipped guest/guest credentials when the host is not loopback', function (): void {
