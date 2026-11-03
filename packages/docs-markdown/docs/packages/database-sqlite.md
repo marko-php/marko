@@ -148,7 +148,7 @@ Through the builder, `whereJson*` path, contains and exists conditions compile t
 
 ### Inserts That Return Values
 
-`RETURNING` needs SQLite 3.35+, which the 3.39 floor satisfies, so generated primary keys read back on single and batch inserts. SQLite documents the order of `RETURNING` rows as unspecified; the batch insert path relies on the order SQLite produces today, which is insertion order, and a test guards it.
+`RETURNING` needs SQLite 3.35+, which the 3.39 floor satisfies, so generated primary keys read back on single and batch inserts. SQLite documents the order of `RETURNING` rows as unspecified, so a batch insert sorts the returned keys ascending before matching them to entities. Generated keys on SQLite are always `AUTOINCREMENT` rowids, which one statement assigns in increasing insert order, so the match does not depend on the order the rows come back in.
 
 ## Other Packages on SQLite
 
