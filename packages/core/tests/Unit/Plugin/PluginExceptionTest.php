@@ -25,6 +25,32 @@ describe('cannotInterceptReadonly', function (): void {
     });
 });
 
+describe('final targets', function (): void {
+    it('suggests targeting an interface when a plugin targets a final class', function (): void {
+        $exception = PluginException::cannotTargetFinalClass('App\\Plugin\\FooPlugin', 'Vendor\\Foo');
+
+        expect($exception)->toBeInstanceOf(PluginException::class)
+            ->and($exception->getMessage())->toContain('App\\Plugin\\FooPlugin')
+            ->and($exception->getMessage())->toContain('Vendor\\Foo')
+            ->and($exception->getSuggestion())->toContain('interface');
+    });
+
+    it('names the final method a plugin tried to hook', function (): void {
+        $exception = PluginException::cannotTargetFinalMethod('App\\Plugin\\FooPlugin', 'Vendor\\Foo', 'bar');
+
+        expect($exception->getMessage())->toContain('Vendor\\Foo::bar()')
+            ->and($exception->getMessage())->toContain('App\\Plugin\\FooPlugin')
+            ->and($exception->getSuggestion())->toContain('interface');
+    });
+
+    it('suggests targeting an interface when an interceptor would extend a final class', function (): void {
+        $exception = PluginException::cannotInterceptFinal('Vendor\\Foo');
+
+        expect($exception->getMessage())->toContain('Vendor\\Foo')
+            ->and($exception->getSuggestion())->toContain('interface');
+    });
+});
+
 describe('ambiguousInterfacePlugins', function (): void {
     it('creates ambiguousInterfacePlugins exception listing the conflicting interfaces', function (): void {
         $exception = PluginException::ambiguousInterfacePlugins(

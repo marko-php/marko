@@ -98,6 +98,39 @@ class PluginException extends MarkoException
         );
     }
 
+    public static function cannotInterceptFinal(
+        string $targetClass,
+    ): self {
+        return new self(
+            message: "Cannot create interceptor for '$targetClass': final classes cannot be extended",
+            context: "While creating plugin interceptor for '$targetClass'",
+            suggestion: "Target an interface instead of the final class. Use #[Plugin(target: InterfaceName::class)] where InterfaceName is an interface that '$targetClass' implements, or bind a non-final replacement with a Preference",
+        );
+    }
+
+    public static function cannotTargetFinalClass(
+        string $pluginClass,
+        string $targetClass,
+    ): self {
+        return new self(
+            message: "Plugin '$pluginClass' cannot target '$targetClass' because '$targetClass' is a final class",
+            context: "While registering plugin '$pluginClass' targeting '$targetClass'",
+            suggestion: "Final classes cannot be extended, so they cannot be intercepted. Use #[Plugin(target: InterfaceName::class)] where InterfaceName is an interface that '$targetClass' implements",
+        );
+    }
+
+    public static function cannotTargetFinalMethod(
+        string $pluginClass,
+        string $targetClass,
+        string $method,
+    ): self {
+        return new self(
+            message: "Plugin '$pluginClass' cannot hook '$targetClass::$method()' because the method is final",
+            context: "While registering plugin '$pluginClass' targeting '$targetClass'",
+            suggestion: "Final methods cannot be overridden, so they cannot be intercepted. Use #[Plugin(target: InterfaceName::class)] where InterfaceName is an interface that '$targetClass' implements and that declares $method()",
+        );
+    }
+
     public static function unsupportedDefaultValue(
         string $method,
         string $parameter,

@@ -52,6 +52,46 @@ class PaymentAuditPlugin
     public function processPayment(): void {}
 }
 
+final class FinalTargetService
+{
+    /** @noinspection PhpUnused - Test fixture */
+    public function run(): string
+    {
+        return 'ran';
+    }
+}
+
+#[Plugin(target: FinalTargetService::class)]
+class FinalTargetServicePlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    #[Before]
+    public function run(): void {}
+}
+
+class FinalMethodTargetService
+{
+    /** @noinspection PhpUnused - Test fixture */
+    final public function locked(): string
+    {
+        return 'locked';
+    }
+
+    /** @noinspection PhpUnused - Test fixture */
+    public function open(): string
+    {
+        return 'open';
+    }
+}
+
+#[Plugin(target: FinalMethodTargetService::class)]
+class FinalMethodTargetServicePlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    #[After]
+    public function locked(): void {}
+}
+
 it('collects all plugins for a given target class with new definition format', function (): void {
     $registry = new PluginRegistry();
 
@@ -636,4 +676,42 @@ it('throws PluginException when multiple interfaces of a class have plugins regi
     // RegistryLookupClassTwoInterfaces implements both A and B, both have plugins
     expect(fn () => $registry->getEffectiveTargetClass(RegistryLookupClassTwoInterfaces::class))
         ->toThrow(PluginException::class);
+});
+
+it('refuses a plugin that targets a final class', function (): void {
+    $registry = new PluginRegistry();
+
+    expect(fn () => $registry->register(new PluginDefinition(
+        pluginClass: FinalTargetServicePlugin::class,
+        targetClass: FinalTargetService::class,
+        beforeMethods: ['run' => ['pluginMethod' => 'run', 'sortOrder' => 10]],
+    )))->toThrow(
+        PluginException::class,
+        "Plugin 'FinalTargetServicePlugin' cannot target 'FinalTargetService' because 'FinalTargetService' is a final class",
+    );
+});
+
+it('refuses a plugin hook on a final method of the target class', function (): void {
+    $registry = new PluginRegistry();
+
+    expect(fn () => $registry->register(new PluginDefinition(
+        pluginClass: FinalMethodTargetServicePlugin::class,
+        targetClass: FinalMethodTargetService::class,
+        afterMethods: ['locked' => ['pluginMethod' => 'locked', 'sortOrder' => 10]],
+    )))->toThrow(
+        PluginException::class,
+        "Plugin 'FinalMethodTargetServicePlugin' cannot hook 'FinalMethodTargetService::locked()' because the method is final",
+    );
+});
+
+it('accepts a plugin on a non-final method of a class that has other final methods', function (): void {
+    $registry = new PluginRegistry();
+
+    $registry->register(new PluginDefinition(
+        pluginClass: FinalMethodTargetServicePlugin::class,
+        targetClass: FinalMethodTargetService::class,
+        beforeMethods: ['open' => ['pluginMethod' => 'locked', 'sortOrder' => 10]],
+    ));
+
+    expect($registry->hasPluginsFor(FinalMethodTargetService::class))->toBeTrue();
 });

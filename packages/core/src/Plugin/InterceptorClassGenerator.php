@@ -125,6 +125,10 @@ class InterceptorClassGenerator
             throw PluginException::cannotInterceptReadonly($targetClass);
         }
 
+        if ($reflection->isFinal()) {
+            throw PluginException::cannotInterceptFinal($targetClass);
+        }
+
         $pluggedMethods = $this->resolvePluggedMethods($targetClass, $pluginRegistry);
         sort($pluggedMethods);
         $methodsHash = substr(md5(implode(',', $pluggedMethods)), 0, 8);
