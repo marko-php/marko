@@ -12,7 +12,6 @@ use Marko\Authorization\GateHookRegistry;
 use Marko\Authorization\Middleware\AuthorizationMiddleware;
 use Marko\Authorization\PolicyRegistry;
 use Marko\Core\Container\ContainerInterface;
-use Marko\Core\Event\EventDispatcherInterface;
 
 return [
     // SessionMiddleware is registered globally by the session drivers; it must run first.
@@ -20,18 +19,7 @@ return [
         'after' => ['marko/session-file', 'marko/session-database'],
     ],
     'bindings' => [
-        GateInterface::class => function (ContainerInterface $container): GateInterface {
-            $authManager = $container->get(AuthManager::class);
-            $config = $container->get(AuthorizationConfig::class);
-            $defaultGuard = $config->defaultGuard();
-
-            return new Gate(
-                guard: $authManager->guard($defaultGuard),
-                policyRegistry: $container->get(PolicyRegistry::class),
-                gateHookRegistry: $container->get(GateHookRegistry::class),
-                eventDispatcher: $container->get(EventDispatcherInterface::class),
-            );
-        },
+        GateInterface::class => Gate::class,
         // Lazy: the Gate and guard are built only when a route with #[Can] is matched.
         // Authentication is checked against the same guard the Gate authorizes with.
         AuthorizationMiddleware::class => function (ContainerInterface $container): AuthorizationMiddleware {
@@ -42,6 +30,15 @@ return [
                 ),
             );
         },
+    ],
+    'arguments' => [
+        Gate::class => [
+            'guard' => fn (ContainerInterface $container): GuardInterface => $container->get(
+                AuthManager::class,
+            )->guard(
+                $container->get(AuthorizationConfig::class)->defaultGuard(),
+            ),
+        ],
     ],
     'singletons' => [
         PolicyRegistry::class,

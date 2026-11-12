@@ -45,16 +45,17 @@ For a Unix timestamp, use `$this->clock->now()->getTimestamp()`.
 
 ### Timezone
 
-By default `SystemClock` returns times in PHP's default timezone (`date_default_timezone_get()`), read each time `now()` is called. To pin a timezone, construct the clock yourself and bind it in your module:
+By default `SystemClock` returns times in PHP's default timezone (`date_default_timezone_get()`), read each time `now()` is called. To pin a timezone, set the `timezone` constructor argument of `SystemClock` in your module. The parameter is a union type (`DateTimeZone|string|null`), so the value must be a closure:
 
 ```php title="app/core/module.php"
 use Marko\Clock\SystemClock;
 use Marko\Core\Container\ContainerInterface;
-use Psr\Clock\ClockInterface;
 
 return [
-    'bindings' => [
-        ClockInterface::class => fn (ContainerInterface $container): ClockInterface => new SystemClock('UTC'),
+    'arguments' => [
+        SystemClock::class => [
+            'timezone' => fn (ContainerInterface $container): string => 'UTC',
+        ],
     ],
 ];
 ```

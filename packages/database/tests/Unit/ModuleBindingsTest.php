@@ -112,11 +112,20 @@ it('leaves the SleeperInterface binding to marko/core', function (): void {
     expect(databaseModuleConfig()['bindings'])->not->toHaveKey(SleeperInterface::class);
 });
 
-it('resolves TransactionBackoff from a container with the database module bindings', function (): void {
+it('declares only the randomizer argument for TransactionBackoff', function (): void {
+    $config = databaseModuleConfig();
+
+    expect($config['bindings'])->not->toHaveKey(TransactionBackoff::class)
+        ->and(array_keys($config['arguments'][TransactionBackoff::class] ?? []))->toBe(['randomizer']);
+});
+
+it('builds TransactionBackoff with the bound sleeper', function (): void {
     $container = databaseModuleContainer(new AppEnvironment(['APP_ENV' => 'production']));
     // marko/core's default binding
     $container->bind(SleeperInterface::class, UsleepSleeper::class);
-    $container->bind(TransactionBackoff::class, databaseModuleConfig()['bindings'][TransactionBackoff::class]);
+    foreach (databaseModuleConfig()['arguments'] as $class => $arguments) {
+        $container->setArguments($class, $arguments);
+    }
     $sleeper = new FakeSleeper();
 
     $backoff = $container->get(TransactionBackoff::class);

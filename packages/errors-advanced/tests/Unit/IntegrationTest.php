@@ -27,7 +27,7 @@ describe('Integration with marko/errors-simple', function () {
         expect($config)->toBeArray()
             ->and($config)->toHaveKey('bindings')
             ->and($config['bindings'])->toHaveKey(ErrorHandlerInterface::class)
-            ->and(($config['bindings'][ErrorHandlerInterface::class])(ClockedContainer::create()))
+            ->and(ClockedContainer::withModule($config)->get(ErrorHandlerInterface::class))
             ->toBeInstanceOf(AdvancedErrorHandler::class);
     });
 
@@ -102,17 +102,14 @@ describe('Integration with marko/errors-simple', function () {
         $simpleConfig = require $simpleModulePath;
         $advancedConfig = require $advancedModulePath;
 
-        // Both packages bind to the same interface
+        // Both packages bind to the same interface: errors-simple to SimpleErrorHandler,
+        // errors-advanced to AdvancedErrorHandler (overrides simple)
         expect($simpleConfig['bindings'])->toHaveKey(ErrorHandlerInterface::class)
             ->and($advancedConfig['bindings'])->toHaveKey(ErrorHandlerInterface::class)
             ->and($simpleConfig['bindings'][ErrorHandlerInterface::class])
             ->toBe(SimpleErrorHandler::class)
-            ->and(($advancedConfig['bindings'][ErrorHandlerInterface::class])(ClockedContainer::create()))
+            ->and(ClockedContainer::withModule($advancedConfig)->get(ErrorHandlerInterface::class))
             ->toBeInstanceOf(AdvancedErrorHandler::class);
-
-        // errors-simple binds to SimpleErrorHandler
-
-        // errors-advanced binds to AdvancedErrorHandler (overrides simple)
 
         // Verify AdvancedErrorHandler is a valid implementation
         $handler = new OutputSafeAdvancedErrorHandler(new FakeClock());

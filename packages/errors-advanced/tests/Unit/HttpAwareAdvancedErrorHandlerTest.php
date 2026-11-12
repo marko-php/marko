@@ -69,6 +69,24 @@ function handleWithAdvanced(
     return [$handler, $output];
 }
 
+/**
+ * Register the module's bindings and constructor arguments on the container.
+ *
+ * @param array<string, mixed> $module
+ */
+function registerAdvancedModule(
+    Container $container,
+    array $module,
+): void {
+    foreach ($module['bindings'] as $abstract => $concrete) {
+        $container->bind($abstract, $concrete);
+    }
+
+    foreach ($module['arguments'] ?? [] as $class => $arguments) {
+        $container->setArguments($class, $arguments);
+    }
+}
+
 describe('AdvancedErrorHandler container resolution', function (): void {
     it('replaces the core bootstrap error handler instead of stacking on top of it', function (): void {
         $module = require dirname(__DIR__, 2) . '/module.php';
@@ -134,10 +152,7 @@ describe('AdvancedErrorHandler container resolution', function (): void {
         $container->instance(ContainerInterface::class, $container);
         $container->instance(ClockInterface::class, new FakeClock());
         $container->instance(BootstrapErrorHandler::class, new BootstrapErrorHandler());
-
-        foreach ($module['bindings'] as $abstract => $concrete) {
-            $container->bind($abstract, $concrete);
-        }
+        registerAdvancedModule($container, $module);
 
         foreach ($module['singletons'] ?? [] as $abstract) {
             $container->singleton($abstract);
@@ -156,10 +171,7 @@ describe('AdvancedErrorHandler container resolution', function (): void {
         $module = require dirname(__DIR__, 2) . '/module.php';
         $container = new Container(new PreferenceRegistry());
         $container->instance(ClockInterface::class, new FakeClock());
-
-        foreach ($module['bindings'] as $abstract => $concrete) {
-            $container->bind($abstract, $concrete);
-        }
+        registerAdvancedModule($container, $module);
 
         expect($container->get(ErrorHandlerInterface::class))->toBeInstanceOf(AdvancedErrorHandler::class);
     });
@@ -169,10 +181,7 @@ describe('AdvancedErrorHandler container resolution', function (): void {
         $container = new Container(new PreferenceRegistry());
         $clock = new FakeClock('2026-01-01 12:00:00 UTC');
         $container->instance(ClockInterface::class, $clock);
-
-        foreach ($module['bindings'] as $abstract => $concrete) {
-            $container->bind($abstract, $concrete);
-        }
+        registerAdvancedModule($container, $module);
 
         $handler = $container->get(ErrorHandlerInterface::class);
 
@@ -185,10 +194,7 @@ describe('AdvancedErrorHandler container resolution', function (): void {
         $container->instance(ClockInterface::class, new FakeClock());
         $appEnvironment = new AppEnvironment(['APP_ENV' => 'local']);
         $container->instance(AppEnvironment::class, $appEnvironment);
-
-        foreach ($module['bindings'] as $abstract => $concrete) {
-            $container->bind($abstract, $concrete);
-        }
+        registerAdvancedModule($container, $module);
 
         $handler = $container->get(ErrorHandlerInterface::class);
         $environment = new ReflectionProperty(AdvancedErrorHandler::class, 'environment')->getValue($handler);

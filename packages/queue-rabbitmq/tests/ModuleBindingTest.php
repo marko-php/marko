@@ -60,6 +60,10 @@ function createRabbitmqContainer(
         foreach ($module['singletons'] ?? [] as $id) {
             $container->singleton($id);
         }
+
+        foreach ($module['arguments'] ?? [] as $class => $arguments) {
+            $container->setArguments($class, $arguments);
+        }
     }
 
     return $container;
@@ -156,7 +160,7 @@ describe('queue-rabbitmq module bindings', function (): void {
             ->toBe($container->get(RabbitmqConnection::class));
     });
 
-    it('uses queue.queue as the default queue', function (): void {
+    it('builds RabbitmqQueue with the configured default queue', function (): void {
         $queue = createRabbitmqContainer()->get(QueueInterface::class);
 
         expect((new ReflectionProperty(RabbitmqQueue::class, 'defaultQueue'))->getValue($queue))->toBe('emails');

@@ -406,6 +406,7 @@ Module configuration is split between two files with clear responsibilities:
 - `enabled` - Whether module is active (default: true)
 - `sequence` - Load order hints (after/before other modules)
 - `bindings` - Interface → implementation mappings
+- `arguments` - Constructor argument substitution by class and parameter name; unlisted parameters still autowire (see Dependency Injection section)
 - `singletons` - Shared instances (see Dependency Injection section)
 - `boot` - Closure that runs after all bindings are registered (receives the Container)
 - `globalMiddleware` - Global HTTP middleware classes
@@ -663,7 +664,7 @@ Bindings tell the container what to create when something requests an interface.
 ],
 ```
 
-**Prefer simple bindings.** Only use closures when autowiring can't express what you need. If a class takes only type-hinted interfaces/classes as constructor params, it's autowirable — no closure needed.
+**Prefer simple bindings, then arguments, then closures.** If a class takes only type-hinted interfaces/classes as constructor params, it's autowirable — no closure needed. If most parameters autowire and one or two need a value, bind the interface to the class and set those with `arguments` (`'arguments' => [Gate::class => ['guard' => fn (ContainerInterface $c) => ...]]`). Only use a closure binding when the construction has real branching. A closure binding that calls `new Foo(...)` bypasses `Foo`'s arguments. Once a class has arguments, its constructor parameter names are public API.
 
 ### Singletons
 

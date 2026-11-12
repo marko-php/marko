@@ -27,6 +27,7 @@ use Marko\Cache\Memory\Driver\ArrayCacheDriver;
 use Marko\Clock\SystemClock;
 use Marko\Config\ConfigRepository;
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Event\Event;
@@ -34,6 +35,7 @@ use Marko\Core\Event\EventDispatcher;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Core\Event\ObserverDefinition;
 use Marko\Core\Event\ObserverRegistry;
+use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Routing\Http\Cookie;
 use Marko\Routing\Http\Request;
@@ -118,18 +120,13 @@ function bootAuthContainer(
 
     $module = require $packageRoot . '/module.php';
 
-    foreach ($module['bindings'] as $interface => $implementation) {
-        $container->bind($interface, $implementation);
-    }
-
-    foreach ($module['singletons'] as $key => $value) {
-        if (is_int($key)) {
-            $container->singleton($value);
-        } else {
-            $container->bind($key, $value);
-            $container->singleton($key);
-        }
-    }
+    new BindingRegistry($container)->registerModule(new ModuleManifest(
+        name: 'marko/authentication',
+        version: '1.0.0',
+        bindings: $module['bindings'],
+        singletons: $module['singletons'],
+        arguments: $module['arguments'] ?? [],
+    ));
 
     return $container;
 }

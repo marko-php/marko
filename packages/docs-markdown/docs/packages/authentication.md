@@ -1423,18 +1423,18 @@ The routing pipeline renders the thrown `401` through [`ExceptionRenderer`](/doc
 {"message": "Unauthorized."}
 ```
 
-To disable the redirect for a web guard, register a binding with `redirectTo: null`:
+To disable the redirect for a web guard, set the `redirectTo` constructor argument to `null` with the `arguments` key. The other parameters still autowire (see [Argument Substitution](/docs/concepts/dependency-injection/#argument-substitution)):
 
 ```php title="module.php"
-use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
-use Marko\Core\Container\ContainerInterface;
 
-// In 'bindings'
-AuthMiddleware::class => fn (ContainerInterface $container): AuthMiddleware => new AuthMiddleware(
-    auth: $container->get(AuthManager::class),
-    redirectTo: null,
-),
+return [
+    'arguments' => [
+        AuthMiddleware::class => [
+            'redirectTo' => null,
+        ],
+    ],
+];
 ```
 
 To change how the `401` looks (a branded page, a different JSON shape), replace `ExceptionRenderer` with a `#[Preference]`. See [Custom error pages](/docs/packages/routing/#custom-error-pages). Authorization failures from `#[Can]` and `Gate::authorize()` use the same renderer; see [Failure Responses](/docs/packages/authorization/#failure-responses).

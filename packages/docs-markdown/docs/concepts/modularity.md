@@ -73,6 +73,7 @@ return [
 | Key | Purpose |
 |---|---|
 | `bindings` | Map interfaces to concrete implementations |
+| `arguments` | Set individual constructor arguments by parameter name; the rest autowire (see [Argument Substitution](/docs/concepts/dependency-injection/#argument-substitution)) |
 | `singletons` | Classes that should only be instantiated once |
 
 ## Interface/Implementation Split

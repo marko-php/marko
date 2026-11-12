@@ -17,6 +17,7 @@ use Marko\AuthenticationToken\Tests\Fixtures\InMemoryTokenRepository;
 use Marko\Authorization\Attributes\Can;
 use Marko\Authorization\Middleware\AuthorizationMiddleware;
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Event\EventDispatcherInterface;
@@ -72,18 +73,13 @@ function registerModule(
     Container $container,
     array $module,
 ): void {
-    foreach ($module['bindings'] ?? [] as $id => $binding) {
-        $container->bind($id, $binding);
-    }
-
-    foreach ($module['singletons'] ?? [] as $key => $value) {
-        if (is_string($key)) {
-            $container->bind($key, $value);
-            $container->singleton($key);
-        } else {
-            $container->singleton($value);
-        }
-    }
+    new BindingRegistry($container)->registerModule(new ModuleManifest(
+        name: 'test/module',
+        version: '1.0.0',
+        bindings: $module['bindings'] ?? [],
+        singletons: $module['singletons'] ?? [],
+        arguments: $module['arguments'] ?? [],
+    ));
 }
 
 /**

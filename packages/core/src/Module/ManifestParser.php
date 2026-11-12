@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Core\Module;
 
+use Marko\Core\Exceptions\ArgumentException;
 use Marko\Core\Exceptions\ModuleException;
 use ParseError;
 
@@ -19,7 +20,7 @@ class ManifestParser
      * Parse a module directory containing composer.json and optionally module.php.
      *
      * @param string $modulePath Path to the module directory
-     * @throws ModuleException If composer.json is missing or invalid
+     * @throws ModuleException|ArgumentException If composer.json is missing or invalid, or arguments are malformed
      */
     public function parse(
         string $modulePath,
@@ -42,7 +43,7 @@ class ManifestParser
      * Never reads composer.json. module.php is still required, so its closures
      * (bindings, boot and shutdown callbacks) stay live.
      *
-     * @throws ModuleException If module.php has syntax errors or does not return an array
+     * @throws ModuleException|ArgumentException If module.php is invalid or its arguments are malformed
      */
     public function parseCached(
         CachedModule $cachedModule,
@@ -64,6 +65,7 @@ class ManifestParser
      * @param array<string, string> $require
      * @param array<string, string> $autoload
      * @param array<string, mixed> $extra
+     * @throws ArgumentException If the arguments are not shaped as class => [parameter => value]
      */
     private function build(
         array $moduleData,
@@ -94,7 +96,48 @@ class ManifestParser
             extra: $extra,
             discovery: $moduleData['discovery'] ?? [],
             shutdown: $moduleData['shutdown'] ?? null,
+            arguments: $this->validatedArguments($moduleData['arguments'] ?? [], $name),
         );
+    }
+
+    /**
+     * @return array<class-string, array<string, mixed>>
+     * @throws ArgumentException If the arguments are not shaped as class => [parameter => value]
+     */
+    private function validatedArguments(
+        mixed $arguments,
+        string $module,
+    ): array {
+        if (!is_array($arguments)) {
+            throw ArgumentException::invalidShape(
+                $module,
+                'it must be an array, ' . get_debug_type($arguments) . ' given',
+            );
+        }
+
+        foreach ($arguments as $class => $parameters) {
+            if (!is_string($class) || $class === '') {
+                throw ArgumentException::invalidShape($module, 'each key must be a non-empty class name string');
+            }
+
+            if (!is_array($parameters)) {
+                throw ArgumentException::invalidShape(
+                    $module,
+                    "the entry for '$class' must be an array keyed by parameter name",
+                );
+            }
+
+            foreach (array_keys($parameters) as $parameter) {
+                if (!is_string($parameter) || $parameter === '') {
+                    throw ArgumentException::invalidShape(
+                        $module,
+                        "every key under '$class' must be a non-empty parameter name string",
+                    );
+                }
+            }
+        }
+
+        return $arguments;
     }
 
     /**

@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\PreferenceRegistry;
+use Marko\Core\Module\ManifestParser;
 use Marko\Encryption\Contracts\EncryptorInterface;
 use Marko\Security\Config\SecurityConfig;
 use Marko\Security\Contracts\CsrfTokenManagerInterface;
+use Marko\Security\CsrfTokenManager;
 use Marko\Security\Middleware\CsrfMiddleware;
 use Marko\Security\Middleware\SecurityHeadersMiddleware;
 use Marko\Security\Tests\Helpers;
@@ -88,7 +91,7 @@ describe('module.php', function (): void {
         expect(file_exists($modulePath))->toBeTrue()
             ->and($module)->toBeArray()
             ->and($module)->toHaveKey('bindings')
-            ->and($module['bindings'])->toHaveKey('Marko\Security\Contracts\CsrfTokenManagerInterface');
+            ->and($module['bindings'])->toHaveKey(CsrfTokenManagerInterface::class);
     });
 
     it('registers the security middleware globally after the session drivers', function (): void {
@@ -100,17 +103,23 @@ describe('module.php', function (): void {
             ->and($module['sequence']['after'])->toContain('marko/session-file', 'marko/session-database');
     });
 
-    it('builds CsrfTokenManager with the configured security.csrf.session_key', function (): void {
+    it('binds CsrfTokenManagerInterface to CsrfTokenManager as a class binding', function (): void {
         $module = require dirname(__DIR__, 2) . '/module.php';
+
+        expect($module['bindings'][CsrfTokenManagerInterface::class])->toBe(CsrfTokenManager::class);
+    });
+
+    it('builds CsrfTokenManager with the configured security.csrf.session_key', function (): void {
         $session = new FakeSession();
         $container = new Container(new PreferenceRegistry());
+        new BindingRegistry($container)->registerModule(new ManifestParser()->parse(dirname(__DIR__, 2)));
         $container->instance(SessionInterface::class, $session);
         $container->instance(EncryptorInterface::class, $this->createStub(EncryptorInterface::class));
         $container->instance(SecurityConfig::class, Helpers::createSecurityConfig([
             'security.csrf.session_key' => '_custom_csrf',
         ]));
 
-        $token = $module['bindings'][CsrfTokenManagerInterface::class]($container)->get();
+        $token = $container->get(CsrfTokenManagerInterface::class)->get();
 
         expect($session->get('_custom_csrf'))->toBe($token)
             ->and($session->has('_csrf_token'))->toBeFalse();

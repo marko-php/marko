@@ -59,6 +59,7 @@ function bootLogPackages(
             name: $name,
             version: '1.0.0',
             bindings: $module['bindings'],
+            arguments: $module['arguments'] ?? [],
             path: $paths[$name],
             source: 'vendor',
         ));

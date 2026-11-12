@@ -6,7 +6,6 @@ use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Discovery\CachedDiscovery;
 use Marko\Core\Environment\AppEnvironment;
 use Marko\Core\Path\ProjectPaths;
-use Marko\Core\Sleep\SleeperInterface;
 use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Connection\TransactionBackoff;
 use Marko\Database\Connection\TransactionInterface;
@@ -41,17 +40,16 @@ return [
             ?? $discovery->discoverAll($paths->vendor, $paths->modules, $paths->app);
         $metadataFactory->linkExtendersFrom($entityClasses);
     },
+    'arguments' => [
+        // Random\Randomizer cannot be autowired (its Engine parameter is an
+        // interface). The sleeper autowires: marko/core binds SleeperInterface;
+        // bind your own sleeper to change the wait.
+        TransactionBackoff::class => [
+            'randomizer' => fn (): Randomizer => new Randomizer(),
+        ],
+    ],
     'bindings' => [
         SeederDiscoveryInterface::class => SeederDiscovery::class,
-        // A closure, because Random\Randomizer cannot be autowired (its Engine
-        // parameter is an interface). marko/core binds SleeperInterface; bind
-        // your own sleeper to change the wait.
-        TransactionBackoff::class => function (ContainerInterface $container): TransactionBackoff {
-            return new TransactionBackoff(
-                sleeper: $container->get(SleeperInterface::class),
-                randomizer: new Randomizer(),
-            );
-        },
         DiffCalculator::class => function (ContainerInterface $container): DiffCalculator {
             return new DiffCalculator(
                 ignoredIndexes: $container->get(DatabaseConfig::class)->ignoreIndexes,

@@ -8,16 +8,10 @@ use Marko\Docs\Contract\DocsSearchInterface;
 use Marko\DocsFts\FtsSearch;
 use Marko\DocsMarkdown\MarkdownRepository;
 
-it('registers DocsSearchInterface singleton binding to FtsSearch in module.php', function (): void {
+it('binds DocsSearchInterface to FtsSearch as a shared class binding', function (): void {
     $module = require dirname(__DIR__, 2) . '/module.php';
 
-    // DocsSearchInterface must appear in singletons (factory closure) for proper DI wiring
-    expect($module)->toHaveKey('singletons');
-    expect($module['singletons'])->toHaveKey(DocsSearchInterface::class);
-
-    $factory = $module['singletons'][DocsSearchInterface::class];
-
-    expect($factory)->toBeInstanceOf(Closure::class);
+    expect($module['singletons'])->toBe([DocsSearchInterface::class => FtsSearch::class]);
 });
 
 it('resolves to FtsSearch from the Marko container when docs-fts is installed', function (): void {
@@ -40,9 +34,26 @@ it('resolves to FtsSearch from the Marko container when docs-fts is installed', 
         }
     }
 
+    foreach ($module['arguments'] as $class => $arguments) {
+        $container->setArguments($class, $arguments);
+    }
+
     $resolved = $container->get(DocsSearchInterface::class);
 
     expect($resolved)->toBeInstanceOf(FtsSearch::class);
+});
+
+it('builds FtsSearch with the packaged index path', function (): void {
+    $packageRoot = dirname(__DIR__, 2);
+    $module = require $packageRoot . '/module.php';
+    $container = new Container();
+    $container->instance(MarkdownRepository::class, new MarkdownRepository('/tmp'));
+    $container->setArguments(FtsSearch::class, $module['arguments'][FtsSearch::class]);
+
+    $search = $container->get(FtsSearch::class);
+    $indexPath = new ReflectionProperty(FtsSearch::class, 'indexPath')->getValue($search);
+
+    expect($indexPath)->toBe($packageRoot . '/resources/docs.sqlite');
 });
 
 it('throws BindingException when only marko/docs is installed without any driver', function (): void {
@@ -55,9 +66,6 @@ it('throws BindingException when only marko/docs is installed without any driver
 it('exposes the underlying driver name via DocsSearchInterface::driverName', function (): void {
     $reflection = new ReflectionClass(DocsSearchInterface::class);
 
-    expect($reflection->hasMethod('driverName'))->toBeTrue();
-
-    $method = $reflection->getMethod('driverName');
-
-    expect($method->getReturnType()?->getName())->toBe('string');
+    expect($reflection->hasMethod('driverName'))->toBeTrue()
+        ->and($reflection->getMethod('driverName')->getReturnType()?->getName())->toBe('string');
 });

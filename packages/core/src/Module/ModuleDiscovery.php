@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Core\Module;
 
+use Marko\Core\Exceptions\ArgumentException;
 use Marko\Core\Exceptions\ModuleException;
 
 /**
@@ -28,7 +29,7 @@ readonly class ModuleDiscovery
      * Discover modules in vendor directory (two levels deep: vendor/vendor-name/package-name/)
      *
      * @return array<ModuleManifest>
-     * @throws ModuleException
+     * @throws ModuleException|ArgumentException
      */
     public function discoverInVendor(
         string $vendorDir,
@@ -69,7 +70,7 @@ readonly class ModuleDiscovery
      * Discover modules in modules directory (recursive, any depth)
      *
      * @return array<ModuleManifest>
-     * @throws ModuleException
+     * @throws ModuleException|ArgumentException
      */
     public function discoverInModules(
         string $modulesDir,
@@ -89,7 +90,7 @@ readonly class ModuleDiscovery
      * Discover modules in app directory (one level deep: app/module-name/)
      *
      * @return array<ModuleManifest>
-     * @throws ModuleException
+     * @throws ModuleException|ArgumentException
      */
     public function discoverInApp(
         string $appDir,
@@ -186,12 +187,13 @@ readonly class ModuleDiscovery
             extra: $manifest->extra,
             discovery: $manifest->discovery,
             shutdown: $manifest->shutdown,
+            arguments: $manifest->arguments,
         );
     }
 
     /**
      * @param array<ModuleManifest> $modules
-     * @throws ModuleException
+     * @throws ModuleException|ArgumentException
      */
     private function discoverRecursively(
         string $dir,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Authorization\Tests\Feature;
 
+use Closure;
 use DateTimeImmutable;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authorization\Attributes\Can;
@@ -13,8 +14,10 @@ use Marko\Authorization\Gate;
 use Marko\Authorization\Middleware\AuthorizationMiddleware;
 use Marko\Authorization\PolicyRegistry;
 use Marko\Authorization\Tests\Support\GateHooks;
+use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Exceptions\BindingException;
+use Marko\Core\Module\ModuleManifest;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\RouteCollection;
@@ -224,17 +227,17 @@ function createRouterRoutes(): RouteCollection
  */
 function createUnconfiguredRouter(): Router
 {
-    /** @var array{bindings: array<string, callable>, singletons: list<string>} $module */
+    /** @var array{bindings: array<string, string|Closure>, singletons: list<string>, arguments: array<string, array<string, mixed>>} $module */
     $module = require dirname(__DIR__, 2) . '/module.php';
     $container = new Container();
 
-    foreach ($module['bindings'] as $id => $factory) {
-        $container->bind($id, $factory);
-    }
-
-    foreach ($module['singletons'] as $id) {
-        $container->singleton($id);
-    }
+    new BindingRegistry($container)->registerModule(new ModuleManifest(
+        name: 'marko/authorization',
+        version: '1.0.0',
+        bindings: $module['bindings'],
+        singletons: $module['singletons'],
+        arguments: $module['arguments'] ?? [],
+    ));
 
     return new Router(
         matcher: new RouteMatcher(createRouterRoutes()),

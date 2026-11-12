@@ -135,13 +135,11 @@ describe('Error Handler Chain Integration', function () {
         $modulePath = dirname(__DIR__, 2) . '/module.php';
         $config = require $modulePath;
 
-        // Bindings map interface to implementation
+        // Bindings map interface to implementation, and the boot function is callable
         expect($config['bindings'])->toHaveKey(ErrorHandlerInterface::class)
-            ->and(($config['bindings'][ErrorHandlerInterface::class])(ClockedContainer::create()))
+            ->and(ClockedContainer::withModule($config)->get(ErrorHandlerInterface::class))
             ->toBeInstanceOf(AdvancedErrorHandler::class)
             ->and($config['boot'])->toBeCallable();
-
-        // Boot function exists and is callable
 
         // AdvancedErrorHandler implements the interface correctly
         $handler = new OutputSafeAdvancedErrorHandler(new FakeClock());
@@ -156,13 +154,11 @@ describe('Error Handler Chain Integration', function () {
         $simpleConfig = require $simpleModulePath;
         $advancedConfig = require $advancedModulePath;
 
-        // errors-simple binds SimpleErrorHandler
+        // errors-simple binds SimpleErrorHandler; errors-advanced binds AdvancedErrorHandler (overrides simple)
         expect($simpleConfig['bindings'][ErrorHandlerInterface::class])
             ->toBe(SimpleErrorHandler::class)
-            ->and(($advancedConfig['bindings'][ErrorHandlerInterface::class])(ClockedContainer::create()))
+            ->and(ClockedContainer::withModule($advancedConfig)->get(ErrorHandlerInterface::class))
             ->toBeInstanceOf(AdvancedErrorHandler::class);
-
-        // errors-advanced binds AdvancedErrorHandler (should override simple)
 
         // Both handlers implement the same interface
         $environment = new Environment();
@@ -179,7 +175,8 @@ describe('Error Handler Chain Integration', function () {
             $advancedConfig['bindings'],
         );
 
-        expect(($mergedBindings[ErrorHandlerInterface::class])(ClockedContainer::create()))
+        expect($mergedBindings[ErrorHandlerInterface::class])->toBe(AdvancedErrorHandler::class)
+            ->and(ClockedContainer::withModule($advancedConfig)->get(ErrorHandlerInterface::class))
             ->toBeInstanceOf(AdvancedErrorHandler::class);
     });
 });

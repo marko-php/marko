@@ -103,7 +103,7 @@ Create a directory in `app/` with a `composer.json`:
 app/
   mymodule/
     composer.json    # Required: name, autoload
-    module.php       # Optional: enabled, sequence, bindings, singletons, boot, shutdown, globalMiddleware, discovery
+    module.php       # Optional: enabled, sequence, bindings, arguments, singletons, boot, shutdown, globalMiddleware, discovery
     src/
       MyService.php
 ```
@@ -115,6 +115,18 @@ return [
     'enabled' => true,
     'bindings' => [
         PaymentInterface::class => StripePayment::class,
+    ],
+];
+```
+
+To change one constructor argument of a class and let the rest autowire, use the `arguments` key, keyed by concrete class and parameter name (see [Argument Substitution](/docs/concepts/dependency-injection/#argument-substitution)):
+
+```php title="module.php"
+return [
+    'arguments' => [
+        MarkdownRepository::class => [
+            'docsPath' => __DIR__ . '/docs',
+        ],
     ],
 ];
 ```
@@ -852,6 +864,24 @@ class MarkoException extends Exception
     public static function inferBasePackageName(string $className): ?string; // Marko\Cache\Redis\Driver\RedisCacheDriver → marko/cache
 }
 ```
+
+### ArgumentException
+
+```php
+use Marko\Core\Exceptions\ArgumentException;
+```
+
+Thrown when a module's `arguments` entry is invalid: the wrong shape, a key that is an interface or a class bound to another class, an unknown or variadic constructor parameter, a value that doesn't fit the parameter's type, or a union, `mixed` or untyped parameter given a non-closure value. Every message names the module or class and the parameter, with a suggestion. Validated at the end of boot and again when the class is resolved. See [Argument Substitution](/docs/concepts/dependency-injection/#argument-substitution).
+
+Implements `Psr\Container\ContainerExceptionInterface`.
+
+### ArgumentConflictException
+
+```php
+use Marko\Core\Exceptions\ArgumentConflictException;
+```
+
+Thrown when two modules of the same priority set the same constructor parameter of the same class, the same way `BindingConflictException` protects bindings. Resolve it by setting that parameter from a higher-priority module, such as your app module, or by removing the duplicate entry.
 
 ### BindingException
 

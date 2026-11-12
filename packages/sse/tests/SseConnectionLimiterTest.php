@@ -98,6 +98,31 @@ describe('SseConnectionLimiter', function (): void {
         expect($limiter->isLimited())->toBeFalse();
     });
 
+    it('declares the maxConnections and retryAfter arguments for SseConnectionLimiter', function (): void {
+        $module = require dirname(__DIR__) . '/module.php';
+
+        expect($module['bindings'])->not->toHaveKey(SseConnectionLimiter::class)
+            ->and($module['arguments'][SseConnectionLimiter::class])->toHaveKeys(['maxConnections', 'retryAfter'])
+            ->and($module['arguments'][SseConnectionLimiter::class])->not->toHaveKey('cache');
+    });
+
+    it('builds SseConnectionLimiter with no connection cap when none is configured', function (): void {
+        $module = require dirname(__DIR__) . '/module.php';
+
+        $container = new Container();
+        $container->instance(ConfigRepositoryInterface::class, new FakeConfigRepository([
+            'sse.max_connections' => null,
+            'sse.retry_after' => 7,
+        ]));
+        $container->instance(CacheInterface::class, new RecordingCache());
+        $container->setArguments(SseConnectionLimiter::class, $module['arguments'][SseConnectionLimiter::class]);
+
+        $limiter = $container->get(SseConnectionLimiter::class);
+
+        expect($limiter->isLimited())->toBeFalse()
+            ->and($limiter->retryAfter())->toBe(7);
+    });
+
     it('is built from config/sse.php by the module binding', function (): void {
         $module = require dirname(__DIR__) . '/module.php';
         $defaults = require dirname(__DIR__) . '/config/sse.php';
@@ -109,7 +134,9 @@ describe('SseConnectionLimiter', function (): void {
         ]));
         $container->instance(CacheInterface::class, new RecordingCache());
 
-        $limiter = $module['bindings'][SseConnectionLimiter::class]($container);
+        $container->setArguments(SseConnectionLimiter::class, $module['arguments'][SseConnectionLimiter::class]);
+
+        $limiter = $container->get(SseConnectionLimiter::class);
 
         expect($defaults['max_connections'])->toBeNull()
             ->and($limiter->isLimited())->toBeTrue()

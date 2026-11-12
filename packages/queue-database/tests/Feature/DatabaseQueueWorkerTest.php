@@ -65,6 +65,10 @@ function workerTestContainer(
         foreach ($module['bindings'] as $interface => $implementation) {
             $container->bind($interface, $implementation);
         }
+
+        foreach ($module['arguments'] ?? [] as $class => $arguments) {
+            $container->setArguments($class, $arguments);
+        }
     }
 
     return $container;

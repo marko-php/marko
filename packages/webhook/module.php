@@ -14,11 +14,9 @@ use Marko\Webhook\Contracts\WebhookUrlPolicyInterface;
 use Marko\Webhook\Middleware\WebhookEndpointMiddleware;
 use Marko\Webhook\Receiving\CacheReplayGuard;
 use Marko\Webhook\Receiving\WebhookReceiver;
-use Marko\Webhook\Receiving\WebhookVerifier;
 use Marko\Webhook\Sending\DnsHostResolver;
 use Marko\Webhook\Sending\WebhookDispatcher;
 use Marko\Webhook\Sending\WebhookUrlPolicy;
-use Psr\Clock\ClockInterface;
 
 return [
     'bindings' => [
@@ -26,19 +24,6 @@ return [
         WebhookUrlPolicyInterface::class => WebhookUrlPolicy::class,
         HostResolverInterface::class => DnsHostResolver::class,
         WebhookReceiverInterface::class => WebhookReceiver::class,
-        // The replay guard is only resolved when webhook.replay_protection is on, so marko/cache stays optional.
-        WebhookReceiver::class => function (ContainerInterface $container): WebhookReceiver {
-            $config = $container->get(WebhookConfig::class);
-
-            return new WebhookReceiver(
-                verifier: $container->get(WebhookVerifier::class),
-                webhookConfig: $config,
-                clock: $container->get(ClockInterface::class),
-                replayGuard: $config->replayProtection
-                    ? $container->get(WebhookReplayGuardInterface::class)
-                    : null,
-            );
-        },
         WebhookReplayGuardInterface::class => function (ContainerInterface $container): WebhookReplayGuardInterface {
             if (!interface_exists(CacheInterface::class)) {
                 throw new ConfigException(
@@ -50,6 +35,16 @@ return [
 
             return new CacheReplayGuard($container->get(CacheInterface::class));
         },
+    ],
+    'arguments' => [
+        WebhookReceiver::class => [
+            // The replay guard is only resolved when webhook.replay_protection is on, so marko/cache stays optional.
+            'replayGuard' => fn (ContainerInterface $container): ?WebhookReplayGuardInterface => $container->get(
+                WebhookConfig::class,
+            )->replayProtection
+                ? $container->get(WebhookReplayGuardInterface::class)
+                : null,
+        ],
     ],
     'globalMiddleware' => [
         WebhookEndpointMiddleware::class,

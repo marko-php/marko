@@ -28,6 +28,8 @@ use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Core\Event\ObserverDefinition;
 use Marko\Core\Event\ObserverDiscovery;
 use Marko\Core\Event\ObserverRegistry;
+use Marko\Core\Exceptions\ArgumentConflictException;
+use Marko\Core\Exceptions\ArgumentException;
 use Marko\Core\Exceptions\BindingConflictException;
 use Marko\Core\Exceptions\BindingException;
 use Marko\Core\Exceptions\CircularDependencyException;
@@ -114,7 +116,7 @@ class Application
     ) {}
 
     /**
-     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException|ReflectionException|RuntimeException|DiscoveryCacheException
+     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException|ReflectionException|RuntimeException|DiscoveryCacheException|ArgumentException|ArgumentConflictException
      */
     public static function boot(
         string $basePath,
@@ -135,13 +137,10 @@ class Application
     }
 
     /**
-     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException|ReflectionException|DiscoveryCacheException
-     */
-    /**
      * @param bool $useDiscoveryCache False boots from live discovery even when a discovery cache exists
      *                                (used by discovery:cache and discovery:clear, which must work while the cache is stale)
      *
-     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException|ReflectionException|DiscoveryCacheException
+     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException|ReflectionException|DiscoveryCacheException|ArgumentException|ArgumentConflictException
      */
     public function initialize(
         bool $useDiscoveryCache = true,
@@ -192,7 +191,8 @@ class Application
         // Initialize container and registries
         $this->preferenceRegistry = new PreferenceRegistry();
         $this->pluginRegistry = new PluginRegistry();
-        $this->container = new Container($this->preferenceRegistry);
+        $container = new Container($this->preferenceRegistry);
+        $this->container = $container;
         $this->container->instance(ContainerInterface::class, $this->container);
         $this->container->instance(PreferenceRegistry::class, $this->preferenceRegistry);
         $this->container->instance(ClassFileParser::class, $this->classFileParser);
@@ -271,6 +271,9 @@ class Application
                 $this->container->call($module->boot);
             }
         }
+
+        // Every configured class is checked once the boot callbacks (which may bind) have run.
+        $container->validateArguments();
 
         // Observers that check what any module's boot callback set up run once everything has booted.
         $this->eventDispatcher->dispatch(new ApplicationBooted());

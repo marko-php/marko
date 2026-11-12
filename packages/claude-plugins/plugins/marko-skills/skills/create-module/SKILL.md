@@ -76,7 +76,7 @@ Copy `assets/Pest.php.tmpl` to `tests/Pest.php`. No placeholder substitution nee
 
 ## Step 4 — Decide whether you need module.php
 
-`module.php` is **optional**. Only create it if the module needs explicit DI bindings (interface → concrete class wiring), singleton declarations, or boot callbacks for lifecycle hooks.
+`module.php` is **optional**. Only create it if the module needs explicit DI bindings (interface → concrete class wiring), `arguments` (substitute individual constructor arguments by parameter name while the rest autowire; prefer it over a closure binding), singleton declarations, or boot callbacks for lifecycle hooks.
 
 If the module is just classes that auto-resolve, **omit `module.php` entirely**. Do not create an empty manifest.
 

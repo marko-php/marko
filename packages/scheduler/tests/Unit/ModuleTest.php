@@ -17,8 +17,10 @@ use Marko\Scheduler\Command\RunBackgroundCommand;
 use Marko\Scheduler\Command\RunScheduleCommand;
 use Marko\Scheduler\Command\ScheduleWorkCommand;
 use Marko\Scheduler\Exceptions\SchedulerException;
+use Marko\Scheduler\Mutex\FileTaskMutex;
 use Marko\Scheduler\Mutex\LockTaskMutex;
 use Marko\Scheduler\Mutex\LockTaskServerClaim;
+use Marko\Scheduler\Mutex\TaskMutexInterface;
 use Marko\Scheduler\Mutex\TaskServerClaimInterface;
 use Marko\Scheduler\Process\BackgroundCommandLauncherInterface;
 use Marko\Scheduler\Process\ProcOpenBackgroundCommandLauncher;
@@ -80,6 +82,28 @@ it('declares Schedule as a singleton in module.php', function (): void {
 
     expect($config)->toHaveKey('singletons')
         ->and($config['singletons'])->toContain(Schedule::class);
+});
+
+it('binds TaskMutexInterface to FileTaskMutex as a class binding', function (): void {
+    $config = require dirname(__DIR__, 2) . '/module.php';
+
+    expect($config['bindings'][TaskMutexInterface::class])->toBe(FileTaskMutex::class);
+});
+
+it('builds FileTaskMutex with the storage framework directory', function (): void {
+    $container = bootSchedulerContainer($this->basePath);
+
+    $mutex = $container->get(TaskMutexInterface::class);
+    $mutex->acquire('module-test-task', 60);
+
+    expect($mutex)->toBeInstanceOf(FileTaskMutex::class)
+        ->and(is_file($this->basePath . '/storage/framework/module-test-task'))->toBeTrue();
+});
+
+it('shares one TaskMutex instance', function (): void {
+    $container = bootSchedulerContainer($this->basePath);
+
+    expect($container->get(TaskMutexInterface::class))->toBe($container->get(TaskMutexInterface::class));
 });
 
 it('resolves the same Schedule instance from the container on every request', function (): void {

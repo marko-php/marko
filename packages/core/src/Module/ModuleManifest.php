@@ -33,6 +33,7 @@ readonly class ModuleManifest
      * @param array<int, class-string> $globalMiddleware Global HTTP middleware classes declared by this module (from module.php). Order across modules follows DependencyResolver (composer require + sequence: { after, before }); order within a module follows array declaration order.
      * @param array<string, mixed> $extra Raw extra data from composer.json (vendor/Marko-specific metadata)
      * @param array<int, class-string> $discovery Discovery cache contributors declared by this module (from module.php); each must implement DiscoveryCacheContributorInterface
+     * @param array<class-string, array<string, mixed>> $arguments Constructor argument values per concrete class, keyed by parameter name (from module.php)
      */
     public function __construct(
         public string $name,
@@ -51,5 +52,6 @@ readonly class ModuleManifest
         public array $extra = [],
         public array $discovery = [],
         public ?Closure $shutdown = null,
+        public array $arguments = [],
     ) {}
 }

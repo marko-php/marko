@@ -21,4 +21,24 @@ class ClockedContainer
 
         return $container;
     }
+
+    /**
+     * The same container with a module.php array's bindings and arguments registered.
+     *
+     * @param array<string, mixed> $module
+     */
+    public static function withModule(array $module): Container
+    {
+        $container = self::create();
+
+        foreach ($module['bindings'] as $abstract => $concrete) {
+            $container->bind($abstract, $concrete);
+        }
+
+        foreach ($module['arguments'] ?? [] as $class => $arguments) {
+            $container->setArguments($class, $arguments);
+        }
+
+        return $container;
+    }
 }

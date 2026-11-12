@@ -77,7 +77,7 @@ my-module/
 │   └── views/            # View templates
 ├── tests/                # Module tests
 ├── composer.json         # Package definition
-└── module.php            # Optional: bindings, singletons, sequence, boot
+└── module.php            # Optional: bindings, arguments, singletons, sequence, boot
 ```
 
 ## The `module.php` File

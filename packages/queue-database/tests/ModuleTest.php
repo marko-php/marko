@@ -56,6 +56,10 @@ function queueDatabaseModuleContainer(
         $container->bind($interface, $implementation);
     }
 
+    foreach ($module['arguments'] ?? [] as $class => $arguments) {
+        $container->setArguments($class, $arguments);
+    }
+
     return $container;
 }
 
@@ -71,7 +75,42 @@ test('module.php exists with correct structure', function (): void {
         ->and($module['bindings'])->toBeArray();
 });
 
-test('module.php binds QueueInterface to a factory that builds DatabaseQueue', function (): void {
+test('it binds QueueInterface to DatabaseQueue as a class binding', function (): void {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    expect($module['bindings'][QueueInterface::class])->toBe(DatabaseQueue::class);
+});
+
+test('it declares the defaultQueue, retryAfter and queueRetryAfters arguments for DatabaseQueue', function (): void {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    expect($module['arguments'])->toHaveKey(DatabaseQueue::class)
+        ->and(array_keys($module['arguments'][DatabaseQueue::class]))
+        ->toBe(['defaultQueue', 'retryAfter', 'queueRetryAfters'])
+        ->and($module['arguments'][DatabaseQueue::class]['defaultQueue'])->toBeInstanceOf(Closure::class);
+});
+
+test('it builds DatabaseQueue with the configured default queue and retry settings', function (): void {
+    $connection = SqliteConnection::withQueueTables();
+    $container = queueDatabaseModuleContainer($connection, [
+        'queue.queue' => 'emails',
+        'queue.retry_after' => 45,
+        'queue.queues' => ['emails' => ['retry_after' => 10]],
+    ]);
+
+    $queue = $container->get(QueueInterface::class);
+    $id = $queue->push(new TestJob('configured'))->id;
+    $row = $connection->query('SELECT queue FROM jobs WHERE id = :id', ['id' => $id])[0];
+
+    $property = new ReflectionProperty(DatabaseQueue::class, 'retryAfter');
+    $overrides = new ReflectionProperty(DatabaseQueue::class, 'queueRetryAfters');
+
+    expect($row['queue'])->toBe('emails')
+        ->and($property->getValue($queue))->toBe(45)
+        ->and($overrides->getValue($queue))->toBe(['emails' => 10]);
+});
+
+test('module.php resolves QueueInterface to DatabaseQueue', function (): void {
     $container = queueDatabaseModuleContainer(SqliteConnection::withQueueTables());
 
     expect($container->get(QueueInterface::class))->toBeInstanceOf(DatabaseQueue::class);
