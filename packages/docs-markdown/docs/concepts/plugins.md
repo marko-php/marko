@@ -272,6 +272,8 @@ Your code calls $hasher->hash('password')
 
 Interceptor classes are generated in memory (via `eval`) — no files are written to disk. Each generated class is cached for the duration of the request so generation only happens once per target.
 
+The `eval` is not an injection point. Everything in the generated code comes from reflecting classes that are already installed: class, method and parameter names and types, plus default values written out with `var_export`. No request, user, database or config data reaches it, so changing what it evaluates means changing installed PHP code, which can already run anything. Hosts that block `eval` outright, for example with a hardening extension such as Snuffleupagus, cannot run plugins.
+
 The strategy depends on the target:
 
 | Target | Strategy |
