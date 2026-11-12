@@ -296,6 +296,8 @@ class TrackPostCreation implements ObserverInterface
 }
 ```
 
+Any class that injects `Magento\Framework\Event\ManagerInterface` through its constructor, here as `$eventManager`, dispatches the event:
+
 ```php
 $this->eventManager->dispatch('blog_post_created', ['post' => $post]);
 ```
@@ -348,7 +350,7 @@ class TrackPostCreation
 }
 ```
 
-Dispatching goes through `EventDispatcherInterface`, which accepts only an `Event` instance. There are no string-named events:
+Any class that injects `Marko\Core\Event\EventDispatcherInterface` through its constructor, here as `$eventDispatcher`, dispatches the event. It accepts only an `Event` instance; there are no string-named events:
 
 ```php
 $this->eventDispatcher->dispatch(new PostCreated($post));
@@ -934,6 +936,8 @@ class SendWelcomeEmail
 }
 ```
 
+Any class that injects `Magento\Framework\MessageQueue\PublisherInterface` through its constructor, here as `$publisher`, publishes the message:
+
 ```php
 $this->publisher->publish('blog.welcome_email', $userId);
 ```
@@ -962,7 +966,7 @@ class SendWelcomeEmail extends Job
 }
 ```
 
-You push it through `QueueInterface`, and `marko queue:work` processes it:
+Any class that injects `Marko\Queue\QueueInterface` through its constructor, here as `$queue`, pushes the job, and `marko queue:work` processes it:
 
 ```php
 $this->queue->push(new SendWelcomeEmail($userId));
