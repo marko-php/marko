@@ -1056,7 +1056,9 @@ Some files are still written:
 - `marko discovery:cache` writes `storage/cache/discovery.php`. See [Discovery Cache](/docs/packages/core/#discovery-cache).
 - Template engines compile templates to disk. See [Precompiling Templates](/docs/packages/view/#precompiling-templates).
 
-Factories have **no equivalent**: inject services, and use `new` for entities and value objects. Proxies (lazy loading) have **no equivalent** either.
+Factories have **no equivalent**. Entities and value objects are created with `new`, and services are injected. When a class needs both injected services and values only known at runtime, write a small factory class yourself; Marko's own packages do this, for example `Marko\Cache\Lock\LockFactory`.
+
+Proxies have **no equivalent** either, and the two reasons Magento uses them don't apply. Listing CLI commands reads their `#[Command]` attributes without building them, so their dependencies are never built either. A circular dependency throws `CircularDependencyException` rather than being hidden behind a proxy. If a service is expensive to build, do the expensive work on first use instead of in the constructor.
 
 ## Related Links
 
