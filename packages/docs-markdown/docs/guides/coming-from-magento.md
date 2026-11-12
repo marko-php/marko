@@ -686,7 +686,32 @@ In Magento, `db_schema.xml` declares tables, and a whitelist file tracks what th
 </schema>
 ```
 
-In Marko, entity classes are the schema. `#[Table]` and `#[Column]` attributes describe the table, and there is no whitelist:
+A model class holds a row's data:
+
+```php title="Model/Post.php"
+<?php
+
+declare(strict_types=1);
+
+namespace Vendor\Blog\Model;
+
+use Magento\Framework\Model\AbstractModel;
+
+class Post extends AbstractModel
+{
+    protected function _construct(): void
+    {
+        $this->_init(ResourceModel\Post::class);
+    }
+
+    public function getTitle(): string
+    {
+        return (string) $this->getData('title');
+    }
+}
+```
+
+In Marko, entity classes are the schema and the data object. `#[Table]` and `#[Column]` attributes describe the table, so one class does the job of `db_schema.xml` and the model, and there is no whitelist:
 
 ```php title="app/blog/src/Entity/Post.php"
 <?php
