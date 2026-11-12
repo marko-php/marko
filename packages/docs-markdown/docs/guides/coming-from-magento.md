@@ -534,9 +534,11 @@ See [Routing](/docs/guides/routing/) and [Overriding Vendor Routes](/docs/packag
 
 ## Configuration
 
-Magento layers configuration from `config.xml` defaults, `env.php`, the admin UI and `ScopeConfigInterface`. Marko is code and environment variables only. The three pieces map like this.
+Magento layers configuration from `config.xml` defaults, `env.php`, the admin UI and `ScopeConfigInterface`. Marko is code and environment variables only. `system.xml` and the admin settings UI have **no equivalent**.
 
-**Defaults.** In Magento, a module's `config.xml` sets default values, and store-scoped values come from the admin and `core_config_data`:
+### Defaults
+
+In Magento, a module's `config.xml` sets default values, and store-scoped values come from the admin and `core_config_data`:
 
 ```xml title="etc/config.xml"
 <config>
@@ -569,7 +571,9 @@ return [
 ];
 ```
 
-**Environment.** In Magento, `env.php` holds per-environment values such as database credentials:
+### Environment
+
+In Magento, `env.php` holds per-environment values such as database credentials:
 
 ```php title="app/etc/env.php"
 <?php
@@ -600,7 +604,9 @@ return [
 ];
 ```
 
-**Reading values.** In Magento, a class injects `ScopeConfigInterface` and reads a path for a scope. The value comes back untyped:
+### Reading Values
+
+In Magento, a class injects `ScopeConfigInterface` and reads a path for a scope. The value comes back untyped:
 
 ```php title="Model/PostLimits.php"
 <?php
@@ -654,8 +660,6 @@ class PostLimits
 ```
 
 Pass `scope:` per call, or call `withScope()` to get a repository bound to one scope. The scope cascade is **one level**: `scopes.{scope}`, then `default`, then the direct key. It is not Magento's default, website, store view hierarchy.
-
-`system.xml` and the admin settings UI have **no equivalent**. Configuration is code plus environment variables.
 
 See [Merge Priority](/docs/packages/config/#merge-priority), [Environment Variables](/docs/getting-started/configuration/#environment-variables) and [Scoped Configuration](/docs/packages/config/#scoped-configuration-multi-tenant).
 
