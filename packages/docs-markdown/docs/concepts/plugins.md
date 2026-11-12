@@ -234,6 +234,7 @@ When a plugin targets an interface, it fires regardless of which concrete implem
 ### Constraints
 
 - **Readonly classes cannot be targeted directly.** If a concrete class is `readonly`, target its interface instead. Marko will throw a helpful error explaining this.
+- **Final classes and final methods cannot be targeted directly.** `final` forbids extending the class or overriding the method, which is how a concrete-class interceptor works. Marko refuses the plugin when it registers it, at boot, and names the plugin, class and method. Target an interface the class implements instead: the interface interceptor wraps the instance rather than extending it, so a final class is fine there.
 - **One interface at a time.** If a class implements multiple interfaces and plugins are registered on more than one, Marko throws an error rather than silently picking a winner. Target the concrete class directly in this case.
 - **Intercepted methods cannot use object defaults.** The interceptor re-declares each intercepted method with the same default values, so a caller who omits an argument gets exactly the default you wrote. Scalars, arrays, enum cases and constants are all supported. A `new Foo()` default cannot be reproduced, so Marko throws a `PluginException` when it generates the interceptor. Use a nullable parameter instead: `?Foo $foo = null`, then `$foo ??= new Foo()` in the method body.
 
@@ -266,8 +267,9 @@ The strategy depends on the target:
 | Target | Strategy |
 |---|---|
 | Interface (e.g., `HasherInterface`) | Generated class `implements` the interface |
-| Non-readonly concrete class | Generated class `extends` the concrete class --- works even when the constructor has mandatory promoted dependencies resolved via DI |
+| Non-readonly, non-final concrete class | Generated class `extends` the concrete class --- works even when the constructor has mandatory promoted dependencies resolved via DI |
 | Readonly concrete class | Error — target the interface instead |
+| Final class, or a hook on a final method | Error at registration — target the interface instead |
 
 In all cases, the generated class implements `PluginInterceptedInterface`, which provides `getPluginTarget()` for code that needs access to the underlying real instance.
 

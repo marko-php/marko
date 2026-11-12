@@ -71,6 +71,14 @@ class ConcreteSampleClass
     }
 }
 
+final class FinalSampleClass
+{
+    public function getValue(): string
+    {
+        return 'final';
+    }
+}
+
 readonly class ReadonlySampleClass
 {
     public function __construct(
@@ -301,6 +309,17 @@ it('throws PluginException when target class is readonly', function (): void {
 
     expect(fn () => $generator->generateConcreteSubclass(ReadonlySampleClass::class, $registry))
         ->toThrow(PluginException::class);
+});
+
+it('throws PluginException instead of a php fatal when target class is final', function (): void {
+    $registry = new PluginRegistry();
+    $generator = new InterceptorClassGenerator();
+
+    expect(fn () => $generator->generateConcreteSubclass(FinalSampleClass::class, $registry))
+        ->toThrow(
+            PluginException::class,
+            "Cannot create interceptor for 'FinalSampleClass': final classes cannot be extended",
+        );
 });
 
 // ─────────────────────────────────────────────────────────────

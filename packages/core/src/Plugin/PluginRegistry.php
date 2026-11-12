@@ -34,6 +34,28 @@ class PluginRegistry
             );
         }
 
+        if ($reflection->isFinal()) {
+            throw PluginException::cannotTargetFinalClass(
+                pluginClass: $plugin->pluginClass,
+                targetClass: $targetClass,
+            );
+        }
+
+        $hookedMethods = array_unique([
+            ...array_keys($plugin->beforeMethods),
+            ...array_keys($plugin->afterMethods),
+        ]);
+
+        foreach ($hookedMethods as $hookedMethod) {
+            if ($reflection->hasMethod($hookedMethod) && $reflection->getMethod($hookedMethod)->isFinal()) {
+                throw PluginException::cannotTargetFinalMethod(
+                    pluginClass: $plugin->pluginClass,
+                    targetClass: $targetClass,
+                    method: $hookedMethod,
+                );
+            }
+        }
+
         if (!isset($this->plugins[$targetClass])) {
             $this->plugins[$targetClass] = [];
         }
