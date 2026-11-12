@@ -24,18 +24,17 @@ use Marko\Database\Query\QueryBuilderInterface;
 // Name and version come from composer.json.
 
 return [
+    'arguments' => [
+        MySqlIntrospector::class => [
+            'database' => fn (ContainerInterface $container): string => $container->get(
+                DatabaseConfig::class,
+            )->database,
+        ],
+    ],
     'bindings' => [
         ConnectionInterface::class => MySqlConnection::class,
         ConnectionFactoryInterface::class => MySqlConnectionFactory::class,
-        IntrospectorInterface::class => function (ContainerInterface $container): IntrospectorInterface {
-            $config = $container->get(DatabaseConfig::class);
-
-            return new MySqlIntrospector(
-                $container->get(ConnectionInterface::class),
-                $config->database,
-                $container->get(MySqlServer::class),
-            );
-        },
+        IntrospectorInterface::class => MySqlIntrospector::class,
         // The MySqlConnection's own server check, so supportsReturning() and the SQL that differs between
         // MySQL and MariaDB read the version once. A decorator (ReadWriteConnection) gets its own.
         MySqlServer::class => static function (ContainerInterface $container): MySqlServer {

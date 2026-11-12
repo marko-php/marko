@@ -16,6 +16,7 @@ use Marko\Authentication\Contracts\PasswordHasherInterface;
 use Marko\Authentication\Contracts\PasswordResetBrokerInterface;
 use Marko\Authentication\Contracts\PasswordResetTokenRepositoryInterface;
 use Marko\Authentication\Contracts\PasswordVerifierInterface;
+use Marko\Authentication\Contracts\RememberTokenStorageInterface;
 use Marko\Authentication\Contracts\ResetLinkNotifierInterface;
 use Marko\Authentication\Contracts\UserPersisterInterface;
 use Marko\Authentication\Contracts\UserProviderInterface;
@@ -32,6 +33,7 @@ use Marko\Authentication\PasswordReset\PasswordResetBroker;
 use Marko\Authentication\Throttle\NullLoginThrottle;
 use Marko\Authentication\Token\RememberTokenManager;
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Event\EventDispatcherInterface;
@@ -47,6 +49,48 @@ use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Testing\Fake\FakeSession;
 use Marko\Testing\Fake\FakeUserProvider;
 use Psr\Clock\ClockInterface;
+
+/**
+ * Register a module.php array's bindings, singletons and arguments the way the application does.
+ *
+ * @param array<string, mixed> $config
+ */
+function registerAuthenticationModule(
+    Container $container,
+    array $config,
+): void {
+    new BindingRegistry($container)->registerModule(new ModuleManifest(
+        name: 'marko/authentication',
+        version: '1.0.0',
+        bindings: $config['bindings'],
+        singletons: $config['singletons'],
+        arguments: $config['arguments'] ?? [],
+    ));
+}
+
+/**
+ * A container holding the authentication module's wiring plus the services AuthManager needs.
+ */
+function authManagerContainer(): Container
+{
+    $container = new Container();
+    $container->instance(ContainerInterface::class, $container);
+    $container->instance(ConfigRepositoryInterface::class, new FakeConfigRepository([
+        'authentication.default.guard' => 'web',
+        'authentication.remember.cookie.prefix' => 'remember_',
+        'authentication.remember.lifetime' => 43200,
+        'authentication.guards' => ['web' => ['driver' => 'session']],
+    ]));
+    $container->instance(SessionInterface::class, new FakeSession());
+    $container->instance(UserProviderInterface::class, new FakeUserProvider([]));
+    $container->instance(EventDispatcherInterface::class, new FakeEventDispatcher());
+    $container->instance(CookieJarInterface::class, new FakeCookieJar());
+    $container->instance(ClockInterface::class, new FakeClock());
+    $container->instance(LoginThrottleInterface::class, new NullLoginThrottle());
+    registerAuthenticationModule($container, require dirname(__DIR__, 2) . '/module.php');
+
+    return $container;
+}
 
 it('has enabled set to true', function () {
     $modulePath = dirname(__DIR__, 2) . '/module.php';
@@ -146,23 +190,27 @@ it('delegates password hashing to marko/hashing when that module is loaded', fun
     expect($binding($container))->toBe($hashingHasher);
 });
 
-it('builds RememberTokenManager with the bound clock from the module', function () {
+it('declares only the lifetimeMinutes argument for RememberTokenManager', function () {
     $config = require dirname(__DIR__, 2) . '/module.php';
-    $binding = $config['bindings'][RememberTokenManager::class];
+
+    expect($config['bindings'])->not->toHaveKey(RememberTokenManager::class)
+        ->and(array_keys($config['arguments'][RememberTokenManager::class]))->toBe(['lifetimeMinutes']);
+});
+
+it('builds RememberTokenManager with the configured remember lifetime', function () {
+    $config = require dirname(__DIR__, 2) . '/module.php';
 
     $authConfig = $this->createStub(AuthConfig::class);
     $authConfig->method('rememberLifetime')->willReturn(60);
     $clock = new FakeClock('2026-01-01 12:00:00 UTC');
 
-    $container = $this->createStub(ContainerInterface::class);
-    $container->method('get')->willReturnCallback(
-        fn (string $id): object => match ($id) {
-            AuthConfig::class => $authConfig,
-            ClockInterface::class => $clock,
-        },
-    );
+    $container = new Container();
+    $container->instance(ContainerInterface::class, $container);
+    $container->instance(AuthConfig::class, $authConfig);
+    $container->instance(ClockInterface::class, $clock);
+    registerAuthenticationModule($container, $config);
 
-    $manager = $binding($container);
+    $manager = $container->get(RememberTokenManager::class);
     $createdAt = $clock->now();
 
     $clock->travel('+60 minutes');
@@ -289,6 +337,31 @@ it(
     },
 );
 
+it('declares only the rememberTokenStorage argument for AuthManager', function () {
+    $config = require dirname(__DIR__, 2) . '/module.php';
+
+    expect($config['bindings'])->not->toHaveKey(AuthManager::class)
+        ->and(array_keys($config['arguments'][AuthManager::class]))->toBe(['rememberTokenStorage']);
+});
+
+it('builds AuthManager without remember token storage when none is bound', function () {
+    $container = authManagerContainer();
+
+    $storage = new ReflectionProperty(AuthManager::class, 'rememberTokenStorage');
+
+    expect($storage->getValue($container->get(AuthManager::class)))->toBeNull();
+});
+
+it('builds AuthManager with the bound remember token storage', function () {
+    $container = authManagerContainer();
+    $bound = $this->createStub(RememberTokenStorageInterface::class);
+    $container->instance(RememberTokenStorageInterface::class, $bound);
+
+    $storage = new ReflectionProperty(AuthManager::class, 'rememberTokenStorage');
+
+    expect($storage->getValue($container->get(AuthManager::class)))->toBe($bound);
+});
+
 it('builds AuthManager with a LoginChallengeResolver so guards get their configured challenges', function () {
     $config = require dirname(__DIR__, 2) . '/module.php';
     $session = new FakeSession();
@@ -310,7 +383,9 @@ it('builds AuthManager with a LoginChallengeResolver so guards get their configu
     $container->instance(RememberTokenManager::class, new RememberTokenManager(new FakeClock()));
     $container->instance(LoginThrottleInterface::class, new NullLoginThrottle());
 
-    $guard = $config['bindings'][AuthManager::class]($container)->guard('web');
+    registerAuthenticationModule($container, $config);
+
+    $guard = $container->get(AuthManager::class)->guard('web');
 
     expect($guard->attempt(['email' => 'ada@example.com']))->toBeFalse()
         ->and($guard->pendingChallengeName())->toBe('module_test');

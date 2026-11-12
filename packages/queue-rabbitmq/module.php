@@ -5,8 +5,6 @@ declare(strict_types=1);
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Queue\FailedJobRepositoryInterface;
-use Marko\Queue\JobEnvelope;
-use Marko\Queue\JobIdGenerator;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Rabbitmq\Exceptions\RabbitmqException;
@@ -18,15 +16,7 @@ use Marko\Queue\Rabbitmq\RabbitmqQueue;
 
 return [
     'bindings' => [
-        QueueInterface::class => static function (ContainerInterface $container): QueueInterface {
-            return new RabbitmqQueue(
-                connection: $container->get(RabbitmqConnection::class),
-                exchangeConfig: $container->get(ExchangeConfig::class),
-                jobEnvelope: $container->get(JobEnvelope::class),
-                defaultQueue: $container->get(QueueConfig::class)->queue(),
-                jobIdGenerator: $container->get(JobIdGenerator::class),
-            );
-        },
+        QueueInterface::class => RabbitmqQueue::class,
         FailedJobRepositoryInterface::class => RabbitmqFailedJobRepository::class,
         RabbitmqConnection::class => static function (ContainerInterface $container): RabbitmqConnection {
             $config = $container->get(ConfigRepositoryInterface::class);
@@ -55,6 +45,13 @@ return [
                 autoDelete: $config->getBool(key: 'queue-rabbitmq.exchange.auto_delete'),
             );
         },
+    ],
+    'arguments' => [
+        RabbitmqQueue::class => [
+            'defaultQueue' => fn (ContainerInterface $container): string => $container->get(
+                QueueConfig::class,
+            )->queue(),
+        ],
     ],
     'singletons' => [
         RabbitmqConnection::class,

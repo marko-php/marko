@@ -142,7 +142,7 @@ An empty `encryption.key` is a configuration error, not a bad message: `pop()` r
 
 `release()` puts the channel into publisher-confirm mode the first time it runs, publishes the retry, and waits up to 10 seconds for the broker to confirm it before it acknowledges the original message. A crash between the two steps can deliver the job twice, but never loses it. If the broker nacks the retry, the original message is requeued and `release()` throws `RabbitmqException`.
 
-Constructor (the module binding supplies every argument from config, with `defaultQueue` taken from `queue.queue`):
+Constructor (the container autowires the connection and exchange config, and the module's `arguments` entry supplies `defaultQueue` from `queue.queue`):
 
 ```php
 use Marko\Queue\Rabbitmq\RabbitmqQueue;

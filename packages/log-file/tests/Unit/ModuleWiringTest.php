@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Container\PreferenceRegistry;
+use Marko\Core\Module\ModuleManifest;
 use Marko\Log\Contracts\LogFormatterInterface;
 use Marko\Log\Contracts\LoggerInterface;
 use Marko\Log\File\Handler\FileLogHandler;
@@ -41,8 +43,16 @@ function logFileContainer(
     $container->instance(LogFormatterInterface::class, new LineFormatter());
     $container->instance(ClockInterface::class, new FakeClock('2026-01-21 09:30:15'));
 
-    foreach ([...$logModule['bindings'], ...$fileModule['bindings']] as $abstract => $concrete) {
-        $container->bind($abstract, $concrete);
+    $registry = new BindingRegistry($container);
+
+    foreach (['marko/log' => $logModule, 'marko/log-file' => $fileModule] as $name => $module) {
+        $registry->registerModule(new ModuleManifest(
+            name: $name,
+            version: '1.0.0',
+            bindings: $module['bindings'],
+            arguments: $module['arguments'] ?? [],
+            source: 'vendor',
+        ));
     }
 
     return $container;
@@ -99,6 +109,38 @@ it('passes the configured file and directory modes to the handler', function () 
 
     expect($fileMode)->toBe(0640)
         ->and($dirMode)->toBe(0750);
+});
+
+it('declares the path, fileMode and dirMode arguments for FileLogHandler', function () {
+    $module = require dirname(__DIR__, 2) . '/module.php';
+
+    expect($module['bindings'])->not->toHaveKey(FileLogHandler::class)
+        ->and($module['arguments'][FileLogHandler::class])->toHaveKeys(['path', 'fileMode', 'dirMode'])
+        ->and($module['arguments'][FileLogHandler::class])->not->toHaveKeys(['formatter', 'rotation']);
+});
+
+it('builds FileLogHandler with the configured path and modes', function () {
+    $parent = sys_get_temp_dir() . '/marko-log-module-' . bin2hex(random_bytes(8));
+    $dir = $parent . '/logs';
+    $container = logFileContainer($dir);
+    $container->instance(ConfigRepositoryInterface::class, new FakeConfigRepository([
+        'log.path' => $dir,
+        'log.file_mode' => 0640,
+        'log.dir_mode' => 0750,
+    ]));
+
+    $handler = $container->get(FileLogHandler::class);
+    $properties = new ReflectionClass($handler)->getProperties();
+    $values = [];
+
+    foreach ($properties as $property) {
+        $values[$property->getName()] = $property->getValue($handler);
+    }
+
+    expect($handler)->toBeInstanceOf(FileLogHandler::class)
+        ->and($values['path'])->toBe($dir)
+        ->and($values['fileMode'])->toBe(0640)
+        ->and($values['dirMode'])->toBe(0750);
 });
 
 it('applies a Preference that replaces DailyRotation', function () {

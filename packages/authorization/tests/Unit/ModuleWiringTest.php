@@ -15,6 +15,7 @@ use Marko\Authorization\PolicyRegistry;
 use Marko\Authorization\Tests\Support\GateHooks;
 use Marko\Config\ConfigRepository;
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Event\EventDispatcherInterface;
@@ -31,6 +32,19 @@ use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Testing\Fake\FakeGuard;
 use RuntimeException;
+
+/** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
+class FakeGateAuthManager extends AuthManager
+{
+    /** @noinspection PhpMissingParentConstructorInspection */
+    public function __construct() {}
+
+    public function guard(
+        ?string $name = null,
+    ): GuardInterface {
+        return new FakeGuard(name: 'web');
+    }
+}
 
 class WiringController
 {
@@ -126,13 +140,13 @@ it('resolves the gate and runs the middleware with the shipped config', function
         'authorization' => require dirname(__DIR__, 2) . '/config/authorization.php',
     ]));
 
-    foreach ($module['bindings'] as $id => $factory) {
-        $container->bind($id, $factory);
-    }
-
-    foreach ($module['singletons'] as $id) {
-        $container->singleton($id);
-    }
+    new BindingRegistry($container)->registerModule(new ModuleManifest(
+        name: 'marko/authorization',
+        version: '1.0.0',
+        bindings: $module['bindings'],
+        singletons: $module['singletons'],
+        arguments: $module['arguments'] ?? [],
+    ));
 
     /** @var GateInterface $gate */
     $gate = $container->get(GateInterface::class);
@@ -146,6 +160,77 @@ it('resolves the gate and runs the middleware with the shipped config', function
 
     expect($response->statusCode())->toBe(200)
         ->and($response->body())->toBe('edited');
+});
+
+it('resolves a Gate that authorizes with the configured default guard', function (): void {
+    $guard = new FakeGuard(name: 'api');
+    $guard->setUser(new FakeAuthenticatable());
+
+    /** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
+    $authManager = new class ($guard) extends AuthManager
+    {
+        /** @noinspection PhpMissingParentConstructorInspection */
+        public function __construct(
+            private readonly GuardInterface $guard,
+        ) {}
+
+        public function guard(
+            ?string $name = null,
+        ): GuardInterface {
+            if ($name !== 'api') {
+                throw new RuntimeException("Expected the configured guard 'api', got '$name'");
+            }
+
+            return $this->guard;
+        }
+    };
+
+    $module = authorizationModule();
+    $container = new Container();
+    $container->instance(ContainerInterface::class, $container);
+    $container->instance(ModuleRepositoryInterface::class, new ModuleRepository([]));
+    $container->instance(EventDispatcherInterface::class, new FakeEventDispatcher());
+    $container->instance(AuthManager::class, $authManager);
+    $container->instance(ConfigRepositoryInterface::class, new ConfigRepository([
+        'authorization' => ['default_guard' => 'api'],
+    ]));
+
+    new BindingRegistry($container)->registerModule(new ModuleManifest(
+        name: 'marko/authorization',
+        version: '1.0.0',
+        bindings: $module['bindings'],
+        singletons: $module['singletons'],
+        arguments: $module['arguments'],
+    ));
+
+    /** @var GateInterface $gate */
+    $gate = $container->get(GateInterface::class);
+    $gate->define('edit', fn (): bool => true);
+
+    expect($gate)->toBeInstanceOf(Gate::class)
+        ->and($gate->allows('edit'))->toBeTrue();
+});
+
+it('shares one Gate instance', function (): void {
+    $module = authorizationModule();
+    $container = new Container();
+    $container->instance(ContainerInterface::class, $container);
+    $container->instance(ModuleRepositoryInterface::class, new ModuleRepository([]));
+    $container->instance(EventDispatcherInterface::class, new FakeEventDispatcher());
+    $container->instance(AuthManager::class, new FakeGateAuthManager());
+    $container->instance(ConfigRepositoryInterface::class, new ConfigRepository([
+        'authorization' => require dirname(__DIR__, 2) . '/config/authorization.php',
+    ]));
+
+    new BindingRegistry($container)->registerModule(new ModuleManifest(
+        name: 'marko/authorization',
+        version: '1.0.0',
+        bindings: $module['bindings'],
+        singletons: $module['singletons'],
+        arguments: $module['arguments'],
+    ));
+
+    expect($container->get(GateInterface::class))->toBe($container->get(GateInterface::class));
 });
 
 it('builds the middleware with the guard configured for authorization', function (): void {

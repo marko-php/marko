@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Marko\Database\MySql\Tests\Module;
 
-use Closure;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Connection\ConnectionFactoryInterface;
@@ -14,9 +13,13 @@ use Marko\Database\Exceptions\ConfigurationException;
 use Marko\Database\Introspection\IntrospectorInterface;
 use Marko\Database\MySql\Connection\MySqlConnection;
 use Marko\Database\MySql\Connection\MySqlConnectionFactory;
+use Marko\Database\MySql\Connection\MySqlServer;
+use Marko\Database\MySql\Introspection\MySqlIntrospector;
 use Marko\Database\MySql\Query\MySqlQueryBuilderFactory;
 use Marko\Database\MySql\Sql\MySqlGenerator;
+use Marko\Database\MySql\Tests\Fixtures\SharedConnection\SharedConnectionContainer;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
+use ReflectionProperty;
 
 describe('MySQL module.php bindings', function (): void {
     it('binds ConnectionInterface to MySqlConnection class', function (): void {
@@ -37,13 +40,28 @@ describe('MySQL module.php bindings', function (): void {
             ->and($moduleConfig['bindings'][SqlGeneratorInterface::class])->toBe(MySqlGenerator::class);
     });
 
-    it('binds IntrospectorInterface via closure (requires database name)', function (): void {
+    it('binds IntrospectorInterface to MySqlIntrospector as a class binding', function (): void {
         $modulePath = dirname(__DIR__, 2);
         $moduleConfig = require $modulePath . '/module.php';
 
-        // IntrospectorInterface still uses a closure because it needs the database name
         expect($moduleConfig['bindings'])->toHaveKey(IntrospectorInterface::class)
-            ->and($moduleConfig['bindings'][IntrospectorInterface::class])->toBeInstanceOf(Closure::class);
+            ->and($moduleConfig['bindings'][IntrospectorInterface::class])->toBe(MySqlIntrospector::class);
+    });
+
+    it('declares only the database argument for MySqlIntrospector', function (): void {
+        $moduleConfig = require dirname(__DIR__, 2) . '/module.php';
+
+        expect(array_keys($moduleConfig['arguments'][MySqlIntrospector::class] ?? []))->toBe(['database']);
+    });
+
+    it('builds MySqlIntrospector with the configured database name', function (): void {
+        $container = SharedConnectionContainer::build(SharedConnectionContainer::config(database: 'shop_db'));
+        $introspector = $container->get(IntrospectorInterface::class);
+
+        expect($introspector)->toBeInstanceOf(MySqlIntrospector::class)
+            ->and(new ReflectionProperty($introspector, 'database')->getValue($introspector))->toBe('shop_db')
+            ->and(new ReflectionProperty($introspector, 'server')->getValue($introspector))
+            ->toBe($container->get(MySqlServer::class));
     });
 
     it('binds QueryBuilderFactoryInterface to MySqlQueryBuilderFactory class', function (): void {

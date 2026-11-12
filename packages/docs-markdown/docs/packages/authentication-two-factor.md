@@ -277,22 +277,18 @@ class BillingController
 
 A browser request from a user without confirmed two-factor is redirected to `setup_route`; a request that wants JSON gets a `403` (`TwoFactorRequiredException`). A request with no authenticated user gets the usual `401` `UnauthenticatedException`, and a user entity that does not implement `TwoFactorAuthenticatableInterface` throws `TwoFactorException`.
 
-The middleware checks the default guard. For another guard, bind it with a `guard` argument:
+The middleware checks the default guard. For another guard, set the `guard` constructor argument with the `arguments` key. The other parameters still autowire (see [Argument Substitution](/docs/concepts/dependency-injection/#argument-substitution)):
 
 ```php title="module.php"
-use Marko\Authentication\AuthManager;
-use Marko\AuthenticationTwoFactor\Config\TwoFactorConfig;
-use Marko\AuthenticationTwoFactor\Contracts\TwoFactorManagerInterface;
 use Marko\AuthenticationTwoFactor\Middleware\RequireTwoFactorMiddleware;
-use Marko\Core\Container\ContainerInterface;
 
-// In 'bindings'
-RequireTwoFactorMiddleware::class => fn (ContainerInterface $container): RequireTwoFactorMiddleware => new RequireTwoFactorMiddleware(
-    authManager: $container->get(AuthManager::class),
-    twoFactorManager: $container->get(TwoFactorManagerInterface::class),
-    twoFactorConfig: $container->get(TwoFactorConfig::class),
-    guard: 'admin',
-),
+return [
+    'arguments' => [
+        RequireTwoFactorMiddleware::class => [
+            'guard' => 'admin',
+        ],
+    ],
+];
 ```
 
 ### Requiring Two-Factor for marko/admin-auth

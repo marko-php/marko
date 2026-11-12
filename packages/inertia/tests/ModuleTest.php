@@ -18,18 +18,25 @@ use Marko\Validation\Contracts\FlashedFormStateInterface;
 use Marko\Vite\Vite;
 
 test('module binds ssr transport and registers inertia singletons', function () {
-    $module = require dirname(__DIR__).'/module.php';
+    $module = require dirname(__DIR__) . '/module.php';
 
     expect($module)->toHaveKey('bindings')
         ->and($module['bindings'])->toHaveKey(SsrTransportInterface::class)
         ->and($module['bindings'][SsrTransportInterface::class])->toBe(CurlSsrTransport::class)
         ->and($module)->toHaveKey('singletons')
-        ->and($module['singletons'])->toHaveKey(Inertia::class)
+        ->and($module['singletons'])->toContain(Inertia::class)
         ->and($module['singletons'])->toContain(SsrClient::class);
 });
 
+test('it declares only the formState argument for Inertia', function () {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    expect($module['singletons'])->toContain(Inertia::class)
+        ->and(array_keys($module['arguments'][Inertia::class]))->toBe(['formState']);
+});
+
 /**
- * A container with everything the Inertia singleton closure resolves.
+ * A container with everything Inertia's constructor resolves.
  */
 function inertiaModuleContainer(): Container
 {
@@ -44,36 +51,50 @@ function inertiaModuleContainer(): Container
     $container->instance(Vite::class, new Vite($config, new ProjectPaths(dirname(__DIR__))));
     $container->instance(SsrClient::class, new SsrClient($config, new CurlSsrTransport()));
 
+    $module = require dirname(__DIR__) . '/module.php';
+
+    foreach ($module['singletons'] as $abstract) {
+        $container->singleton($abstract);
+    }
+
+    foreach ($module['arguments'] as $class => $arguments) {
+        $container->setArguments($class, $arguments);
+    }
+
     return $container;
 }
 
-test('module builds Inertia without flashed form state when nothing binds the reader', function () {
-    $module = require dirname(__DIR__).'/module.php';
-    $inertia = inertiaModuleContainer()->call($module['singletons'][Inertia::class]);
+test('it builds Inertia without form state when none is bound', function () {
+    $inertia = inertiaModuleContainer()->get(Inertia::class);
 
     expect(new ReflectionProperty(Inertia::class, 'formState')->getValue($inertia))->toBeNull();
 });
 
+test('it shares one Inertia instance', function () {
+    $container = inertiaModuleContainer();
+
+    expect($container->get(Inertia::class))->toBe($container->get(Inertia::class));
+});
+
 test('module gives Inertia the bound flashed form state reader', function () {
-    $module = require dirname(__DIR__).'/module.php';
     $container = inertiaModuleContainer();
     $formState = new FlashedErrors(['email' => ['Required.']]);
     $container->instance(FlashedFormStateInterface::class, $formState);
 
-    $inertia = $container->call($module['singletons'][Inertia::class]);
+    $inertia = $container->get(Inertia::class);
 
     expect(new ReflectionProperty(Inertia::class, 'formState')->getValue($inertia))->toBe($formState);
 });
 
 test('module stays minimal and avoids framework defaults', function () {
-    $module = require dirname(__DIR__).'/module.php';
+    $module = require dirname(__DIR__) . '/module.php';
 
     expect($module)->not->toHaveKey('enabled')
         ->and($module)->not->toHaveKey('sequence');
 });
 
 test('inertia config declares frontend overlay slots', function () {
-    $config = require dirname(__DIR__).'/config/inertia.php';
+    $config = require dirname(__DIR__) . '/config/inertia.php';
 
     expect($config['version'])->toBeNull()
         ->and($config['assetEntry'])->toBeNull()

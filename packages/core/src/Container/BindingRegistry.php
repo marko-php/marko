@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Marko\Core\Container;
 
 use Closure;
+use Marko\Core\Exceptions\ArgumentConflictException;
 use Marko\Core\Exceptions\BindingConflictException;
 use Marko\Core\Module\ModuleManifest;
 
 class BindingRegistry
 {
-    private const array SOURCE_PRIORITY = [
+    public const array SOURCE_PRIORITY = [
         'vendor' => 0,
         'modules' => 1,
         'app' => 2,
@@ -21,17 +22,23 @@ class BindingRegistry
      */
     private array $bindings = [];
 
+    private readonly ArgumentRegistry $arguments;
+
     public function __construct(
         private readonly Container $container,
-    ) {}
+    ) {
+        $this->arguments = new ArgumentRegistry($container);
+    }
 
     /**
-     * @throws BindingConflictException When same-priority modules bind the same interface
+     * @throws BindingConflictException|ArgumentConflictException When same-priority modules bind the same interface or set the same argument
      */
     public function registerModule(
         ModuleManifest $module,
     ): void {
         $sourcePriority = self::SOURCE_PRIORITY[$module->source] ?? 0;
+
+        $this->arguments->registerModule($module);
 
         foreach ($module->bindings as $interface => $implementation) {
             $this->registerBinding($interface, $implementation, $module, $sourcePriority);
@@ -81,5 +88,11 @@ class BindingRegistry
         ];
 
         $this->container->bind($interface, $implementation);
+
+        if ($implementation instanceof Closure) {
+            $this->arguments->dropOutranked($interface, $sourcePriority);
+        } else {
+            $this->arguments->bindingReplaced($interface);
+        }
     }
 }

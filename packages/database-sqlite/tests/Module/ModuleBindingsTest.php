@@ -6,6 +6,7 @@ namespace Marko\Database\Sqlite\Tests\Module;
 
 use Marko\Database\Connection\ConnectionFactoryInterface;
 use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Connection\TransactionBackoff;
 use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\Diff\SqlGeneratorInterface;
 use Marko\Database\Introspection\IntrospectorInterface;
@@ -42,5 +43,15 @@ describe('SQLite module.php bindings', function (): void {
             ->and($container->get(QueryBuilderInterface::class))->toBeInstanceOf(SqliteQueryBuilder::class)
             ->and($queryBuilderFactory)->toBeInstanceOf(SqliteQueryBuilderFactory::class)
             ->and($factoryConnection)->toBe($connection);
+    });
+
+    it('builds a driver connection from the database module without binding TransactionBackoff', function (): void {
+        $container = SqliteContainer::build(SqliteContainer::config());
+        $connection = $container->get(ConnectionInterface::class);
+        $backoff = new ReflectionProperty($connection, 'transactionBackoff')->getValue($connection);
+        $databaseModule = require dirname(__DIR__, 3) . '/database/module.php';
+
+        expect($databaseModule['bindings'])->not->toHaveKey(TransactionBackoff::class)
+            ->and($backoff)->toBeInstanceOf(TransactionBackoff::class);
     });
 });

@@ -326,7 +326,7 @@ public function acquire(int $ttl): ?int;
 public function release(int $slot): void;
 ```
 
-Built from `config/sse.php` by the module binding. Uses only `increment()` (a return value of `1` means the slot was free) and `delete()` on the cache --- never `get()`.
+Built from `config/sse.php` through the module's `arguments` entry. Uses only `increment()` (a return value of `1` means the slot was free) and `delete()` on the cache --- never `get()`.
 
 ### SseException
 

@@ -6,7 +6,9 @@ namespace Marko\Queue\Rabbitmq\Tests;
 
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Config\Exceptions\ConfigNotFoundException;
+use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
+use Marko\Core\Module\ModuleManifest;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Rabbitmq\Exceptions\RabbitmqException;
 use Marko\Queue\Rabbitmq\Exchange\ExchangeConfig;
@@ -52,14 +54,17 @@ function createRabbitmqContainer(
         require dirname(__DIR__) . '/module.php',
     ];
 
-    foreach ($modules as $module) {
-        foreach ($module['bindings'] as $id => $implementation) {
-            $container->bind($id, $implementation);
-        }
+    $registry = new BindingRegistry($container);
 
-        foreach ($module['singletons'] ?? [] as $id) {
-            $container->singleton($id);
-        }
+    foreach ($modules as $index => $module) {
+        $registry->registerModule(new ModuleManifest(
+            name: "module-$index",
+            version: '1.0.0',
+            bindings: $module['bindings'],
+            singletons: $module['singletons'] ?? [],
+            arguments: $module['arguments'] ?? [],
+            source: 'vendor',
+        ));
     }
 
     return $container;
@@ -156,7 +161,7 @@ describe('queue-rabbitmq module bindings', function (): void {
             ->toBe($container->get(RabbitmqConnection::class));
     });
 
-    it('uses queue.queue as the default queue', function (): void {
+    it('builds RabbitmqQueue with the configured default queue', function (): void {
         $queue = createRabbitmqContainer()->get(QueueInterface::class);
 
         expect((new ReflectionProperty(RabbitmqQueue::class, 'defaultQueue'))->getValue($queue))->toBe('emails');

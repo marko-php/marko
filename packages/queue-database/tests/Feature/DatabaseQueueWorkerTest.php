@@ -5,9 +5,11 @@ declare(strict_types=1);
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
+use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Event\EventDispatcherInterface;
+use Marko\Core\Module\ModuleManifest;
 use Marko\Database\Config\DatabaseTimezoneConfig;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\PgSql\Query\PgSqlQueryBuilderFactory;
@@ -59,12 +61,18 @@ function workerTestContainer(
 
     $packages = dirname(__DIR__, 3);
 
+    $registry = new BindingRegistry($container);
+
     foreach (['queue', 'queue-database'] as $package) {
         $module = require "$packages/$package/module.php";
 
-        foreach ($module['bindings'] as $interface => $implementation) {
-            $container->bind($interface, $implementation);
-        }
+        $registry->registerModule(new ModuleManifest(
+            name: "marko/$package",
+            version: '1.0.0',
+            bindings: $module['bindings'],
+            arguments: $module['arguments'] ?? [],
+            source: 'vendor',
+        ));
     }
 
     return $container;

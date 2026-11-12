@@ -153,6 +153,7 @@ return [
 |------------|-------|---------|--------------------------------------|
 | `enabled`  | bool  | `true`  | Set to `false` to disable the module |
 | `bindings` | array | `[]`    | Interface to implementation mappings |
+| `arguments` | array | `[]`   | Constructor argument values by class and parameter name; unlisted parameters autowire. Values: a class name, a literal, an enum case, `null`, or a closure factory `fn (ContainerInterface $c) => ...`. Prefer over a closure binding |
 
 ### Simple Bindings
 

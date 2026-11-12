@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Marko\Core\Container;
 
 use Closure;
+use Marko\Core\Exceptions\ArgumentException;
 use Marko\Core\Exceptions\BindingException;
 use Marko\Core\Exceptions\CircularDependencyException;
 use Marko\Core\Exceptions\PluginException;
+use Marko\Core\Exceptions\PreferenceConflictException;
 use Marko\Core\Plugin\PluginInterceptor;
 use ReflectionClass;
 use ReflectionException;
@@ -29,11 +31,87 @@ class Container implements ContainerInterface
     /** @var array<string, string|Closure> */
     private array $bindings = [];
 
+    /** @var array<class-string, array<string, mixed>> */
+    private array $arguments = [];
+
     private ?PluginInterceptor $pluginInterceptor = null;
+
+    private readonly ArgumentResolver $argumentResolver;
 
     public function __construct(
         private readonly ?PreferenceRegistry $preferenceRegistry = null,
-    ) {}
+    ) {
+        $this->argumentResolver = new ArgumentResolver();
+    }
+
+    /**
+     * Configure constructor argument values for a class.
+     *
+     * @param class-string $class
+     * @param array<string, mixed> $arguments
+     */
+    public function setArguments(
+        string $class,
+        array $arguments,
+    ): void {
+        $this->arguments[$class] = $arguments;
+    }
+
+    /**
+     * Check every configured class without instantiating anything.
+     *
+     * @throws ArgumentException|BindingException|PreferenceConflictException|ReflectionException
+     */
+    public function validateArguments(): void
+    {
+        foreach ($this->arguments as $class => $arguments) {
+            if ($arguments === []) {
+                continue;
+            }
+
+            $this->validateConfiguredClass($class);
+        }
+    }
+
+    /**
+     * @param class-string $class
+     * @throws ArgumentException|BindingException|PreferenceConflictException|ReflectionException
+     */
+    private function validateConfiguredClass(
+        string $class,
+    ): void {
+        if (!class_exists($class) && !interface_exists($class)) {
+            throw BindingException::classNotFound($class);
+        }
+
+        $reflection = new ReflectionClass($class);
+
+        if ($reflection->isInterface()) {
+            throw ArgumentException::interfaceKey($class);
+        }
+
+        $binding = $this->bindings[$class] ?? null;
+
+        if ($binding instanceof Closure) {
+            throw ArgumentException::closureBound($class);
+        }
+
+        if ($binding !== null && $binding !== $class) {
+            throw ArgumentException::reboundClass($class, $binding);
+        }
+
+        $replacement = $this->preferenceRegistry?->getPreference($class);
+
+        if ($reflection->isAbstract() && ($replacement === null || $replacement === $class)) {
+            throw ArgumentException::abstractKey($class);
+        }
+
+        $this->validateClassArguments($reflection);
+
+        if ($replacement !== null && $replacement !== $class) {
+            $this->validateClassArguments(new ReflectionClass($replacement));
+        }
+    }
 
     public function setPluginInterceptor(PluginInterceptor $interceptor): void
     {
@@ -48,7 +126,7 @@ class Container implements ContainerInterface
     }
 
     /**
-     * @throws BindingException|CircularDependencyException|ReflectionException|PluginException
+     * @throws ArgumentException|BindingException|CircularDependencyException|ReflectionException|PluginException|PreferenceConflictException
      */
     public function get(
         string $id,
@@ -98,7 +176,7 @@ class Container implements ContainerInterface
     }
 
     /**
-     * @throws BindingException|CircularDependencyException|ReflectionException|PluginException
+     * @throws ArgumentException|BindingException|CircularDependencyException|ReflectionException|PluginException|PreferenceConflictException
      */
     public function call(Closure $callable): mixed
     {
@@ -131,7 +209,54 @@ class Container implements ContainerInterface
     }
 
     /**
-     * @throws BindingException|CircularDependencyException|ReflectionException|PluginException
+     * @return array<string, mixed>
+     * @throws PreferenceConflictException
+     */
+    private function effectiveArguments(
+        string $class,
+    ): array {
+        $arguments = $this->arguments[$class] ?? [];
+
+        if ($this->preferenceRegistry === null) {
+            return $arguments;
+        }
+
+        foreach ($this->preferenceRegistry->replacedClasses($class) as $replaced) {
+            $arguments = [...($this->arguments[$replaced] ?? []), ...$arguments];
+        }
+
+        return $arguments;
+    }
+
+    /**
+     * Validate the class's own arguments, then each inherited entry against the class it came from.
+     *
+     * @param ReflectionClass<object> $class
+     * @throws ArgumentException|PreferenceConflictException
+     */
+    private function validateClassArguments(
+        ReflectionClass $class,
+    ): void {
+        $seen = $this->arguments[$class->getName()] ?? [];
+
+        if ($seen !== []) {
+            $this->argumentResolver->validate($class, $seen);
+        }
+
+        foreach ($this->preferenceRegistry?->replacedClasses($class->getName()) ?? [] as $replaced) {
+            $inherited = array_diff_key($this->arguments[$replaced] ?? [], $seen);
+
+            if ($inherited === []) {
+                continue;
+            }
+
+            $this->argumentResolver->validate($class, $inherited, $replaced);
+            $seen += $inherited;
+        }
+    }
+
+    /**
+     * @throws ArgumentException|BindingException|CircularDependencyException|ReflectionException|PluginException|PreferenceConflictException
      */
     private function resolve(
         string $id,
@@ -156,6 +281,10 @@ class Container implements ContainerInterface
 
             // Closure bindings are called with the container
             if ($binding instanceof Closure) {
+                if ($this->effectiveArguments($id) !== []) {
+                    throw ArgumentException::closureBound($id);
+                }
+
                 $instance = $binding($this);
 
                 if ($this->pluginInterceptor !== null) {
@@ -211,6 +340,10 @@ class Container implements ContainerInterface
         $constructor = $reflectionClass->getConstructor();
 
         if ($constructor === null) {
+            if ($this->effectiveArguments($id) !== []) {
+                $this->validateClassArguments($reflectionClass);
+            }
+
             $instance = new $id();
         } else {
             $this->resolving[$id] = true;
@@ -218,8 +351,23 @@ class Container implements ContainerInterface
             try {
                 $parameters = $constructor->getParameters();
                 $dependencies = [];
+                $arguments = $this->effectiveArguments($id);
+
+                if ($arguments !== []) {
+                    $this->validateClassArguments($reflectionClass);
+                }
 
                 foreach ($parameters as $parameter) {
+                    if (array_key_exists($parameter->getName(), $arguments)) {
+                        $dependencies[] = $this->argumentResolver->resolveValue(
+                            $parameter,
+                            $arguments[$parameter->getName()],
+                            $id,
+                            $this,
+                        );
+                        continue;
+                    }
+
                     $type = $parameter->getType();
 
                     // Use default value for builtin types or untyped parameters

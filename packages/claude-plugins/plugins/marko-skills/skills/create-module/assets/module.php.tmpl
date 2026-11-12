@@ -12,9 +12,17 @@ use Marko\Core\Container\ContainerInterface;
 
 return [
     'bindings' => [
-        ExampleInterface::class => function (ContainerInterface $container): ExampleInterface {
-            return new ExampleImplementation();
-        },
+        ExampleInterface::class => ExampleImplementation::class,
+    ],
+    // Set individual constructor arguments by parameter name; every parameter
+    // you do not list still autowires. Prefer this over a closure binding.
+    // A value is read from the parameter's type: a class name, a literal, a
+    // closure factory (receives the container), or null.
+    'arguments' => [
+        ExampleImplementation::class => [
+            'label' => 'example',
+            'limit' => fn (ContainerInterface $container): int => 10,
+        ],
     ],
     'singletons' => [
         // Class names registered as shared instances

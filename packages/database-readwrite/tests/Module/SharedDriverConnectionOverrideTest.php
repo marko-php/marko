@@ -15,10 +15,10 @@ use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\ReadWrite\Connection\ReadWriteConnection;
 
-class SharedOverrideConfigRepository implements ConfigRepositoryInterface
+readonly class SharedOverrideConfigRepository implements ConfigRepositoryInterface
 {
     public function __construct(
-        private readonly string $driver,
+        private string $driver,
     ) {}
 
     public function get(
@@ -115,6 +115,7 @@ function buildReadWriteOverContainer(string $driver): Container
             version: '1.0.0',
             bindings: $moduleConfig['bindings'] ?? [],
             singletons: $moduleConfig['singletons'] ?? [],
+            arguments: $moduleConfig['arguments'] ?? [],
             source: 'vendor',
             // marko/database's boot only scans for entities; it needs ProjectPaths and is irrelevant here.
             boot: $package === 'database' ? null : ($moduleConfig['boot'] ?? null),

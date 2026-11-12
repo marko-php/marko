@@ -66,33 +66,22 @@ These appear as `********` in the error output. Masking is handled by `RequestDa
 
 ## Customization
 
-`AdvancedErrorHandler` builds its formatters itself, so customize the page by passing your own formatter. Bind `ErrorHandlerInterface` in your app module (app bindings take priority over vendor ones):
+`AdvancedErrorHandler` builds its formatters itself, so customize the page by passing your own formatter. The package binds `ErrorHandlerInterface` to `AdvancedErrorHandler` and sets its `prettyHtmlFormatter` argument to `null`; every other constructor parameter autowires. Override just that argument in your app module (app arguments take priority over vendor ones):
 
 ```php title="app/web/module.php"
-use Marko\Core\Container\ContainerInterface;
-use Marko\Core\Environment\AppEnvironment;
-use Marko\Errors\Contracts\ErrorHandlerInterface;
 use Marko\ErrorsAdvanced\AdvancedErrorHandler;
-use Marko\ErrorsSimple\Environment;
 use App\Web\Errors\CustomHtmlFormatter;
-use Psr\Clock\ClockInterface;
 
 return [
-    'bindings' => [
-        ErrorHandlerInterface::class => function (ContainerInterface $container): ErrorHandlerInterface {
-            $appEnvironment = $container->get(AppEnvironment::class);
-
-            return new AdvancedErrorHandler(
-                clock: $container->get(ClockInterface::class),
-                environment: new Environment(appEnvironment: $appEnvironment),
-                prettyHtmlFormatter: new CustomHtmlFormatter(
-                    environment: $appEnvironment,
-                ),
-            );
-        },
+    'arguments' => [
+        AdvancedErrorHandler::class => [
+            'prettyHtmlFormatter' => CustomHtmlFormatter::class,
+        ],
     ],
 ];
 ```
+
+The class name is resolved through the container, so `CustomHtmlFormatter` can take the `AppEnvironment` in its constructor and have it autowired. See [Argument Substitution](/docs/concepts/dependency-injection/#argument-substitution).
 
 A `PrettyHtmlFormatter` subclass takes the same `AppEnvironment`. When none is passed it builds one that reads the real `MARKO_ENV`/`APP_ENV`, so an unconfigured formatter fails safe to the generic page.
 

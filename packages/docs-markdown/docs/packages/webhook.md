@@ -280,7 +280,7 @@ return [
 
 The receiver then records every accepted `X-Webhook-Id` through `WebhookReplayGuardInterface`. The default `CacheReplayGuard` uses [marko/cache](/docs/packages/cache/)'s atomic `increment()`, so two concurrent requests with the same ID cannot both be accepted, and keeps each ID for twice `timestamp_tolerance` (the whole window in which its timestamp is accepted). Use a cache driver shared by every web server, such as `marko/cache-redis`; a per-process or per-server cache only catches replays that reach the same process or server. Only requests that pass every other check are recorded, so a forged request cannot block a real delivery ID.
 
-`marko/cache` is optional: with `replay_protection` on and no `marko/cache` installed, resolving the receiver throws a `ConfigException` that says so. To store seen IDs elsewhere, bind your own `WebhookReplayGuardInterface`. A sender that retries a delivery you already accepted gets a `401` for the retry, which Marko senders record as a final rejection.
+`marko/cache` is optional: with `replay_protection` on and no `marko/cache` installed, resolving the receiver throws a `ConfigException` that says so. `replay_protection` applies to every receiver the container builds, including one resolved through `WebhookReceiverInterface`. To store seen IDs elsewhere, bind your own `WebhookReplayGuardInterface`. A sender that retries a delivery you already accepted gets a `401` for the retry, which Marko senders record as a final rejection.
 
 ### Delivery Tracking
 

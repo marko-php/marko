@@ -20,9 +20,42 @@ class PreferenceRegistry
     private array $preferences = [];
 
     /**
+     * @var array<class-string, class-string>
+     */
+    private array $replaced = [];
+
+    /**
      * @var array<class-string, array{module: string, source: string}>
      */
     private array $sources = [];
+
+    /**
+     * Classes the given replacement replaced, nearest first.
+     *
+     * @param class-string $replacement
+     * @return list<class-string>
+     * @throws PreferenceConflictException When a circular preference chain is detected
+     */
+    public function replacedClasses(
+        string $replacement,
+    ): array {
+        $chain = [];
+        $visited = [$replacement => true];
+        $current = $replacement;
+
+        while (isset($this->replaced[$current])) {
+            $current = $this->replaced[$current];
+
+            if (isset($visited[$current])) {
+                throw PreferenceConflictException::circularPreference($replacement, $current);
+            }
+
+            $visited[$current] = true;
+            $chain[] = $current;
+        }
+
+        return $chain;
+    }
 
     /**
      * Register a class preference.
@@ -59,6 +92,7 @@ class PreferenceRegistry
         }
 
         $this->preferences[$original] = $replacement;
+        $this->replaced[$replacement] = $original;
 
         if ($moduleName !== '') {
             $this->sources[$original] = [

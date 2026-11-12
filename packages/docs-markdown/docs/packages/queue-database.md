@@ -19,9 +19,9 @@ Requires [`marko/database`](/docs/packages/database/) for the database connectio
 
 ### Wiring
 
-Installing the package and a database driver is enough. Its `module.php` binds `QueueInterface` to a `DatabaseQueue` built from your queue config and the driver's `QueryBuilderFactoryInterface`, and binds `FailedJobRepositoryInterface` to `DatabaseFailedJobRepository`. `marko/queue` binds `WorkerInterface`, so `marko queue:work` runs with no extra bindings.
+Installing the package and a database driver is enough. Its `module.php` binds `QueueInterface` to `DatabaseQueue`, whose `defaultQueue`, `retryAfter` and `queueRetryAfters` constructor arguments come from your queue config through the module's `arguments` entry (the driver's `QueryBuilderFactoryInterface` is autowired), and binds `FailedJobRepositoryInterface` to `DatabaseFailedJobRepository`. `marko/queue` binds `WorkerInterface`, so `marko queue:work` runs with no extra bindings.
 
-The factory reads these keys from `config/queue.php`:
+The module's `arguments` entry reads these keys from `config/queue.php`:
 
 | Key | Effect on the database driver |
 |---|---|
@@ -195,7 +195,7 @@ Implements `QueueInterface`. The constructor accepts:
 - an optional `queueRetryAfters` map of queue name to seconds, which overrides `retryAfter` for those queues
 - an optional `JobIdGenerator`, which gives each pushed job its id (see [`marko/queue`](/docs/packages/queue/#jobidgenerator))
 
-The module factory passes the container's bound clock, `DatabaseTimezoneConfig`, `RetryPolicy` and `JobIdGenerator`, and sets the default queue, `retryAfter` and `queueRetryAfters` from `queue.queue`, `queue.retry_after` and `QueueConfig::queueRetryAfters()` (the queues in `queue.queues` that set a `retry_after`).
+The container autowires the bound clock, `DatabaseTimezoneConfig`, `RetryPolicy` and `JobIdGenerator`, and the module's `arguments` entry sets the default queue, `retryAfter` and `queueRetryAfters` from `queue.queue`, `queue.retry_after` and `QueueConfig::queueRetryAfters()` (the queues in `queue.queues` that set a `retry_after`).
 
 `pop()` selects the next available job with `lockForUpdate()->skipLocked()` inside a transaction, then reserves it with an `UPDATE` guarded on `reserved_at`. A job locked by another worker is skipped rather than waited for, so multiple workers can run concurrently without claiming the same job. The connection must implement `TransactionInterface` (the MySQL and PostgreSQL drivers do). Otherwise `pop()` throws `LockException`, because the lock would be released as soon as the `SELECT` finished. Jobs whose `reserved_at` timestamp is older than `retry_after` seconds are treated as crashed and become eligible for re-reservation.
 

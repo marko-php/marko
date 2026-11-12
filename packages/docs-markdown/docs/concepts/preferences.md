@@ -66,6 +66,12 @@ return [
 
 Preferences and bindings are coarse-grained (whole class replacement). Plugins are fine-grained (method-level interception). Use the right tool for the scope of your change.
 
+## Arguments Are Inherited
+
+When a Preference replaces a class, the replacement is built with the replaced class's [`arguments`](/docs/concepts/dependency-injection/#argument-substitution). The replacement's own `arguments` override them per argument. Every parameter name the replaced class's arguments set must exist on the replacement's constructor, or boot fails with an `ArgumentException`.
+
+This applies only to Preferences. A subclass that merely `extends` a class, with no `#[Preference]`, inherits none of its parent's arguments.
+
 ## Preference Chains
 
 Preferences can chain. If module A prefers `PostController` → `CustomPostController`, and module B prefers `CustomPostController` → `AdvancedPostController`, the container follows the chain to the final replacement.

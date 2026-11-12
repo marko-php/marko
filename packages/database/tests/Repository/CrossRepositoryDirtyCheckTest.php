@@ -141,6 +141,7 @@ function buildCrossRepositoryContainer(ConnectionInterface $connection): Contain
         version: '1.0.0',
         bindings: $moduleConfig['bindings'],
         singletons: $moduleConfig['singletons'],
+        arguments: $moduleConfig['arguments'] ?? [],
         source: 'vendor',
     ));
 

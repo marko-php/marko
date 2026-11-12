@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Event\EventDispatcherInterface;
+use Marko\Core\Module\ModuleManifest;
 use Marko\Database\Config\DatabaseTimezoneConfig;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\PgSql\Query\PgSqlQueryBuilderFactory;
@@ -52,8 +54,16 @@ function queueDatabaseModuleContainer(
     $queueModule = require dirname(__DIR__, 2) . '/queue/module.php';
     $module = require dirname(__DIR__) . '/module.php';
 
-    foreach ([...$queueModule['bindings'], ...$module['bindings']] as $interface => $implementation) {
-        $container->bind($interface, $implementation);
+    $registry = new BindingRegistry($container);
+
+    foreach (['marko/queue' => $queueModule, 'marko/queue-database' => $module] as $name => $definition) {
+        $registry->registerModule(new ModuleManifest(
+            name: $name,
+            version: '1.0.0',
+            bindings: $definition['bindings'],
+            arguments: $definition['arguments'] ?? [],
+            source: 'vendor',
+        ));
     }
 
     return $container;
@@ -71,7 +81,42 @@ test('module.php exists with correct structure', function (): void {
         ->and($module['bindings'])->toBeArray();
 });
 
-test('module.php binds QueueInterface to a factory that builds DatabaseQueue', function (): void {
+test('it binds QueueInterface to DatabaseQueue as a class binding', function (): void {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    expect($module['bindings'][QueueInterface::class])->toBe(DatabaseQueue::class);
+});
+
+test('it declares the defaultQueue, retryAfter and queueRetryAfters arguments for DatabaseQueue', function (): void {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    expect($module['arguments'])->toHaveKey(DatabaseQueue::class)
+        ->and(array_keys($module['arguments'][DatabaseQueue::class]))
+        ->toBe(['defaultQueue', 'retryAfter', 'queueRetryAfters'])
+        ->and($module['arguments'][DatabaseQueue::class]['defaultQueue'])->toBeInstanceOf(Closure::class);
+});
+
+test('it builds DatabaseQueue with the configured default queue and retry settings', function (): void {
+    $connection = SqliteConnection::withQueueTables();
+    $container = queueDatabaseModuleContainer($connection, [
+        'queue.queue' => 'emails',
+        'queue.retry_after' => 45,
+        'queue.queues' => ['emails' => ['retry_after' => 10]],
+    ]);
+
+    $queue = $container->get(QueueInterface::class);
+    $id = $queue->push(new TestJob('configured'))->id;
+    $row = $connection->query('SELECT queue FROM jobs WHERE id = :id', ['id' => $id])[0];
+
+    $property = new ReflectionProperty(DatabaseQueue::class, 'retryAfter');
+    $overrides = new ReflectionProperty(DatabaseQueue::class, 'queueRetryAfters');
+
+    expect($row['queue'])->toBe('emails')
+        ->and($property->getValue($queue))->toBe(45)
+        ->and($overrides->getValue($queue))->toBe(['emails' => 10]);
+});
+
+test('module.php resolves QueueInterface to DatabaseQueue', function (): void {
     $container = queueDatabaseModuleContainer(SqliteConnection::withQueueTables());
 
     expect($container->get(QueueInterface::class))->toBeInstanceOf(DatabaseQueue::class);

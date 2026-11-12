@@ -18,6 +18,7 @@ use Marko\Webhook\Receiving\CacheReplayGuard;
 use Marko\Webhook\Receiving\WebhookReceiver;
 use Marko\Webhook\Sending\WebhookSignature;
 use Psr\Clock\ClockInterface;
+use ReflectionProperty;
 
 /**
  * @return array<string, mixed>
@@ -47,6 +48,10 @@ function webhookModuleContainer(
         $container->bind($abstract, $concrete);
     }
 
+    foreach (webhookModule()['arguments'] as $class => $arguments) {
+        $container->setArguments($class, $arguments);
+    }
+
     return $container;
 }
 
@@ -69,6 +74,40 @@ describe('Webhook module wiring', function (): void {
         'registers WebhookEndpointMiddleware as global middleware so #[WebhookEndpoint] needs nothing else',
         function (): void {
             expect(webhookModule()['globalMiddleware'])->toBe([WebhookEndpointMiddleware::class]);
+        },
+    );
+
+    it('declares only the replayGuard argument for WebhookReceiver', function (): void {
+        $module = webhookModule();
+
+        expect($module['bindings'])->not->toHaveKey(WebhookReceiver::class)
+            ->and(array_keys($module['arguments'][WebhookReceiver::class]))->toBe(['replayGuard']);
+    });
+
+    it('builds WebhookReceiver without a replay guard when replay protection is off', function (): void {
+        $receiver = webhookModuleContainer(false, $this->createStub(CacheInterface::class))
+            ->get(WebhookReceiver::class);
+
+        expect(new ReflectionProperty(WebhookReceiver::class, 'replayGuard')->getValue($receiver))->toBeNull();
+    });
+
+    it('builds WebhookReceiver with the replay guard when replay protection is on', function (): void {
+        $receiver = webhookModuleContainer(true, $this->createStub(CacheInterface::class))
+            ->get(WebhookReceiver::class);
+
+        expect(new ReflectionProperty(WebhookReceiver::class, 'replayGuard')->getValue($receiver))
+            ->toBeInstanceOf(CacheReplayGuard::class);
+    });
+
+    it(
+        'honours replay protection when WebhookReceiver is resolved through WebhookReceiverInterface',
+        function (): void {
+            $receiver = webhookModuleContainer(false, $this->createStub(CacheInterface::class))
+                ->get(WebhookReceiverInterface::class);
+
+            expect($receiver)->toBeInstanceOf(WebhookReceiver::class)
+                ->and(new ReflectionProperty(WebhookReceiver::class, 'replayGuard')->getValue($receiver))
+                ->toBeNull();
         },
     );
 

@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 use Marko\Docs\Contract\DocsSearchInterface;
 use Marko\DocsFts\FtsSearch;
 
@@ -34,7 +35,7 @@ it('has module.php binding DocsSearchInterface to FtsSearch', function (): void 
     expect($module)->toBeArray()
         ->and($module)->toHaveKey('singletons')
         ->and($module['singletons'])->toHaveKey(DocsSearchInterface::class)
-        ->and($module['singletons'][DocsSearchInterface::class])->toBeInstanceOf(Closure::class);
+        ->and($module['singletons'][DocsSearchInterface::class])->toBe(FtsSearch::class);
 });
 
 it('has src tests/Unit tests/Feature directories with Pest bootstrap', function (): void {

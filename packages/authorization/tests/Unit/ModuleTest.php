@@ -6,6 +6,7 @@ namespace Marko\Authorization\Tests\Unit;
 
 use Marko\Authorization\Contracts\GateInterface;
 use Marko\Authorization\Discovery\GateHookCacheContributor;
+use Marko\Authorization\Gate;
 use Marko\Authorization\GateHookRegistry;
 use Marko\Authorization\PolicyRegistry;
 
@@ -36,11 +37,18 @@ it('registers PolicyRegistry and GateInterface as singletons', function (): void
         ->and($module['singletons'])->toContain(GateInterface::class);
 });
 
-it('wires Gate with factory closure', function (): void {
+it('binds GateInterface to Gate as a class binding', function (): void {
     $modulePath = dirname(__DIR__, 2) . '/module.php';
     $module = require $modulePath;
 
-    expect($module['bindings'][GateInterface::class])->toBeCallable();
+    expect($module['bindings'][GateInterface::class])->toBe(Gate::class);
+});
+
+it('declares only the guard argument for Gate', function (): void {
+    $module = require dirname(__DIR__, 2) . '/module.php';
+
+    expect($module['arguments'][Gate::class])->toHaveKey('guard')
+        ->and(array_keys($module['arguments'][Gate::class]))->toBe(['guard']);
 });
 
 it('includes config/authorization.php with sensible defaults', function (): void {
