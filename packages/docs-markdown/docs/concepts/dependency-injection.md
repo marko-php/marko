@@ -206,7 +206,7 @@ Prefer a plain binding, then `arguments`, and reach for a closure binding only w
 
 Two behaviours to know:
 
-- **A closure binding on a class takes over construction.** If a higher-priority module binds a class to a closure, that closure builds the class and the arguments set by lower-priority modules are dropped. A closure binding of equal or lower priority than the arguments, or one made by `$container->bind()` in a boot callback, throws instead.
+- **A closure binding on a class takes over construction.** If a higher-priority module binds a class to a closure, that closure builds the class and the arguments set by lower-priority modules are set aside. They are set aside only while that closure is the class's binding: if an even higher-priority module binds the class to a class again, they apply once more. A closure binding of equal or lower priority than the arguments, or one made by `$container->bind()` in a boot callback, throws instead.
 - **Known limit:** an interface bound to a closure that calls `new Foo(...)` itself bypasses `Foo`'s arguments, because the container never builds `Foo`. This is not detected. Bind the interface to the class (`GateInterface::class => Gate::class`) so the container builds it.
 
 ### Parameter names are public API

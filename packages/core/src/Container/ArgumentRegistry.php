@@ -33,10 +33,6 @@ class ArgumentRegistry
 
         foreach ($module->arguments as $class => $arguments) {
             foreach ($arguments as $parameter => $value) {
-                if ($priority < ($this->closurePriorities[$class] ?? -1)) {
-                    continue;
-                }
-
                 $existing = $this->merged[$class][$parameter] ?? null;
 
                 if ($existing !== null && $priority === $existing['priority']) {
@@ -69,11 +65,16 @@ class ArgumentRegistry
     ): void {
         $this->closurePriorities[$class] = $priority;
 
-        foreach ($this->merged[$class] ?? [] as $parameter => $entry) {
-            if ($entry['priority'] < $priority) {
-                unset($this->merged[$class][$parameter]);
-            }
-        }
+        $this->applyToContainer($class);
+    }
+
+    /**
+     * Forget the closure priority of a class whose closure binding was replaced by a class binding.
+     */
+    public function bindingReplaced(
+        string $class,
+    ): void {
+        unset($this->closurePriorities[$class]);
 
         $this->applyToContainer($class);
     }
@@ -81,9 +82,15 @@ class ArgumentRegistry
     private function applyToContainer(
         string $class,
     ): void {
+        $closurePriority = $this->closurePriorities[$class] ?? -1;
+        $active = array_filter(
+            $this->merged[$class] ?? [],
+            fn (array $entry): bool => $entry['priority'] >= $closurePriority,
+        );
+
         $this->container->setArguments(
             $class,
-            array_map(fn (array $entry): mixed => $entry['value'], $this->merged[$class] ?? []),
+            array_map(fn (array $entry): mixed => $entry['value'], $active),
         );
     }
 }

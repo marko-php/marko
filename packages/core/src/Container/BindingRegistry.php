@@ -91,6 +91,8 @@ class BindingRegistry
 
         if ($implementation instanceof Closure) {
             $this->arguments->dropOutranked($interface, $sourcePriority);
+        } else {
+            $this->arguments->bindingReplaced($interface);
         }
     }
 }

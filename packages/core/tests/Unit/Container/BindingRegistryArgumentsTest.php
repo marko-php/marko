@@ -124,6 +124,62 @@ it('keeps a vendor module\'s arguments for other classes when one class is taken
     expect($container->get(T017Other::class)->name)->toBe('kept');
 });
 
+it('restores arguments when a higher-priority class binding replaces a closure binding', function (): void {
+    $container = new Container();
+    $registry = new BindingRegistry($container);
+
+    $registry->registerModule(new ModuleManifest(
+        name: 'vendor/a',
+        version: '1.0.0',
+        source: 'vendor',
+        arguments: [T003Subject::class => ['label' => 'from-vendor']],
+    ));
+    $registry->registerModule(new ModuleManifest(
+        name: 'modules/b',
+        version: '1.0.0',
+        source: 'modules',
+        bindings: [T003Subject::class => fn (): T003Subject => new T003Subject('from-closure')],
+    ));
+    $registry->registerModule(new ModuleManifest(
+        name: 'app/c',
+        version: '1.0.0',
+        source: 'app',
+        bindings: [T003Subject::class => T003Subject::class],
+    ));
+
+    $container->validateArguments();
+
+    expect($container->get(T003Subject::class)->label)->toBe('from-vendor');
+});
+
+it('applies later lower-priority arguments once the closure binding is replaced', function (): void {
+    $container = new Container();
+    $registry = new BindingRegistry($container);
+
+    $registry->registerModule(new ModuleManifest(
+        name: 'modules/b',
+        version: '1.0.0',
+        source: 'modules',
+        bindings: [T003Subject::class => fn (): T003Subject => new T003Subject('from-closure')],
+    ));
+    $registry->registerModule(new ModuleManifest(
+        name: 'vendor/a',
+        version: '1.0.0',
+        source: 'vendor',
+        arguments: [T003Subject::class => ['label' => 'from-vendor']],
+    ));
+    $registry->registerModule(new ModuleManifest(
+        name: 'app/c',
+        version: '1.0.0',
+        source: 'app',
+        bindings: [T003Subject::class => T003Subject::class],
+    ));
+
+    $container->validateArguments();
+
+    expect($container->get(T003Subject::class)->label)->toBe('from-vendor');
+});
+
 it('drops the arguments regardless of which module registers first', function (): void {
     $container = new Container();
     $registry = new BindingRegistry($container);
