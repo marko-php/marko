@@ -574,7 +574,10 @@
             "phpcbf --standard=phpcs.xml || true"
         ],
         "phpstan": "php -d memory_limit=2G vendor/bin/phpstan analyse",
-        "docs:lint": "php bin/docs-lint.php",
+        "docs:lint": [
+            "php bin/docs-lint.php",
+            "php bin/docs-sidebar-lint.php"
+        ],
         "ci": [
             "@test",
             "@cs:check",
