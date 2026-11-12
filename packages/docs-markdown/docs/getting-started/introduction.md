@@ -18,7 +18,7 @@ Marko is a modular PHP 8.5+ framework that combines Magento's powerful extensibi
 Magento's extensibility + Laravel's DX + Loud errors = Marko
 ```
 
-From **Magento**, Marko takes the extensibility primitives: Preferences (interface swapping), Plugins (method interception), Events & Observers, and a layered module system.
+From **Magento**, Marko takes the extensibility primitives: Preferences (interface swapping), Plugins (method interception), Events & Observers, and a layered module system. Coming from Magento? [Coming From Magento](/docs/guides/coming-from-magento/) maps each Magento concept to its Marko equivalent.
 
 From **Laravel**, Marko takes the developer experience: clean APIs, sensible defaults, Composer-native package management, and attribute-based routing.
 
@@ -55,3 +55,4 @@ You code against the interface. Swap implementations by changing a single bindin
 - [Install Marko](/docs/getting-started/installation/) and create your first project
 - [Understand the project structure](/docs/getting-started/project-structure/)
 - [Learn about modularity](/docs/concepts/modularity/) — the foundation of everything in Marko
+- [Coming from Magento?](/docs/guides/coming-from-magento/) — see how each Magento concept maps to Marko
