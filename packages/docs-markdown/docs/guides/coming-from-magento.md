@@ -5,6 +5,8 @@ description: Map Magento 2 concepts — di.xml, plugins, observers, layout XML a
 
 This page is for Magento 2 developers. Marko borrows Magento's extensibility primitives (preferences, plugins, observers, constructor argument injection) but expresses them in PHP attributes and `module.php` instead of XML. Some Magento features are deliberately left out, and where Marko behaves differently from what you expect, this page says so.
 
+Each section shows the Magento code first, then the Marko code that does the same job.
+
 ## Quick Reference
 
 | Magento | Marko | Details |
@@ -29,11 +31,27 @@ This page is for Magento 2 developers. Marko borrows Magento's extensibility pri
 
 ## Preferences
 
-In Magento, `di.xml` maps a type to another with a preference:
+In Magento, `di.xml` maps a type to another with a preference, whether the type is an interface or a class:
 
-```xml
-<preference for="Vendor\Module\Api\PostRepositoryInterface"
-            type="Vendor\Module\Model\PostRepository"/>
+```xml title="etc/di.xml"
+<preference for="Vendor\Blog\Api\PostRepositoryInterface"
+            type="Vendor\Blog\Model\PostRepository"/>
+<preference for="Acme\Blog\Controller\PostController"
+            type="Vendor\Blog\Controller\CustomPostController"/>
+```
+
+```php title="Controller/CustomPostController.php"
+<?php
+
+declare(strict_types=1);
+
+namespace Vendor\Blog\Controller;
+
+use Acme\Blog\Controller\PostController;
+
+class CustomPostController extends PostController
+{
+}
 ```
 
 Marko splits this in two. To choose the implementation of an interface, add it to `bindings` in `module.php`:
@@ -85,10 +103,12 @@ More detail: [Preferences](/docs/concepts/preferences/) and [Bindings](/docs/con
 
 In Magento, `di.xml` sets constructor arguments per type:
 
-```xml
-<type name="Vendor\Module\Model\Mailer">
+```xml title="etc/di.xml"
+<type name="Vendor\Blog\Notifier\PostNotifier">
     <arguments>
         <argument name="sender" xsi:type="string">noreply@example.com</argument>
+        <argument name="slugGenerator" xsi:type="object">Vendor\Blog\Notifier\SlugGenerator</argument>
+        <argument name="batchSize" xsi:type="number">50</argument>
     </arguments>
 </type>
 ```
@@ -102,20 +122,19 @@ declare(strict_types=1);
 
 use App\Blog\Notifier\PostNotifier;
 use App\Blog\Notifier\SlugGenerator;
-use Marko\Core\Container\ContainerInterface;
 
 return [
     'arguments' => [
         PostNotifier::class => [
             'sender' => 'noreply@example.com',
             'slugGenerator' => SlugGenerator::class,
-            'batchSize' => fn (ContainerInterface $container): int => 50,
+            'batchSize' => 50,
         ],
     ],
 ];
 ```
 
-A class-name string for a class-typed parameter is the equivalent of Magento's `xsi:type="object"`, and a closure computes a value at resolve time. A Preference inherits the arguments of the class it replaces.
+There is no `xsi:type`: the parameter's declared type decides how the value is read. A class-name string for a class-typed parameter is the equivalent of `xsi:type="object"`. A closure computes the value at resolve time, which covers what Magento's `init_parameter` and `const` types are used for. A Preference inherits the arguments of the class it replaces.
 
 Three differences matter if you are used to `di.xml`:
 
@@ -127,7 +146,48 @@ See [Argument Substitution](/docs/concepts/dependency-injection/#argument-substi
 
 ## Virtual Types
 
-Marko has no virtual types. Where you would configure one class two ways in Magento, write a real subclass, or set `arguments` on the class.
+In Magento, a virtual type configures an existing class a second way under a new name that has no file:
+
+```xml title="etc/di.xml"
+<virtualType name="Vendor\Blog\Notifier\UrgentPostNotifier"
+             type="Vendor\Blog\Notifier\PostNotifier">
+    <arguments>
+        <argument name="sender" xsi:type="string">urgent@example.com</argument>
+    </arguments>
+</virtualType>
+```
+
+Marko has no virtual types. Write a real subclass and give it its own `arguments`:
+
+```php title="app/blog/src/Notifier/UrgentPostNotifier.php"
+<?php
+
+declare(strict_types=1);
+
+namespace App\Blog\Notifier;
+
+class UrgentPostNotifier extends PostNotifier
+{
+}
+```
+
+```php title="module.php"
+<?php
+
+declare(strict_types=1);
+
+use App\Blog\Notifier\UrgentPostNotifier;
+
+return [
+    'arguments' => [
+        UrgentPostNotifier::class => [
+            'sender' => 'urgent@example.com',
+        ],
+    ],
+];
+```
+
+The subclass can be type-hinted, found in an IDE and analyzed by PHPStan. If you only need to change one configuration of the class, set `arguments` on the class itself and skip the subclass.
 
 See [Why There Are No Virtual Types](/docs/concepts/dependency-injection/#why-there-are-no-virtual-types).
 
@@ -135,10 +195,33 @@ See [Why There Are No Virtual Types](/docs/concepts/dependency-injection/#why-th
 
 In Magento, a plugin is registered in `di.xml` and uses `before`, `after` and `around` methods:
 
-```xml
-<type name="Vendor\Module\Model\PostRepository">
-    <plugin name="seo_slug" type="Vendor\Module\Plugin\SeoSlug" sortOrder="10"/>
+```xml title="etc/di.xml"
+<type name="Vendor\Blog\Api\PostRepositoryInterface">
+    <plugin name="post_seo" type="Vendor\Seo\Plugin\PostSeoPlugin" sortOrder="10"/>
 </type>
+```
+
+```php title="Plugin/PostSeoPlugin.php"
+<?php
+
+declare(strict_types=1);
+
+namespace Vendor\Seo\Plugin;
+
+use Vendor\Blog\Api\PostRepositoryInterface;
+
+class PostSeoPlugin
+{
+    public function beforeGetById(PostRepositoryInterface $subject, int $id): ?array
+    {
+        return null;
+    }
+
+    public function afterSave(PostRepositoryInterface $subject, object $result, object $post): object
+    {
+        return $result;
+    }
+}
 ```
 
 In Marko, a `#[Plugin]` class names its target, and `#[Before]` / `#[After]` mark the methods. There is no registration; plugins are discovered from the attribute. Sort order goes on the method attribute:
@@ -174,7 +257,7 @@ class PostSeoPlugin
 
 What differs from Magento:
 
-- **Methods are named after the target method.** The plugin method is `save`, not `beforeSave`. Use `#[Before(method: 'save')]` to hook a method under a different name.
+- **Methods are named after the target method.** The plugin method is `save`, not `afterSave`. Use `#[Before(method: 'save')]` to hook a method under a different name.
 - **There is no `$subject` parameter.** A before plugin takes the target's arguments. An after plugin takes `$result` first, then the arguments. If a plugin needs to call other methods on the target, inject the target's interface through the plugin's constructor.
 - **There are no around plugins.** A before plugin returns `null` to pass through, an `array` to replace the arguments, or any other non-null value to short-circuit the original method. That covers part of what around plugins were used for. To replace behavior outright, use a [Preference](#preferences).
 - **Equal sort orders are an error.** Two plugins on the same method and timing with the same `sortOrder` make boot fail with `PluginException`. Magento tolerates ties.
@@ -185,19 +268,39 @@ See [Plugins](/docs/concepts/plugins/).
 
 ## Events and Observers
 
-In Magento, `events.xml` binds an observer to a named event, and the data is an untyped array:
+In Magento, an event is a string name. `events.xml` binds an observer to it, the observer implements `ObserverInterface`, and the event data is an untyped array:
 
-```xml
-<event name="blog_post_save_after">
-    <observer name="track_post" instance="Vendor\Module\Observer\TrackPost"/>
+```xml title="etc/events.xml"
+<event name="blog_post_created">
+    <observer name="track_post_creation" instance="Vendor\Analytics\Observer\TrackPostCreation"/>
 </event>
 ```
 
-```php
-$this->eventManager->dispatch('blog_post_save_after', ['post' => $post]);
+```php title="Observer/TrackPostCreation.php"
+<?php
+
+declare(strict_types=1);
+
+namespace Vendor\Analytics\Observer;
+
+use Magento\Framework\Event\Observer;
+use Magento\Framework\Event\ObserverInterface;
+
+class TrackPostCreation implements ObserverInterface
+{
+    public function execute(Observer $observer): void
+    {
+        $post = $observer->getEvent()->getData('post');
+        // ...
+    }
+}
 ```
 
-In Marko, an event is a class that extends `Marko\Core\Event\Event`. Typed constructor properties and getters replace the data array:
+```php
+$this->eventManager->dispatch('blog_post_created', ['post' => $post]);
+```
+
+In Marko, an event is a class that extends `Marko\Core\Event\Event`. It takes the place of the string name, and typed constructor properties and getters replace the data array:
 
 ```php title="app/blog/src/Events/PostCreated.php"
 <?php
@@ -222,32 +325,6 @@ class PostCreated extends Event
 }
 ```
 
-`EventDispatcherInterface::dispatch()` accepts only an `Event` instance. There are no string-named events.
-
-```php title="app/blog/src/Service/PostPublisher.php"
-<?php
-
-declare(strict_types=1);
-
-namespace App\Blog\Service;
-
-use App\Blog\Entity\PostInterface;
-use App\Blog\Events\PostCreated;
-use Marko\Core\Event\EventDispatcherInterface;
-
-class PostPublisher
-{
-    public function __construct(
-        private EventDispatcherInterface $eventDispatcher,
-    ) {}
-
-    public function publish(PostInterface $post): void
-    {
-        $this->eventDispatcher->dispatch(new PostCreated($post));
-    }
-}
-```
-
 An observer is a class with `#[Observer]` and a typed `handle()` method. There is no `events.xml`; observers are discovered from the attribute:
 
 ```php title="app/analytics/src/Observer/TrackPostCreation.php"
@@ -265,9 +342,16 @@ class TrackPostCreation
 {
     public function handle(PostCreated $event): void
     {
+        $post = $event->getPost();
         // ...
     }
 }
+```
+
+Dispatching goes through `EventDispatcherInterface`, which accepts only an `Event` instance. There are no string-named events:
+
+```php
+$this->eventDispatcher->dispatch(new PostCreated($post));
 ```
 
 A higher `priority` runs first. Pass `async: true` to push the observer onto the queue instead of running it inline; that needs `marko/queue` and a running `marko queue:work`. As with plugins, you cannot disable another module's observer.
@@ -278,7 +362,7 @@ See [Events](/docs/concepts/events/).
 
 In Magento, `module.xml` lists the modules that must load first:
 
-```xml
+```xml title="etc/module.xml"
 <module name="Vendor_Blog">
     <sequence>
         <module name="Magento_Catalog"/>
@@ -309,7 +393,17 @@ See [Override timing and load order](/docs/concepts/dependency-injection/#overri
 
 ## Enabling and Disabling Modules
 
-In Magento, `app/etc/config.php` holds each module's state, and `bin/magento module:enable` and `module:disable` change it.
+In Magento, `app/etc/config.php` holds every module's state, and `bin/magento module:enable` and `module:disable` change it:
+
+```php title="app/etc/config.php"
+<?php
+
+return [
+    'modules' => [
+        'Vendor_Blog' => 0,
+    ],
+];
+```
 
 In Marko, `enabled` is a key in **that module's own** `module.php`, and it defaults to `true`:
 
@@ -335,7 +429,15 @@ See [Creating Modules](/docs/packages/core/#creating-modules).
 
 ## Registration and Module Locations
 
-In Magento, every module ships a `registration.php`, and lives in `app/code/Vendor/Module` or in `vendor`.
+In Magento, every module ships a `registration.php`, and lives in `app/code/Vendor/Module` or in `vendor`:
+
+```php title="registration.php"
+<?php
+
+use Magento\Framework\Component\ComponentRegistrar;
+
+ComponentRegistrar::register(ComponentRegistrar::MODULE, 'Vendor_Blog', __DIR__);
+```
 
 Marko has no registration file. A package is a module when its `composer.json` declares the module flag:
 
@@ -364,9 +466,45 @@ See [Module Discovery](/docs/concepts/modularity/#module-discovery) and [Project
 
 ## Routes and Controllers
 
-In Magento, `routes.xml` declares a frontName, and a controller lives at `Controller/Path/Action.php` with an `execute()` method.
+In Magento, `routes.xml` declares a frontName, and each action is its own class at `Controller/Path/Action.php` with an `execute()` method. The URL `/blog/post/view/id/5` maps to it:
 
-In Marko, the route is an attribute on the controller method, and route parameters go in the path:
+```xml title="etc/frontend/routes.xml"
+<router id="standard">
+    <route id="blog" frontName="blog">
+        <module name="Vendor_Blog"/>
+    </route>
+</router>
+```
+
+```php title="Controller/Post/View.php"
+<?php
+
+declare(strict_types=1);
+
+namespace Vendor\Blog\Controller\Post;
+
+use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\App\RequestInterface;
+use Magento\Framework\Controller\Result\Raw;
+use Magento\Framework\Controller\Result\RawFactory;
+
+class View implements HttpGetActionInterface
+{
+    public function __construct(
+        private RequestInterface $request,
+        private RawFactory $rawFactory,
+    ) {}
+
+    public function execute(): Raw
+    {
+        $id = (int) $this->request->getParam('id');
+
+        return $this->rawFactory->create()->setContents('Post ' . $id);
+    }
+}
+```
+
+In Marko, there is no `routes.xml`. The route is an attribute on the controller method, route parameters go in the path, and they arrive as typed method arguments:
 
 ```php title="app/blog/src/Controller/PostController.php"
 <?php
@@ -375,28 +513,20 @@ declare(strict_types=1);
 
 namespace App\Blog\Controller;
 
-use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Routing\Attributes\Get;
-use Marko\Routing\Attributes\Middleware;
-use Marko\Routing\Attributes\Post;
 use Marko\Routing\Http\Response;
 
 class PostController
 {
-    #[Get('/posts/{id}')]
+    #[Get('/blog/post/{id}')]
     public function show(int $id): Response
     {
         return new Response('Post ' . $id);
     }
-
-    #[Post('/posts')]
-    #[Middleware(AuthMiddleware::class)]
-    public function store(): Response
-    {
-        return new Response('Created');
-    }
 }
 ```
+
+One controller can hold as many routes as you like, each with its own `#[Get]`, `#[Post]` or other method attribute, and `#[Middleware]` attaches middleware per method.
 
 To replace a vendor controller, use `#[Preference]` as in [Preferences](#preferences). To remove one inherited route from the replacement, put `#[DisableRoute]` on the method. Two controllers claiming the same route fail loudly at boot.
 
@@ -404,10 +534,58 @@ See [Routing](/docs/guides/routing/) and [Overriding Vendor Routes](/docs/packag
 
 ## Configuration
 
-Magento layers configuration from `config.xml` defaults, `env.php`, the admin UI and `ScopeConfigInterface`. Marko is code and environment variables only.
+Magento layers configuration from `config.xml` defaults, `env.php`, the admin UI and `ScopeConfigInterface`. Marko is code and environment variables only. The three pieces map like this.
 
-- **Defaults and overrides.** Each module has `config/*.php` files that return arrays. They merge in module priority order, and the **project-root `config/` directory** is applied last and wins.
-- **Environment.** `env.php` becomes environment variables, read only in config files through `Marko\Config\Env`:
+**Defaults.** In Magento, a module's `config.xml` sets default values, and store-scoped values come from the admin and `core_config_data`:
+
+```xml title="etc/config.xml"
+<config>
+    <default>
+        <blog>
+            <general>
+                <per_page>10</per_page>
+            </general>
+        </blog>
+    </default>
+</config>
+```
+
+In Marko, each module has `config/*.php` files that return arrays. Scoped values sit in the same file under `scopes`. Files merge in module priority order, and the **project-root `config/` directory** is applied last and wins:
+
+```php title="app/blog/config/blog.php"
+<?php
+
+declare(strict_types=1);
+
+return [
+    'default' => [
+        'per_page' => 10,
+    ],
+    'scopes' => [
+        'tenant-eu' => [
+            'per_page' => 20,
+        ],
+    ],
+];
+```
+
+**Environment.** In Magento, `env.php` holds per-environment values such as database credentials:
+
+```php title="app/etc/env.php"
+<?php
+
+return [
+    'db' => [
+        'connection' => [
+            'default' => [
+                'host' => 'localhost',
+            ],
+        ],
+    ],
+];
+```
+
+In Marko, those values are environment variables, read only in config files through `Marko\Config\Env`:
 
 ```php title="config/database.php"
 <?php
@@ -422,7 +600,32 @@ return [
 ];
 ```
 
-- **Reading values.** Where Magento calls `ScopeConfigInterface::getValue()`, Marko injects `ConfigRepositoryInterface` and calls a typed accessor. There are no default fallbacks; a missing key throws.
+**Reading values.** In Magento, a class injects `ScopeConfigInterface` and reads a path for a scope. The value comes back untyped:
+
+```php title="Model/PostLimits.php"
+<?php
+
+declare(strict_types=1);
+
+namespace Vendor\Blog\Model;
+
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Store\Model\ScopeInterface;
+
+class PostLimits
+{
+    public function __construct(
+        private ScopeConfigInterface $scopeConfig,
+    ) {}
+
+    public function perPage(string $storeCode): int
+    {
+        return (int) $this->scopeConfig->getValue('blog/general/per_page', ScopeInterface::SCOPE_STORE, $storeCode);
+    }
+}
+```
+
+In Marko, a class injects `ConfigRepositoryInterface` and calls a typed accessor. There are no default fallbacks; a missing key throws:
 
 ```php title="app/blog/src/Service/PostLimits.php"
 <?php
@@ -458,7 +661,19 @@ See [Merge Priority](/docs/packages/config/#merge-priority), [Environment Variab
 
 ## Database Schema
 
-In Magento, `db_schema.xml` declares tables, and a whitelist file tracks what the declarative schema may drop.
+In Magento, `db_schema.xml` declares tables, and a whitelist file tracks what the declarative schema may drop:
+
+```xml title="etc/db_schema.xml"
+<schema>
+    <table name="posts">
+        <column xsi:type="int" name="id" unsigned="true" nullable="false" identity="true"/>
+        <column xsi:type="varchar" name="title" length="255" nullable="false" default=""/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="id"/>
+        </constraint>
+    </table>
+</schema>
+```
 
 In Marko, entity classes are the schema. `#[Table]` and `#[Column]` attributes describe the table, and there is no whitelist:
 
@@ -490,7 +705,15 @@ See [Database](/docs/guides/database/) and [Entity-Driven Schema](/docs/packages
 
 ## Adding Columns to Another Module's Table
 
-In Magento, a second module's `db_schema.xml` adds columns to a table another module owns.
+In Magento, a second module's `db_schema.xml` adds columns to a table another module owns:
+
+```xml title="etc/db_schema.xml"
+<schema>
+    <table name="customer_entity">
+        <column xsi:type="varchar" name="plan" length="255" nullable="true"/>
+    </table>
+</schema>
+```
 
 In Marko, declare a companion entity with `#[Table(extends: ...)]`:
 
@@ -528,9 +751,39 @@ See [Table Extension](/docs/packages/database/#table-extension).
 
 ## Layout XML, Blocks and Templates
 
-In Magento, layout handle XML places blocks, `Block` classes supply data, and `.phtml` files render it.
+In Magento, layout handle XML places blocks, `Block` classes supply data, and `.phtml` files render it:
 
-In Marko, `marko/layout` replaces the XML. A `#[Component]` class declares a template, the handle it appears on and a slot. `#[Layout]` on a controller picks the page layout. Ordering uses `sortOrder`, `before` and `after` where Magento used `<move>`. Components from other modules can inject themselves into any page.
+```xml title="view/frontend/layout/catalog_product_view.xml"
+<page>
+    <body>
+        <referenceContainer name="content">
+            <block class="Vendor\Shipping\Block\Estimate"
+                   name="shipping.estimate"
+                   template="Vendor_Shipping::estimate.phtml"/>
+        </referenceContainer>
+    </body>
+</page>
+```
+
+```php title="Block/Estimate.php"
+<?php
+
+declare(strict_types=1);
+
+namespace Vendor\Shipping\Block;
+
+use Magento\Framework\View\Element\Template;
+
+class Estimate extends Template
+{
+    public function getProductId(): int
+    {
+        return (int) $this->getRequest()->getParam('id');
+    }
+}
+```
+
+In Marko, `marko/layout` replaces the XML. A `#[Component]` class declares a template, the handle it appears on and a slot, so one class does the job of the layout XML entry and the block. `#[Layout]` on a controller picks the page layout. Ordering uses `sortOrder`, `before` and `after` where Magento used `<move>`. Components from other modules can inject themselves into any page.
 
 ```php title="app/shipping/src/Component/ShippingEstimate.php"
 <?php
@@ -563,26 +816,50 @@ See [Layouts](/docs/guides/layout/), [Layout package](/docs/packages/layout/) an
 
 ## Cron
 
-In Magento, `crontab.xml` registers jobs in cron groups, and `bin/magento cron:run` executes them.
+In Magento, `crontab.xml` registers jobs in cron groups, each job points at a class method, and `bin/magento cron:run` executes them:
 
-In Marko, inject `Schedule` from `marko/scheduler` into a `module.php` `boot` callback:
+```xml title="etc/crontab.xml"
+<group id="default">
+    <job name="blog_nightly_cleanup" instance="Vendor\Blog\Cron\Cleanup" method="execute">
+        <schedule>0 0 * * *</schedule>
+    </job>
+</group>
+```
+
+```php title="Cron/Cleanup.php"
+<?php
+
+declare(strict_types=1);
+
+namespace Vendor\Blog\Cron;
+
+class Cleanup
+{
+    public function execute(): void
+    {
+        // ...
+    }
+}
+```
+
+In Marko, there is no `crontab.xml`. Inject `Schedule` from `marko/scheduler` into a `module.php` `boot` callback, along with any service the task calls. The cleanup class is a plain class like Magento's:
 
 ```php title="module.php"
 <?php
 
 declare(strict_types=1);
 
+use App\Blog\Cron\Cleanup;
 use Marko\Scheduler\Schedule;
 
 return [
-    'boot' => function (Schedule $schedule): void {
-        $schedule->call(fn () => null)->daily()->description('Nightly cleanup');
-        $schedule->command('app:prune')->daily();
+    'boot' => function (Schedule $schedule, Cleanup $cleanup): void {
+        $schedule->call(fn () => $cleanup->execute())->daily()->description('Nightly cleanup');
     },
 ];
 ```
 
-One system cron entry runs `marko schedule:run` every minute, and the scheduler decides what is due.
+`$schedule->command('blog:prune')` schedules a CLI command instead of a closure. One system cron entry runs `marko schedule:run` every minute, and the scheduler decides what is due.
 
 Cron groups have **no equivalent**. The nearest per-task options are `withoutOverlapping()` and `runInBackground()`.
 
@@ -590,9 +867,42 @@ See [Scheduling](/docs/guides/scheduling/).
 
 ## Message Queues
 
-In Magento, a queue needs `communication.xml`, `queue_topology.xml`, `queue_consumer.xml` and `queue_publisher.xml`, and `queue:consumers:start` runs a consumer.
+In Magento, a queue needs `communication.xml`, `queue_topology.xml`, `queue_consumer.xml` and `queue_publisher.xml`, a handler class, and a publisher call. `queue:consumers:start` runs the consumer. The topic and consumer files look like this, and the topology and publisher files are similar:
 
-In Marko, a job class extends `Marko\Queue\Job` and implements `handle()`. You push it through `QueueInterface`, and `marko queue:work` processes it:
+```xml title="etc/communication.xml"
+<config>
+    <topic name="blog.welcome_email" request="int"/>
+</config>
+```
+
+```xml title="etc/queue_consumer.xml"
+<config>
+    <consumer name="blog.welcome_email" queue="blog.welcome_email"
+              handler="Vendor\Blog\Model\SendWelcomeEmail::process"/>
+</config>
+```
+
+```php title="Model/SendWelcomeEmail.php"
+<?php
+
+declare(strict_types=1);
+
+namespace Vendor\Blog\Model;
+
+class SendWelcomeEmail
+{
+    public function process(int $userId): void
+    {
+        // ...
+    }
+}
+```
+
+```php
+$this->publisher->publish('blog.welcome_email', $userId);
+```
+
+In Marko, a job class extends `Marko\Queue\Job` and implements `handle()`. It is both the message and its handler, so there is no topic, consumer, topology or publisher configuration:
 
 ```php title="app/blog/src/Job/SendWelcomeEmail.php"
 <?php
@@ -616,38 +926,58 @@ class SendWelcomeEmail extends Job
 }
 ```
 
-```php title="app/blog/src/Service/Welcomer.php"
-<?php
+You push it through `QueueInterface`, and `marko queue:work` processes it:
 
-declare(strict_types=1);
-
-namespace App\Blog\Service;
-
-use App\Blog\Job\SendWelcomeEmail;
-use Marko\Queue\QueueInterface;
-
-class Welcomer
-{
-    public function __construct(
-        private QueueInterface $queue,
-    ) {}
-
-    public function welcome(int $userId): void
-    {
-        $this->queue->push(new SendWelcomeEmail($userId));
-    }
-}
+```php
+$this->queue->push(new SendWelcomeEmail($userId));
 ```
 
-A driver package supplies the backend (sync, database, Redis or RabbitMQ). There is no topic or exchange topology configuration: the job class is both the message and its handler. For event-driven background work, use an async observer.
+A driver package supplies the backend (sync, database, Redis or RabbitMQ). For event-driven background work, use an async observer.
 
 See [Queues](/docs/guides/queues/) and [Queue package](/docs/packages/queue/).
 
 ## CLI Commands
 
-In Magento, a Symfony Console command is registered through the `CommandList` argument in `di.xml`.
+In Magento, a command extends Symfony Console's `Command` and is registered through the `CommandList` argument in `di.xml`:
 
-In Marko, put `#[Command]` on a class that implements `CommandInterface`. It is discovered automatically, and you run it with `marko name`. The `Input` and `Output` types are Marko's own, not Symfony Console's:
+```xml title="etc/di.xml"
+<type name="Magento\Framework\Console\CommandList">
+    <arguments>
+        <argument name="commands" xsi:type="array">
+            <item name="blog_prune" xsi:type="object">Vendor\Blog\Console\Command\PruneCommand</item>
+        </argument>
+    </arguments>
+</type>
+```
+
+```php title="Console/Command/PruneCommand.php"
+<?php
+
+declare(strict_types=1);
+
+namespace Vendor\Blog\Console\Command;
+
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+
+class PruneCommand extends Command
+{
+    protected function configure(): void
+    {
+        $this->setName('blog:prune')->setDescription('Delete old drafts');
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $output->writeln('Pruned.');
+
+        return Command::SUCCESS;
+    }
+}
+```
+
+In Marko, there is no registration. Put `#[Command]` on a class that implements `CommandInterface`; the attribute carries the name and description. It is discovered automatically, and you run it with `marko blog:prune`. The `Input` and `Output` types are Marko's own, not Symfony Console's:
 
 ```php title="app/blog/src/Command/PruneCommand.php"
 <?php
