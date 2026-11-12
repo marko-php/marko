@@ -175,7 +175,7 @@ class PostSeoPlugin
 What differs from Magento:
 
 - **Methods are named after the target method.** The plugin method is `save`, not `beforeSave`. Use `#[Before(method: 'save')]` to hook a method under a different name.
-- **There is no `$subject` parameter.** A before plugin takes the target's arguments. An after plugin takes `$result` first, then the arguments.
+- **There is no `$subject` parameter.** A before plugin takes the target's arguments. An after plugin takes `$result` first, then the arguments. If a plugin needs to call other methods on the target, inject the target's interface through the plugin's constructor.
 - **There are no around plugins.** A before plugin returns `null` to pass through, an `array` to replace the arguments, or any other non-null value to short-circuit the original method. That covers part of what around plugins were used for. To replace behavior outright, use a [Preference](#preferences).
 - **Equal sort orders are an error.** Two plugins on the same method and timing with the same `sortOrder` make boot fail with `PluginException`. Magento tolerates ties.
 - **Readonly and final classes cannot be targeted directly.** Target an interface they implement instead. Marko's own services are often `readonly`.
