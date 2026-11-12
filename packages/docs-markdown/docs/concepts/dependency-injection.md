@@ -96,33 +96,45 @@ return [
 
 Autowiring fills every constructor parameter from the container. Sometimes one parameter needs a different value: a setting read from config, a specific implementation, or an explicit `null`. The `arguments` key in `module.php` sets individual constructor arguments by parameter name, and every parameter you do not list still autowires.
 
-```php title="module.php"
+Take a class with one parameter the container can fill on its own and one it cannot:
+
+```php title="app/reports/src/ReportExporter.php"
 <?php
 
 declare(strict_types=1);
 
-use Marko\Authorization\Config\AuthorizationConfig;
-use Marko\Authorization\Gate;
-use Marko\Authorization\Contracts\GateInterface;
-use Marko\Authentication\AuthManager;
-use Marko\Authentication\Contracts\GuardInterface;
-use Marko\Core\Container\ContainerInterface;
+namespace App\Reports;
+
+use Marko\Filesystem\Contracts\FilesystemInterface;
+
+class ReportExporter
+{
+    public function __construct(
+        private FilesystemInterface $filesystem,
+        private string $outputDir,
+    ) {}
+}
+```
+
+`$filesystem` autowires, but nothing in the container says what `$outputDir` should be. Set it in the module's `module.php`:
+
+```php title="app/reports/module.php"
+<?php
+
+declare(strict_types=1);
+
+use App\Reports\ReportExporter;
 
 return [
-    'bindings' => [
-        GateInterface::class => Gate::class,
-    ],
     'arguments' => [
-        Gate::class => [
-            'guard' => fn (ContainerInterface $container): GuardInterface => $container
-                ->get(AuthManager::class)
-                ->guard($container->get(AuthorizationConfig::class)->defaultGuard()),
+        ReportExporter::class => [
+            'outputDir' => '/var/exports',
         ],
     ],
 ];
 ```
 
-`Gate` takes a guard, a policy registry, a gate hook registry and an event dispatcher. Only `guard` needs custom logic, so it is the only entry; the other three autowire. The interface is bound to the class, so plugins on `Gate` apply when it is resolved through `GateInterface`.
+Only `outputDir` is listed, so `$filesystem` still autowires.
 
 ### How a value is read
 
@@ -157,6 +169,34 @@ return [
 `null` matters for optional class-typed parameters: the autowirer resolves them from the container even when they have a default, so an unbound `?SomeInterface $x = null` throws unless you list it as `null`.
 
 Union, intersection, `mixed`, `object` and untyped parameters cannot be read from a type, so they require a closure. Object instances and variadic parameters are rejected. A `Closure`-typed parameter receives whatever closure your factory returns.
+
+### Closures for custom logic
+
+When an argument takes more than a plain value to build, pass a closure. It receives the container and returns the argument. `Gate` from `marko/authorization` uses one for its guard, which comes from the default guard set in config:
+
+```php title="module.php"
+<?php
+
+declare(strict_types=1);
+
+use Marko\Authorization\Config\AuthorizationConfig;
+use Marko\Authorization\Gate;
+use Marko\Authentication\AuthManager;
+use Marko\Authentication\Contracts\GuardInterface;
+use Marko\Core\Container\ContainerInterface;
+
+return [
+    'arguments' => [
+        Gate::class => [
+            'guard' => fn (ContainerInterface $container): GuardInterface => $container
+                ->get(AuthManager::class)
+                ->guard($container->get(AuthorizationConfig::class)->defaultGuard()),
+        ],
+    ],
+];
+```
+
+`Gate` takes a guard, a policy registry, a gate hook registry and an event dispatcher. Only `guard` needs custom logic, so it is the only entry; the other three autowire.
 
 ### Loud errors
 
