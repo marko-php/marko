@@ -122,6 +122,16 @@ Use the `sortOrder` parameter to control the order when multiple plugins target 
 public function getPost(int $id): null { /* runs first */ }
 ```
 
+### Sort Order Conflicts
+
+Marko never breaks a tie by load order. If two plugins hook the same target method with the same timing (`before` or `after`) and the same `sortOrder`, the application refuses to boot and throws a `PluginException` that names both plugins:
+
+```text
+Two plugins have conflicting sort order (0) for before hook on 'App\Blog\Repository\PostRepository::getPost()': App\Seo\Plugin\PostSeoPlugin and App\Cache\Plugin\PostCachePlugin
+```
+
+To fix it, give one of the plugins a different `sortOrder`. Because the default is `0`, two plugins that both leave it unset will conflict when they hook the same method. A `before` plugin and an `after` plugin with the same `sortOrder` don't conflict, because each timing is ordered separately.
+
 ## Advanced: Explicit Method Targeting
 
 When you need both a `before` and an `after` interceptor for the same target method inside one plugin class, you cannot give two methods the same name. Use the `method:` parameter to specify the target method while giving each plugin method a distinct name.
