@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Marko\ErrorsAdvanced\Tests\Fixtures;
 
+use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\PreferenceRegistry;
+use Marko\Core\Module\ModuleManifest;
 use Marko\Testing\Fake\FakeClock;
 use Psr\Clock\ClockInterface;
 
@@ -31,13 +33,13 @@ class ClockedContainer
     {
         $container = self::create();
 
-        foreach ($module['bindings'] as $abstract => $concrete) {
-            $container->bind($abstract, $concrete);
-        }
-
-        foreach ($module['arguments'] ?? [] as $class => $arguments) {
-            $container->setArguments($class, $arguments);
-        }
+        new BindingRegistry($container)->registerModule(new ModuleManifest(
+            name: 'marko/errors-advanced',
+            version: '1.0.0',
+            bindings: $module['bindings'],
+            arguments: $module['arguments'] ?? [],
+            source: 'vendor',
+        ));
 
         return $container;
     }

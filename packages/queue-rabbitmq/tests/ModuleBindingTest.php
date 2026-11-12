@@ -6,7 +6,9 @@ namespace Marko\Queue\Rabbitmq\Tests;
 
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Config\Exceptions\ConfigNotFoundException;
+use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
+use Marko\Core\Module\ModuleManifest;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Rabbitmq\Exceptions\RabbitmqException;
 use Marko\Queue\Rabbitmq\Exchange\ExchangeConfig;
@@ -52,18 +54,17 @@ function createRabbitmqContainer(
         require dirname(__DIR__) . '/module.php',
     ];
 
-    foreach ($modules as $module) {
-        foreach ($module['bindings'] as $id => $implementation) {
-            $container->bind($id, $implementation);
-        }
+    $registry = new BindingRegistry($container);
 
-        foreach ($module['singletons'] ?? [] as $id) {
-            $container->singleton($id);
-        }
-
-        foreach ($module['arguments'] ?? [] as $class => $arguments) {
-            $container->setArguments($class, $arguments);
-        }
+    foreach ($modules as $index => $module) {
+        $registry->registerModule(new ModuleManifest(
+            name: "module-$index",
+            version: '1.0.0',
+            bindings: $module['bindings'],
+            singletons: $module['singletons'] ?? [],
+            arguments: $module['arguments'] ?? [],
+            source: 'vendor',
+        ));
     }
 
     return $container;

@@ -229,3 +229,38 @@ it('applies arguments on a boot from the discovery cache', function (): void {
     expect($mailer->host)->toBe('cached.test')
         ->and($mailer->port)->toBe(465);
 });
+
+it('applies arguments from the discovery cache when the module\'s composer.json is gone', function (): void {
+    $saved = $_ENV['APP_ENV'] ?? null;
+    $_ENV['APP_ENV'] = 'production';
+    $class = T007Mailer::class;
+    $base = argumentsTestProject([
+        'vendor/acme/mail' => "return ['arguments' => [\\$class::class => ['host' => 'cached.test', 'port' => 465]]];",
+    ]);
+
+    try {
+        $live = argumentsTestApplication($base);
+        $live->initialize(false);
+        $payload = new DiscoveryCompiler($live->container)->compile($live->modules);
+        $payload['sections']['routes'] = [];
+        $payload['sections']['http_exception_responders'] = [];
+        $live->container->get(DiscoveryCache::class)->write($payload);
+
+        unlink("$base/vendor/acme/mail/composer.json");
+
+        $cached = argumentsTestApplication($base);
+        $cached->initialize();
+        $mailer = $cached->container->get(T007Mailer::class);
+    } finally {
+        unset($_ENV['APP_ENV']);
+
+        if ($saved !== null) {
+            $_ENV['APP_ENV'] = $saved;
+        }
+
+        argumentsTestCleanup($base);
+    }
+
+    expect($mailer->host)->toBe('cached.test')
+        ->and($mailer->port)->toBe(465);
+});

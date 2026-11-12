@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Event\EventDispatcherInterface;
+use Marko\Core\Module\ModuleManifest;
 use Marko\Database\Config\DatabaseTimezoneConfig;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\PgSql\Query\PgSqlQueryBuilderFactory;
@@ -52,12 +54,16 @@ function queueDatabaseModuleContainer(
     $queueModule = require dirname(__DIR__, 2) . '/queue/module.php';
     $module = require dirname(__DIR__) . '/module.php';
 
-    foreach ([...$queueModule['bindings'], ...$module['bindings']] as $interface => $implementation) {
-        $container->bind($interface, $implementation);
-    }
+    $registry = new BindingRegistry($container);
 
-    foreach ($module['arguments'] ?? [] as $class => $arguments) {
-        $container->setArguments($class, $arguments);
+    foreach (['marko/queue' => $queueModule, 'marko/queue-database' => $module] as $name => $definition) {
+        $registry->registerModule(new ModuleManifest(
+            name: $name,
+            version: '1.0.0',
+            bindings: $definition['bindings'],
+            arguments: $definition['arguments'] ?? [],
+            source: 'vendor',
+        ));
     }
 
     return $container;

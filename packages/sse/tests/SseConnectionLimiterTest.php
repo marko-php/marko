@@ -7,13 +7,30 @@ use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
+use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Sse\Exceptions\SseException;
 use Marko\Sse\SseConnectionLimiter;
 use Marko\Sse\Tests\Support\RecordingCache;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
+
+/**
+ * @param array<string, mixed> $module The array returned by marko/sse's module.php
+ */
+function sseModuleManifest(
+    array $module,
+): ModuleManifest {
+    return new ModuleManifest(
+        name: 'marko/sse',
+        version: '1.0.0',
+        bindings: $module['bindings'],
+        arguments: $module['arguments'],
+        source: 'vendor',
+    );
+}
 
 describe('SseConnectionLimiter', function (): void {
     it('is not limited when max_connections is null', function (): void {
@@ -115,7 +132,7 @@ describe('SseConnectionLimiter', function (): void {
             'sse.retry_after' => 7,
         ]));
         $container->instance(CacheInterface::class, new RecordingCache());
-        $container->setArguments(SseConnectionLimiter::class, $module['arguments'][SseConnectionLimiter::class]);
+        new BindingRegistry($container)->registerModule(sseModuleManifest($module));
 
         $limiter = $container->get(SseConnectionLimiter::class);
 
@@ -134,7 +151,7 @@ describe('SseConnectionLimiter', function (): void {
         ]));
         $container->instance(CacheInterface::class, new RecordingCache());
 
-        $container->setArguments(SseConnectionLimiter::class, $module['arguments'][SseConnectionLimiter::class]);
+        new BindingRegistry($container)->registerModule(sseModuleManifest($module));
 
         $limiter = $container->get(SseConnectionLimiter::class);
 

@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Container\PreferenceRegistry;
+use Marko\Core\Module\ModuleManifest;
 use Marko\Log\Contracts\LogFormatterInterface;
 use Marko\Log\Contracts\LoggerInterface;
 use Marko\Log\File\Handler\FileLogHandler;
@@ -41,12 +43,16 @@ function logFileContainer(
     $container->instance(LogFormatterInterface::class, new LineFormatter());
     $container->instance(ClockInterface::class, new FakeClock('2026-01-21 09:30:15'));
 
-    foreach ([...$logModule['bindings'], ...$fileModule['bindings']] as $abstract => $concrete) {
-        $container->bind($abstract, $concrete);
-    }
+    $registry = new BindingRegistry($container);
 
-    foreach ($fileModule['arguments'] as $class => $arguments) {
-        $container->setArguments($class, $arguments);
+    foreach (['marko/log' => $logModule, 'marko/log-file' => $fileModule] as $name => $module) {
+        $registry->registerModule(new ModuleManifest(
+            name: $name,
+            version: '1.0.0',
+            bindings: $module['bindings'],
+            arguments: $module['arguments'] ?? [],
+            source: 'vendor',
+        ));
     }
 
     return $container;

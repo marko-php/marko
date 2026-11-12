@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Marko\ErrorsAdvanced\Tests\Unit\HttpAware;
 
 use Closure;
+use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Container\PreferenceRegistry;
 use Marko\Core\Environment\AppEnvironment;
 use Marko\Core\Error\BootstrapErrorHandler;
 use Marko\Core\Exceptions\HttpExceptionInterface;
+use Marko\Core\Module\ModuleManifest;
 use Marko\Errors\Contracts\ErrorHandlerInterface;
 use Marko\ErrorsAdvanced\AdvancedErrorHandler;
 use Marko\ErrorsAdvanced\Tests\Fixtures\OutputSafeAdvancedErrorHandler;
@@ -78,13 +80,14 @@ function registerAdvancedModule(
     Container $container,
     array $module,
 ): void {
-    foreach ($module['bindings'] as $abstract => $concrete) {
-        $container->bind($abstract, $concrete);
-    }
-
-    foreach ($module['arguments'] ?? [] as $class => $arguments) {
-        $container->setArguments($class, $arguments);
-    }
+    new BindingRegistry($container)->registerModule(new ModuleManifest(
+        name: 'marko/errors-advanced',
+        version: '1.0.0',
+        bindings: $module['bindings'],
+        singletons: $module['singletons'] ?? [],
+        arguments: $module['arguments'] ?? [],
+        source: 'vendor',
+    ));
 }
 
 describe('AdvancedErrorHandler container resolution', function (): void {
@@ -153,10 +156,6 @@ describe('AdvancedErrorHandler container resolution', function (): void {
         $container->instance(ClockInterface::class, new FakeClock());
         $container->instance(BootstrapErrorHandler::class, new BootstrapErrorHandler());
         registerAdvancedModule($container, $module);
-
-        foreach ($module['singletons'] ?? [] as $abstract) {
-            $container->singleton($abstract);
-        }
 
         $before = $stacks();
         $container->call($module['boot']);

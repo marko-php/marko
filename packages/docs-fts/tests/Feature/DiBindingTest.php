@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Exceptions\BindingException;
+use Marko\Core\Module\ModuleManifest;
 use Marko\Docs\Contract\DocsSearchInterface;
 use Marko\DocsFts\FtsSearch;
 use Marko\DocsMarkdown\MarkdownRepository;
@@ -21,22 +23,14 @@ it('resolves to FtsSearch from the Marko container when docs-fts is installed', 
     // Pre-register MarkdownRepository since it requires a string path (non-autowirable)
     $container->instance(MarkdownRepository::class, new MarkdownRepository('/tmp'));
 
-    foreach ($module['bindings'] as $interface => $implementation) {
-        $container->bind($interface, $implementation);
-    }
-
-    foreach ($module['singletons'] as $interface => $implementation) {
-        if (is_int($interface)) {
-            $container->singleton($implementation);
-        } else {
-            $container->bind($interface, $implementation);
-            $container->singleton($interface);
-        }
-    }
-
-    foreach ($module['arguments'] as $class => $arguments) {
-        $container->setArguments($class, $arguments);
-    }
+    new BindingRegistry($container)->registerModule(new ModuleManifest(
+        name: 'marko/docs-fts',
+        version: '1.0.0',
+        bindings: $module['bindings'],
+        singletons: $module['singletons'],
+        arguments: $module['arguments'],
+        source: 'vendor',
+    ));
 
     $resolved = $container->get(DocsSearchInterface::class);
 
