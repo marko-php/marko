@@ -844,7 +844,7 @@ class ShippingEstimate
 }
 ```
 
-Templates render through `marko/view` with a Latte or Twig driver. There is no PHP-template driver, so there is no `.phtml` equivalent.
+Templates render through `marko/view` and whichever template engine driver you install; the [View package](/docs/packages/view/) lists them. None of them renders plain PHP templates, so there is no `.phtml` equivalent.
 
 Magento's `<referenceBlock remove="true">` becomes an `#[After]` plugin on `ComponentCollectorInterface::collect()`. See [Cross-Module Extensibility](/docs/guides/layout/#cross-module-extensibility).
 
