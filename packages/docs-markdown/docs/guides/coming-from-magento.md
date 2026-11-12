@@ -589,7 +589,14 @@ return [
 ];
 ```
 
-In Marko, those values are environment variables, read only in config files through `Marko\Config\Env`:
+In Marko, per-environment values go in `.env` at the project root. Real environment variables take precedence over it:
+
+```bash title=".env"
+DB_HOST=localhost
+DB_PORT=5432
+```
+
+A config file reads them through `Marko\Config\Env`, with typed parsing and a default. Application code never reads environment variables directly:
 
 ```php title="config/database.php"
 <?php
