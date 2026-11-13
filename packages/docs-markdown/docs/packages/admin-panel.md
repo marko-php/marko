@@ -26,7 +26,7 @@ The panel registers these routes automatically:
 | POST | `/admin/logout` | Logout (requires valid CSRF token) |
 | GET | `/admin` | Dashboard (requires auth; lists only the sections the admin user can access) |
 
-The login and logout `POST` routes are protected by the global `CsrfMiddleware` that [`marko/security`](/docs/packages/security/) registers. The login form receives a CSRF token via the `csrfToken` template variable; the template must include it as a hidden field named `_token`. Requests without a valid token are rejected before authentication logic runs.
+The logout `POST` route is protected by the global `CsrfMiddleware` that [`marko/security`](/docs/packages/security/) registers. The login `POST` route lists `RouteCsrfMiddleware` ahead of its rate limiter instead, so a forged cross-site login is rejected before it uses up an attempt. The login form receives a CSRF token via the `csrfToken` template variable; the template must include it as a hidden field named `_token`. Requests without a valid token are rejected before authentication logic runs.
 
 Login is throttled in two layers. The admin guard is a `SessionGuard`, so [login throttling](/docs/packages/authentication/#login-throttling) locks out an email for a client after repeated failures. A locked-out attempt re-renders the login form with an error, status `429` and a `Retry-After` header. On top of that, `#[RateLimit(maxAttempts: 10, decaySeconds: 60, name: 'admin-login')]` with [`RateLimitMiddleware`](/docs/packages/ratelimiter/) caps login `POST`s per client IP across all emails. Both need a cache driver.
 
@@ -140,10 +140,11 @@ use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Post;
 
 #[Get(path: '/admin/login')]                    // showLoginForm
-#[Post(path: '/admin/login')]                   // authenticate — CSRF required (global CsrfMiddleware)
-#[Middleware(RateLimitMiddleware::class)]        // 10 login POSTs per minute per client IP
+#[Post(path: '/admin/login')]                   // authenticate: CSRF required (RouteCsrfMiddleware)
+#[Middleware([RouteCsrfMiddleware::class, RateLimitMiddleware::class])] // token checked first, then 10 login POSTs per minute per client IP
+#[WithoutMiddleware(CsrfMiddleware::class)]      // the global check is replaced, not doubled
 #[RateLimit(maxAttempts: 10, decaySeconds: 60, name: 'admin-login')]
-#[Post(path: '/admin/logout')]                  // logout — CSRF required (global CsrfMiddleware)
+#[Post(path: '/admin/logout')]                  // logout: CSRF required (global CsrfMiddleware)
 ```
 
 ### DashboardController Routes

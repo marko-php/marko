@@ -5,8 +5,12 @@ declare(strict_types=1);
 use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\PreferenceRegistry;
+use Marko\Core\Module\DependencyResolver;
+use Marko\Core\Module\GlobalMiddlewareResolver;
 use Marko\Core\Module\ManifestParser;
+use Marko\Core\Module\ModuleManifest;
 use Marko\Encryption\Contracts\EncryptorInterface;
+use Marko\Layout\Middleware\LayoutMiddleware;
 use Marko\Security\Config\SecurityConfig;
 use Marko\Security\Contracts\CsrfTokenManagerInterface;
 use Marko\Security\CsrfTokenManager;
@@ -97,10 +101,41 @@ describe('module.php', function (): void {
     it('registers the security middleware globally after the session drivers', function (): void {
         $module = require dirname(__DIR__, 2) . '/module.php';
 
-        // SecurityHeadersMiddleware is listed first so it wraps CsrfMiddleware
-        // and also decorates the 419 a token mismatch renders.
         expect($module['globalMiddleware'])->toBe([SecurityHeadersMiddleware::class, CsrfMiddleware::class])
             ->and($module['sequence']['after'])->toContain('marko/session-file', 'marko/session-database');
+    });
+
+    it('orders CsrfMiddleware before LayoutMiddleware in the global middleware', function (): void {
+        $manifest = fn (string $name, array $module): ModuleManifest => new ModuleManifest(
+            name: $name,
+            version: '1.0.0',
+            after: $module['sequence']['after'] ?? [],
+            before: $module['sequence']['before'] ?? [],
+            globalMiddleware: $module['globalMiddleware'] ?? [],
+        );
+
+        // Layout is listed first, as alphabetical discovery would, so only the sequence hint can produce the order.
+        $modules = new DependencyResolver()->resolve([
+            $manifest('marko/layout', require dirname(__DIR__, 3) . '/layout/module.php'),
+            $manifest('marko/security', require dirname(__DIR__, 2) . '/module.php'),
+        ]);
+        $order = new GlobalMiddlewareResolver()->resolve($modules);
+
+        expect(array_search(CsrfMiddleware::class, $order, true))
+            ->toBeLessThan(array_search(LayoutMiddleware::class, $order, true));
+    });
+
+    it('shares one CsrfTokenManager between CsrfMiddleware and the login rotation', function (): void {
+        $container = new Container(new PreferenceRegistry());
+        new BindingRegistry($container)->registerModule(new ManifestParser()->parse(dirname(__DIR__, 2)));
+        $container->instance(SessionInterface::class, new FakeSession());
+        $container->instance(EncryptorInterface::class, $this->createStub(EncryptorInterface::class));
+        $container->instance(SecurityConfig::class, Helpers::createSecurityConfig([
+            'security.csrf.session_key' => '_csrf_token',
+        ]));
+
+        expect($container->get(CsrfTokenManagerInterface::class))
+            ->toBe($container->get(CsrfTokenManagerInterface::class));
     });
 
     it('binds CsrfTokenManagerInterface to CsrfTokenManager as a class binding', function (): void {
