@@ -5,6 +5,8 @@ description: Pretty error pages with syntax-highlighted code, stack traces, and 
 
 Pretty error pages with syntax-highlighted code, stack traces, and request details --- so you can diagnose issues at a glance during development. Errors Advanced implements `ErrorHandlerInterface` with a rich HTML error page that displays the error message, syntax-highlighted source code around the error line, full stack trace with code context, request data (headers, query, POST), and environment info. In production, it shows a safe generic error page and sends status `500`; API clients that accept JSON get a JSON body instead. Sensitive data (passwords, tokens, API keys) is automatically masked in request output. CLI errors fall back to plain text.
 
+Non-fatal PHP errors (warnings, notices, deprecations) never replace the response: the web SAPI reports them via `error_log`, and the CLI writes them to `STDERR`. Only fatal errors and uncaught exceptions render the error page, as in errors-simple.
+
 ## Installation
 
 ```bash
