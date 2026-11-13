@@ -634,7 +634,7 @@ $this->http->actingAs($apiUser, 'api')->getJson('/api/me')->assertOk();
 
 ### Request-scoped state and exceptions
 
-Before each request, the client calls `reset()` on every resolved `ResettableInterface` service (`Marko\Core\RequestStateResetter`, the same code the RoadRunner worker runs), so the session, the session guard and similar request-scoped state never leak from one request to the next.
+Before each request, the client calls `reset()` on every resolved `ResettableInterface` service, including one a plugin proxy wraps (`Marko\Core\RequestStateResetter`, the same code the RoadRunner worker runs), so the session, the session guard and similar request-scoped state never leak from one request to the next.
 
 An exception thrown by a controller or middleware propagates out of `$client->get()`, so the test shows the real stack trace. HTTP exceptions (`HttpExceptionInterface`, e.g. `HttpException::notFound()`) are rendered into a response by the router, exactly as in production, so `assertNotFound()` and friends work on them.
 

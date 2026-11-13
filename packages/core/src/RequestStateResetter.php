@@ -6,6 +6,7 @@ namespace Marko\Core;
 
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Contracts\ResettableInterface;
+use Marko\Core\Plugin\PluginInterceptedInterface;
 
 /**
  * Clears request-scoped state between requests served by one booted
@@ -38,16 +39,32 @@ readonly class RequestStateResetter
     public function reset(
         ResettableInterface ...$except,
     ): void {
-        /** @var array<string, ResettableInterface> $resettables */
-        $resettables = $this->container->resolvedInstances(ResettableInterface::class);
-        ksort($resettables);
+        $instances = $this->container->resolvedInstances();
+        ksort($instances);
 
-        foreach ($resettables as $resettable) {
-            if (in_array($resettable, $except, true)) {
+        foreach ($instances as $instance) {
+            $resettable = $this->resettableBehind($instance);
+
+            if ($resettable === null || in_array($resettable, $except, true)) {
                 continue;
             }
 
             $resettable->reset();
         }
+    }
+
+    /**
+     * A plugin interface proxy implements only the plugged interface, so the
+     * resettable service it wraps would otherwise keep one request's state.
+     * A concrete subclass proxy is itself resettable and holds the state.
+     */
+    private function resettableBehind(
+        object $instance,
+    ): ?ResettableInterface {
+        while ($instance instanceof PluginInterceptedInterface && !$instance instanceof ResettableInterface) {
+            $instance = $instance->getPluginTarget();
+        }
+
+        return $instance instanceof ResettableInterface ? $instance : null;
     }
 }
