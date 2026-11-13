@@ -58,11 +58,30 @@ Every PR is gated by the `CI` workflow on `Tests`, `Lint`, and `Static analysis`
 
 ## Feature Development
 
-For simple fixes and quick changes, use TDD (when at all possible).
+For simple fixes and quick changes, use TDD (when at all possible). Quick fixes happen in a worktree too (`claude --worktree <name>`), never on main's checkout.
 
 For any feature or request beyond simple ones, use the `hcf:plan-create` skill to trigger the autonomous development workflow. NEVER use Claude Code's built-in plan mode. After writing a plan, ask user if they would like to execute it. Also provide the command to run it later with the `hcf:plan-orchestrate` skill.
 
 Use this workflow for new features, multi-file changes, or anything requiring multiple steps or tests.
+
+Plans are created in the main checkout, never in a worktree. Skip plan-create's "Create feature branch" step so main stays on `develop`. When the plan starts executing, run `bin/worktree create <plan> --plan <plan>` (this links main's plan in, so progress lands in main), then run `hcf:plan-orchestrate` from a session started in that worktree. Code changes happen in the worktree.
+
+Plans are ephemeral: they live only in main's `.claude/plans/` (gitignored), are never committed, and are deleted once the work merges. The code is the source of truth.
+
+## Worktrees
+
+Every change is made in a worktree, so several features can run at once. Marko is a plain-mode project of the shared worktree tool (`~/Sites/claude-dev-env/worktree/README.md`, see its "Plain projects" section): a worktree is a git checkout, a cloned `vendor/`, a copy of main's `composer.lock` and a `composer install`. Nothing is served, so there are no ports, routes or `.env`. Config is `.worktree.conf`.
+
+```bash
+claude --worktree <name>            # start a worktree session
+bin/worktree create <name>          # or create one from the shell
+bin/worktree remove|list|status|wait|reap
+```
+
+- Branches are `feature/<name>`, created from `develop`.
+- Provisioning runs in the background. Run `bin/worktree wait <name>` before `composer test` (or any other command that needs `vendor/`).
+- `bin/worktree remove` keeps the `feature/` branch; `bin/worktree reap` deletes worktrees and branches whose work has merged.
+- The integration services (the single `marko-integration` compose stack on fixed host ports, see `.claude/testing.md`) are shared, not per-worktree. Concurrent `composer test:integration` runs against them would collide on the same databases, so never run two at once.
 
 ## Project Overview 
 

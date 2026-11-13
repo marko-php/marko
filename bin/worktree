@@ -1,0 +1,11 @@
+#!/bin/sh
+# Thin wrapper: every worktree subcommand lives in claude-dev-env.
+# See ~/Sites/claude-dev-env/worktree/README.md and ./.worktree.conf.
+DEV_ENV_DIR="${DEV_ENV_DIR:-$HOME/Sites/claude-dev-env}"
+
+if [ ! -f "$DEV_ENV_DIR/worktree/bin/worktree" ]; then
+    echo "claude-dev-env not found at $DEV_ENV_DIR (set DEV_ENV_DIR)." >&2
+    exit 1
+fi
+
+exec sh "$DEV_ENV_DIR/worktree/bin/worktree" "$@"
