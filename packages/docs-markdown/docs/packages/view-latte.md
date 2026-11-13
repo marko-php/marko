@@ -195,6 +195,12 @@ views/
 
 Functions from every other discovered `#[TemplateFunctions]` provider are available the same way.
 
+### Template Tags
+
+| Tag | Description |
+|---|---|
+| `{slot name/}` | The rendered HTML of a [layout](/docs/guides/layout/) slot (`Marko\View\Latte\Extensions\SlotExtension`) |
+
 ### Configuration Options
 
 | Option | Type | Description |

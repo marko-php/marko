@@ -38,6 +38,19 @@ class DefaultLayout {}
 </html>
 ```
 
+With the Twig driver, the same layout uses the `slot()` function:
+
+```twig title="resources/views/layouts/default.twig"
+<!doctype html>
+<html>
+<body>
+  {{ slot('header') }}
+  {{ slot('content') }}
+  {{ slot('footer') }}
+</body>
+</html>
+```
+
 ### Attach a Layout to a Controller
 
 ```php title="ProductController.php"
