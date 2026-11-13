@@ -21,7 +21,7 @@ Your entity class is the single source of truth for both your PHP code and datab
 
 ### Complete Example
 
-```php title="app/blog/Entity/Post.php"
+```php title="app/blog/src/Entity/Post.php"
 <?php
 
 declare(strict_types=1);
@@ -193,7 +193,7 @@ UUID primary keys work on both drivers. A `uuid` column is `UUID` on PostgreSQL 
 
 Add `generated: true` to let the database generate the key. `save()` and `insertBatch()` leave an unset (or `null`) key out of the `INSERT`, so the column default fills it, then read the value back with `INSERT ... RETURNING` and set it on the entity:
 
-```php title="app/blog/Entity/Article.php"
+```php title="app/blog/src/Entity/Article.php"
 <?php
 
 declare(strict_types=1);
@@ -251,7 +251,7 @@ Saving or batch-inserting an entity whose key is unset or `null`, when the key i
 
 Store structured data directly in a column using `#[Column(type: 'json')]`. The property type must be `array` or `?array`. MySQL uses the native `JSON` type; PostgreSQL uses `JSONB`.
 
-```php title="app/blog/Entity/Post.php"
+```php title="app/blog/src/Entity/Post.php"
 <?php
 
 declare(strict_types=1);
@@ -449,7 +449,7 @@ Values Marko wrote to `DATETIME` or PostgreSQL `TIMESTAMP` columns (through `Dat
 
 A cast converts a value object to and from its column. Implement `CastInterface` and point `#[Cast]` at it:
 
-```php title="app/billing/Cast/MoneyCast.php"
+```php title="app/billing/src/Cast/MoneyCast.php"
 <?php
 
 declare(strict_types=1);
@@ -478,7 +478,7 @@ class MoneyCast implements CastInterface
 }
 ```
 
-```php title="app/billing/Entity/Invoice.php"
+```php title="app/billing/src/Entity/Invoice.php"
 use App\Billing\Cast\MoneyCast;
 use App\Billing\Money;
 use Marko\Database\Attributes\Cast;
@@ -498,7 +498,7 @@ public Money $total;
 
 `#[Timestamps]` on an entity fills its creation and update times:
 
-```php title="app/blog/Entity/Comment.php"
+```php title="app/blog/src/Entity/Comment.php"
 use DateTimeImmutable;
 use Marko\Database\Attributes\Column;
 use Marko\Database\Attributes\Table;
@@ -595,7 +595,7 @@ class User extends Entity
 }
 ```
 
-```php title="app/billing/Entity/UserBilling.php"
+```php title="app/billing/src/Entity/UserBilling.php"
 #[Table(extends: User::class)]
 class UserBilling extends Entity
 {
@@ -655,7 +655,7 @@ To link extenders to their parents, the package's boot callback needs every `#[T
 
 Entities are plain PHP objects. They don't save themselves or know about the database. Repositories handle all persistence.
 
-```php title="app/blog/Repository/PostRepository.php"
+```php title="app/blog/src/Repository/PostRepository.php"
 <?php
 
 declare(strict_types=1);
@@ -932,7 +932,7 @@ Define relationships between entities using property attributes. Marko loads rel
 
 A user has one profile. The `foreignKey` is the property name on the **related** entity pointing back to this entity.
 
-```php title="app/blog/Entity/User.php"
+```php title="app/blog/src/Entity/User.php"
 <?php
 
 declare(strict_types=1);
@@ -962,7 +962,7 @@ class User extends Entity
 
 A post has many comments. The `foreignKey` is the property name on the **related** entity pointing back to this entity.
 
-```php title="app/blog/Entity/Post.php"
+```php title="app/blog/src/Entity/Post.php"
 <?php
 
 declare(strict_types=1);
@@ -993,7 +993,7 @@ class Post extends Entity
 
 A comment belongs to a post. The `foreignKey` is the property name on **this** entity pointing to the related entity.
 
-```php title="app/blog/Entity/Comment.php"
+```php title="app/blog/src/Entity/Comment.php"
 <?php
 
 declare(strict_types=1);
@@ -1026,7 +1026,7 @@ class Comment extends Entity
 
 A post belongs to many tags through a pivot entity. The `foreignKey` is the pivot property pointing to **this** entity; `relatedKey` is the pivot property pointing to the related entity.
 
-```php title="app/blog/Entity/Post.php"
+```php title="app/blog/src/Entity/Post.php"
 #[BelongsToMany(
     entityClass: Tag::class,
     pivotClass: PostTag::class,
@@ -1095,7 +1095,7 @@ $posts->toArray();
 
 `QuerySpecification` is an interface for encapsulating reusable query logic. Use `matching()` on the repository to apply one or more specifications.
 
-```php title="app/blog/Query/PublishedSpec.php"
+```php title="app/blog/src/Query/PublishedSpec.php"
 <?php
 
 declare(strict_types=1);
@@ -1114,7 +1114,7 @@ class PublishedSpec implements QuerySpecification
 }
 ```
 
-```php title="app/blog/Query/RecentSpec.php"
+```php title="app/blog/src/Query/RecentSpec.php"
 <?php
 
 declare(strict_types=1);
@@ -1153,7 +1153,7 @@ $posts = $postRepository->matching(
 
 `QuerySpecification::apply()` receives an `EntityQueryBuilderInterface`, which extends `QueryBuilderInterface` with `with()`. Specs can declare their own eager-loading needs:
 
-```php title="app/blog/Query/PublishedWithAuthorSpec.php"
+```php title="app/blog/src/Query/PublishedWithAuthorSpec.php"
 <?php
 
 declare(strict_types=1);
@@ -1182,7 +1182,7 @@ The database driver (`marko/database-mysql` or `marko/database-pgsql`) registers
 
 Inject `TransactionInterface` to run a unit of work atomically. It resolves to the same shared connection:
 
-```php title="app/billing/Service/CheckoutService.php"
+```php title="app/billing/src/Service/CheckoutService.php"
 <?php
 
 declare(strict_types=1);
@@ -1223,7 +1223,7 @@ Under a long-running worker, the connection's `reset()` (from `ResettableInterfa
 
 Transactions nest, so a service that wraps its work in `transaction()` can be called from another service that does the same. The outermost call opens a real transaction (`BEGIN`). Each nested call opens a savepoint (`SAVEPOINT marko_sp_1`, `marko_sp_2`, ...). An inner `commit()` releases its savepoint, and only the outermost `commit()` makes the data durable. An inner `rollback()` returns to its savepoint, which undoes only the inner work:
 
-```php title="app/billing/Service/CheckoutService.php"
+```php title="app/billing/src/Service/CheckoutService.php"
 public function checkout(Invoice $invoice, Payment $payment): void
 {
     $this->transaction->transaction(function () use ($invoice, $payment): void {
@@ -1247,7 +1247,7 @@ An exception that escapes the outer callback rolls back everything, inner work i
 
 Side effects such as pushing a job, sending mail, invalidating a cache or broadcasting must not happen until the data they refer to is committed. A worker could otherwise pick up the job before the row is visible, or after it was rolled back. Register them with `afterCommit()`:
 
-```php title="app/billing/Service/CheckoutService.php"
+```php title="app/billing/src/Service/CheckoutService.php"
 $this->transaction->transaction(function () use ($invoice): void {
     $this->invoices->save($invoice);
 
@@ -1272,7 +1272,7 @@ A test that wraps each case in a transaction that is rolled back afterwards (`Re
 
 Read-modify-write sequences, such as counters, inventory or state machines, need the rows they read to stay put until they write. Lock them from the query builder inside a transaction:
 
-```php title="app/inventory/Service/StockService.php"
+```php title="app/inventory/src/Service/StockService.php"
 public function reserve(int $productId, int $quantity): void
 {
     $this->transaction->transaction(function () use ($productId, $quantity): void {
@@ -1391,7 +1391,7 @@ The original `PDOException` is always available from `getPrevious()`. `constrain
 
 Catch `UniqueConstraintViolationException` and turn it into a validation error:
 
-```php title="app/account/Service/RegistrationService.php"
+```php title="app/account/src/Service/RegistrationService.php"
 <?php
 
 declare(strict_types=1);
@@ -1481,7 +1481,7 @@ A failed `COMMIT` is translated too, so a serialization failure PostgreSQL detec
 
 Pass `attempts` to `transaction()` to retry the whole transaction on a `TransactionConflictException`:
 
-```php title="app/inventory/Service/StockService.php"
+```php title="app/inventory/src/Service/StockService.php"
 public function reserve(int $productId, int $quantity): void
 {
     $this->transaction->transaction(function () use ($productId, $quantity): void {
@@ -1515,7 +1515,7 @@ The `backoff` argument sets the wait between attempts. It applies only when `att
 
 `$attempt` is the number of the attempt that just failed, starting at `1`. A negative `int` throws `TransactionException` before the transaction begins, and a closure that returns a negative number (or anything other than an `int`) throws `TransactionException` instead of retrying:
 
-```php title="app/inventory/Service/StockService.php"
+```php title="app/inventory/src/Service/StockService.php"
 use Marko\Database\Exceptions\DeadlockException;
 use Marko\Database\Exceptions\TransactionConflictException;
 
@@ -1599,7 +1599,7 @@ Seeders populate development/test databases with sample data. They're discovered
 
 Each seeder runs inside a database transaction. If a seeder fails partway through, all its changes are automatically rolled back — preventing partial data that would require manual cleanup.
 
-```php title="app/blog/Seed/PostSeeder.php"
+```php title="app/blog/src/Seed/PostSeeder.php"
 <?php
 
 declare(strict_types=1);
@@ -1928,7 +1928,7 @@ Names you declare with `#[Index]` are never shortened, since renaming your ident
 
 Add `where:` to `#[Index]` to create a partial index. The predicate is raw SQL, copied into the `CREATE INDEX` statement:
 
-```php title="app/catalog/Entity/Show.php"
+```php title="app/catalog/src/Entity/Show.php"
 #[Table('shows')]
 #[Index('shows_live_idx', ['status'], where: "status = 'live'")]
 class Show extends Entity
@@ -1945,7 +1945,7 @@ Indexes are matched by name. Changing an existing index's `where:` (or columns) 
 
 Indexes the entity cannot express (expression, GIN/GiST, covering indexes) belong in a hand-written migration. Tell the diff to leave them alone, per table:
 
-```php title="app/catalog/Entity/Show.php"
+```php title="app/catalog/src/Entity/Show.php"
 #[Table('shows', unmanagedIndexes: ['shows_search_gin_idx'])]
 class Show extends Entity
 {

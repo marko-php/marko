@@ -13,7 +13,7 @@ composer require marko/mail marko/mail-smtp
 
 ## Sending Mail
 
-```php title="app/blog/Service/NotificationService.php"
+```php title="app/blog/src/Service/NotificationService.php"
 <?php
 
 declare(strict_types=1);

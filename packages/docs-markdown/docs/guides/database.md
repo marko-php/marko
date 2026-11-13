@@ -34,7 +34,7 @@ return [
 
 Entities are plain PHP classes. Marko infers the database schema from PHP types:
 
-```php title="app/blog/Entity/Post.php"
+```php title="app/blog/src/Entity/Post.php"
 <?php
 
 declare(strict_types=1);
@@ -104,7 +104,7 @@ marko db:status
 
 Use `QueryBuilderInterface` for fluent query building:
 
-```php title="app/blog/Repository/PostRepository.php"
+```php title="app/blog/src/Repository/PostRepository.php"
 <?php
 
 declare(strict_types=1);
@@ -151,7 +151,7 @@ readonly class PostRepository
 
 Extend `Repository` for entity-aware queries. `findAll()` and `findBy()` return an `EntityCollection` — an iterable, countable collection with `filter`, `map`, `sortBy`, `groupBy`, `chunk`, and `pluck` methods.
 
-```php title="app/blog/Repository/PostRepository.php"
+```php title="app/blog/src/Repository/PostRepository.php"
 <?php
 
 declare(strict_types=1);
@@ -208,7 +208,7 @@ See the [Database package reference](/docs/packages/database/) for the full Rela
 
 Populate your database with test or default data:
 
-```php title="app/blog/Database/Seeder/PostSeeder.php"
+```php title="app/blog/src/Database/Seeder/PostSeeder.php"
 <?php
 
 declare(strict_types=1);

@@ -60,7 +60,7 @@ return [
 
 Implement `TwoFactorAuthenticatableInterface` on your user entity. Changes are saved through the `UserPersisterInterface` you already bind for marko/authentication (see [Saving Changed Users](/docs/packages/authentication/#saving-changed-users)); there is no second persistence contract.
 
-```php title="app/web/Entity/User.php"
+```php title="app/web/src/Entity/User.php"
 use DateTimeImmutable;
 use Marko\AuthenticationTwoFactor\Contracts\TwoFactorAuthenticatableInterface;
 use Marko\Database\Attributes\Column;
@@ -108,7 +108,7 @@ class User extends Entity implements TwoFactorAuthenticatableInterface
 
 Setup takes two steps. `enable()` stores a new secret and recovery codes but does not activate them: logins are only challenged once the user proves their authenticator works by entering a first code to `confirm()`.
 
-```php title="app/web/Controller/TwoFactorSetupController.php"
+```php title="app/web/src/Controller/TwoFactorSetupController.php"
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\AuthenticationTwoFactor\Contracts\TwoFactorManagerInterface;
@@ -177,7 +177,7 @@ Also show `$setup->secret` for users who type the key into their app by hand.
 
 With `TwoFactorLoginChallenge` on the guard, `attempt()` returns `false` for a user with confirmed two-factor even when the password is right: the user is held at the challenge, not logged in, and no `LoginEvent` fires yet. `TwoFactorChallenge` handles the code step:
 
-```php title="app/web/Controller/LoginController.php"
+```php title="app/web/src/Controller/LoginController.php"
 use Marko\Authentication\AuthManager;
 use Marko\AuthenticationTwoFactor\TwoFactorChallenge;
 use Marko\Routing\Attributes\Post;
@@ -256,7 +256,7 @@ When `confirm()` activates two-factor, it also ends the user's other sessions an
 
 `RequireTwoFactorMiddleware` lets through only users with confirmed two-factor. Put it after `AuthMiddleware`:
 
-```php title="app/web/Controller/BillingController.php"
+```php title="app/web/src/Controller/BillingController.php"
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\AuthenticationTwoFactor\Middleware\RequireTwoFactorMiddleware;
 use Marko\Routing\Attributes\Get;
@@ -310,7 +310,7 @@ All events live in `Marko\AuthenticationTwoFactor\Event`. None carries a secret 
 | `RecoveryCodeUsedEvent` | `verify()` / `TwoFactorChallenge::verify()`, when a recovery code is spent | `user`, `remainingCodes` |
 | `TwoFactorChallengeFailedEvent` | `TwoFactorChallenge::verify()`, for a wrong code | `user`, `guard` |
 
-```php title="app/web/Observer/LowRecoveryCodesObserver.php"
+```php title="app/web/src/Observer/LowRecoveryCodesObserver.php"
 use Marko\AuthenticationTwoFactor\Event\RecoveryCodeUsedEvent;
 use Marko\Core\Attributes\Observer;
 

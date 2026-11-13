@@ -9,7 +9,7 @@ Marko uses PHP attributes to compose page layouts from components. Every piece o
 
 A layout is just a component with slots. Define it with `#[Component]` and list the slots it provides:
 
-```php title="app/theme/Component/DefaultLayout.php"
+```php title="app/theme/src/Component/DefaultLayout.php"
 <?php
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ The template name `theme::layouts/default` resolves to `resources/views/layouts/
 
 Use `#[Layout]` on a controller class to assign a layout to all its actions:
 
-```php title="app/blog/Controller/PostController.php"
+```php title="app/blog/src/Controller/PostController.php"
 <?php
 
 declare(strict_types=1);
@@ -88,7 +88,7 @@ class PostController
 
 Components declare which slot they fill and which pages they appear on:
 
-```php title="app/blog/Component/PostList.php"
+```php title="app/blog/src/Component/PostList.php"
 <?php
 
 declare(strict_types=1);
@@ -113,7 +113,7 @@ class PostList
 
 The `data()` method provides template variables. Route parameters are injected by name automatically:
 
-```php title="app/blog/Component/PostDetail.php"
+```php title="app/blog/src/Component/PostDetail.php"
 #[Component(
     template: 'blog::components/post-detail',
     handle: [PostController::class, 'show'],
@@ -176,7 +176,7 @@ class AdWidget {}
 
 Components can define their own sub-slots for deeper composition:
 
-```php title="app/blog/Component/PostTabs.php"
+```php title="app/blog/src/Component/PostTabs.php"
 #[Component(
     template: 'blog::components/tabs',
     handle: [PostController::class, 'show'],
@@ -216,7 +216,7 @@ Parent components render first, then their sub-slots are filled — this happens
 
 Any module can inject components into any page. A shipping module can add a component to the product page without modifying the product module:
 
-```php title="app/shipping/Component/ShippingEstimate.php"
+```php title="app/shipping/src/Component/ShippingEstimate.php"
 #[Component(
     template: 'shipping::components/estimate',
     handle: 'products_product_show',
@@ -233,7 +233,7 @@ class ShippingEstimate
 
 To remove or reorder another module's component, use an `#[After]` plugin on `ComponentCollectorInterface::collect()`:
 
-```php title="app/shipping/Plugin/RemoveVendorWidgetPlugin.php"
+```php title="app/shipping/src/Plugin/RemoveVendorWidgetPlugin.php"
 use Marko\Core\Attributes\After;
 use Marko\Core\Attributes\Plugin;
 use Marko\Layout\ComponentCollection;

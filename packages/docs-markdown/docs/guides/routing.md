@@ -9,7 +9,7 @@ In development (`APP_ENV=local`) routes are discovered live at boot, so adding o
 
 ## Defining Routes
 
-```php title="app/blog/Controller/PostController.php"
+```php title="app/blog/src/Controller/PostController.php"
 <?php
 
 declare(strict_types=1);
@@ -131,7 +131,7 @@ class BlogRouteOverrides
 
 Middleware implements `MiddlewareInterface`:
 
-```php title="app/myapp/Middleware/RateLimitMiddleware.php"
+```php title="app/myapp/src/Middleware/RateLimitMiddleware.php"
 <?php
 
 declare(strict_types=1);

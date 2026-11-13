@@ -17,7 +17,7 @@ composer require marko/cache marko/cache-redis
 
 ## Basic Usage
 
-```php title="app/blog/Service/PostService.php"
+```php title="app/blog/src/Service/PostService.php"
 <?php
 
 declare(strict_types=1);

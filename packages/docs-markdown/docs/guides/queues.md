@@ -17,7 +17,7 @@ composer require marko/queue marko/queue-rabbitmq
 
 ## Creating Jobs
 
-```php title="app/blog/Job/SendWelcomeEmail.php"
+```php title="app/blog/src/Job/SendWelcomeEmail.php"
 <?php
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ readonly class SendWelcomeEmail extends Job
 
 ## Dispatching Jobs
 
-```php title="app/blog/Service/RegistrationService.php"
+```php title="app/blog/src/Service/RegistrationService.php"
 <?php
 
 declare(strict_types=1);

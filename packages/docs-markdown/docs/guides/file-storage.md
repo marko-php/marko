@@ -51,7 +51,7 @@ The `default` key determines which disk is used when you inject `FilesystemInter
 
 Inject `FilesystemInterface` for default disk operations:
 
-```php title="app/blog/Service/DocumentService.php"
+```php title="app/blog/src/Service/DocumentService.php"
 <?php
 
 declare(strict_types=1);
@@ -219,7 +219,7 @@ This creates `public/storage` pointing to `storage/public`, making files in the 
 
 Use `FilesystemManagerInterface` when you need to work with more than one disk:
 
-```php title="app/blog/Service/MediaService.php"
+```php title="app/blog/src/Service/MediaService.php"
 <?php
 
 declare(strict_types=1);
