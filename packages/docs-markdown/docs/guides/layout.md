@@ -19,22 +19,22 @@ namespace App\Theme\Component;
 use Marko\Layout\Attributes\Component;
 
 #[Component(
-    template: 'theme::layouts/default.html',
+    template: 'theme::layouts/default',
     slots: ['header', 'content', 'footer'],
 )]
 class DefaultLayout {}
 ```
 
-The template uses `{slot}` tags to mark where child components render:
+The template name `theme::layouts/default` resolves to `resources/views/layouts/default.latte` in the `theme` module; the view driver adds the extension. The template marks where child components render with `{slot name/}` tags:
 
-```html title="app/theme/templates/layouts/default.html"
+```latte title="app/theme/resources/views/layouts/default.latte"
 <!doctype html>
 <html>
 <head><title>My App</title></head>
 <body>
-  <header>{slot header}{/slot}</header>
-  <main>{slot content}{/slot}</main>
-  <footer>{slot footer}{/slot}</footer>
+  <header>{slot header/}</header>
+  <main>{slot content/}</main>
+  <footer>{slot footer/}</footer>
 </body>
 </html>
 ```
@@ -98,7 +98,7 @@ namespace App\Blog\Component;
 use Marko\Layout\Attributes\Component;
 
 #[Component(
-    template: 'blog::components/post-list.html',
+    template: 'blog::components/post-list',
     handle: [PostController::class, 'index'],
     slot: 'content',
 )]
@@ -115,7 +115,7 @@ The `data()` method provides template variables. Route parameters are injected b
 
 ```php title="app/blog/Component/PostDetail.php"
 #[Component(
-    template: 'blog::components/post-detail.html',
+    template: 'blog::components/post-detail',
     handle: [PostController::class, 'show'],
     slot: 'content',
 )]
@@ -178,7 +178,7 @@ Components can define their own sub-slots for deeper composition:
 
 ```php title="app/blog/Component/PostTabs.php"
 #[Component(
-    template: 'blog::components/tabs.html',
+    template: 'blog::components/tabs',
     handle: [PostController::class, 'show'],
     slot: 'content',
     slots: ['tab.details', 'tab.reviews'],
@@ -186,10 +186,10 @@ Components can define their own sub-slots for deeper composition:
 class PostTabs {}
 ```
 
-```html title="app/blog/templates/components/tabs.html"
+```latte title="app/blog/resources/views/components/tabs.latte"
 <div class="tabs">
-  <div class="tab-panel">{slot tab.details}{/slot}</div>
-  <div class="tab-panel">{slot tab.reviews}{/slot}</div>
+  <div class="tab-panel">{slot tab.details/}</div>
+  <div class="tab-panel">{slot tab.reviews/}</div>
 </div>
 ```
 
@@ -197,7 +197,7 @@ Other components target the sub-slots using dot-notation:
 
 ```php
 #[Component(
-    template: 'blog::components/reviews.html',
+    template: 'blog::components/reviews',
     handle: 'default',
     slot: 'tab.reviews',
 )]
@@ -218,7 +218,7 @@ Any module can inject components into any page. A shipping module can add a comp
 
 ```php title="app/shipping/Component/ShippingEstimate.php"
 #[Component(
-    template: 'shipping::components/estimate.html',
+    template: 'shipping::components/estimate',
     handle: 'products_product_show',
     slot: 'content',
 )]
