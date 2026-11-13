@@ -58,6 +58,16 @@ class Environment
     }
 
     /**
+     * Whether a PHP warning is thrown as an ErrorException so the error page
+     * shows it and the request stops there. Only a development web request
+     * does; production logs it, and the CLI prints it to STDERR.
+     */
+    public function throwsWarnings(): bool
+    {
+        return $this->isWeb() && $this->isDevelopment();
+    }
+
+    /**
      * Whether the current request asks for a JSON response: an Accept header
      * containing application/json or a +json type, or a JSON Content-Type
      * when no Accept header is sent. Error handlers run outside the router,

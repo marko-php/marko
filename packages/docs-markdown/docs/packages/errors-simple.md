@@ -14,6 +14,8 @@ In the web SAPI the handler sets the HTTP status (`500`, or the status of an `Ht
 
 Non-fatal PHP errors (warnings, notices, deprecations) are reported via `error_log` in the web SAPI rather than halting the response or replacing the page with a 500 error. Fatal errors and uncaught exceptions still replace the response.
 
+The one exception is a warning in a development web request (`MARKO_ENV` of `development`, `dev` or `local`). It is thrown as an `ErrorException`, so the request stops at the line that warned and the error page shows it. Code that runs on after a warning in production (a failed `imagecreatefromstring()` that returns `false`, for example) shows the error page in development instead, so check its input before the call rather than relying on the warning.
+
 ## Installation
 
 ```bash

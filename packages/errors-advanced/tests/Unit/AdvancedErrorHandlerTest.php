@@ -367,6 +367,42 @@ describe('AdvancedErrorHandler registration', function (): void {
             ]);
     });
 
+    it(
+        'throws a warning in a development web request so the error page renders and the code stops',
+        function (): void {
+            $handler = new TestableAdvancedHandler(
+                clock: new FakeClock(),
+                environment: new Environment(sapi: 'fpm-fcgi', envVars: ['MARKO_ENV' => 'development']),
+            );
+
+            $originalLevel = error_reporting();
+            error_reporting(E_ALL);
+
+            ob_start();
+            echo 'prior response content';
+
+            try {
+                $handler->handleError(E_WARNING, 'Undefined array key "name"', '/app/Controller.php', 27);
+                $thrown = null;
+            } catch (ErrorException $e) {
+                $thrown = $e;
+            } finally {
+                $output = ob_get_clean();
+                error_reporting($originalLevel);
+            }
+
+            expect($thrown)->toBeInstanceOf(ErrorException::class)
+                ->and($thrown->getMessage())->toBe('Undefined array key "name"')
+                ->and($thrown->getSeverity())->toBe(E_WARNING)
+                ->and($thrown->getFile())->toBe('/app/Controller.php')
+                ->and($thrown->getLine())->toBe(27)
+                ->and($output)->toBe('prior response content')
+                ->and($handler->nonFatalReports)->toBe([])
+                ->and($handler->statusCodeSet)->toBeNull()
+                ->and($handler->headersSent)->toBe([]);
+        },
+    );
+
     it('surfaces deprecations and notices without halting execution or clearing output buffers', function (): void {
         $handler = new TestableAdvancedHandler(
             clock: new FakeClock(),

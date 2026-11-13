@@ -127,8 +127,8 @@ describe('Error Handling Integration', function (): void {
         expect($handler->handled?->timestamp)->toEqual($clock->now());
     });
 
-    it('handles PHP warning in web context non-destructively', function (): void {
-        $env = new Environment(sapi: 'cgi', envVars: ['MARKO_ENV' => 'development']);
+    it('handles PHP warning in a production web context non-destructively', function (): void {
+        $env = new Environment(sapi: 'cgi', envVars: ['MARKO_ENV' => 'production']);
         $handler = new TestableErrorHandler($env, new FakeClock());
 
         $originalLevel = error_reporting();

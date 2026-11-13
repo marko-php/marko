@@ -174,6 +174,13 @@ class AdvancedErrorHandler implements ErrorHandlerInterface
         $exception = new ErrorException($message, 0, $level, $file, $line);
         $severity = Severity::fromErrorLevel($level);
 
+        // In development, a web request stops at a warning: the exception
+        // handler renders the error page and nothing after the warning runs,
+        // so the page never sits in front of a response that keeps going.
+        if ($severity === Severity::Warning && $this->environment->throwsWarnings()) {
+            throw $exception;
+        }
+
         if ($severity === Severity::Deprecated || $severity === Severity::Notice || $severity === Severity::Warning) {
             $report = ErrorReport::fromThrowable($exception, $severity, $this->clock->now());
             $this->handleNonFatal($report);
