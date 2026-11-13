@@ -21,19 +21,19 @@ A layout component is the page root. It declares the top-level slots that other 
 use Marko\Layout\Attributes\Component;
 
 #[Component(
-    template: 'layouts/default.html',
+    template: 'layouts/default',
     slots: ['header', 'content', 'footer'],
 )]
 class DefaultLayout {}
 ```
 
-```html title="layouts/default.html"
+```latte title="resources/views/layouts/default.latte"
 <!doctype html>
 <html>
 <body>
-  {slot header}{/slot}
-  {slot content}{/slot}
-  {slot footer}{/slot}
+  {slot header/}
+  {slot content/}
+  {slot footer/}
 </body>
 </html>
 ```
@@ -63,7 +63,7 @@ Components declare which slot they render into and which routes they appear on:
 use Marko\Layout\Attributes\Component;
 
 #[Component(
-    template: 'components/product-content.html',
+    template: 'components/product-content',
     handle: 'products_*',
     slot: 'content',   // matches all products_* routes
 )]
@@ -84,7 +84,7 @@ Components can define their own sub-slots for deeper composition:
 
 ```php
 #[Component(
-    template: 'components/tabs.html',
+    template: 'components/tabs',
     handle: 'products_product_show',
     slot: 'content',
     slots: ['tab.details', 'tab.reviews'],
@@ -96,7 +96,7 @@ Child components target these sub-slots using dot-notation:
 
 ```php
 #[Component(
-    template: 'components/reviews.html',
+    template: 'components/reviews',
     handle: 'default',
     slot: 'tab.reviews',
 )]

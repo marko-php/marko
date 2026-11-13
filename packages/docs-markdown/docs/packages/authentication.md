@@ -262,7 +262,7 @@ $this->authManager->logoutOtherDevices($user, 'admin'); // a named guard
 
 **Sessions** are ended only when the user entity implements `HasSessionVersionInterface`. Session handlers have no per-user index, so the guard versions sessions instead: it copies the user's session version into the session at login (`auth_{guard}_session_version`) and logs out a session whose copy no longer matches, on that session's next request. `logoutOtherDevices()` stores a random new version on the user, saves it through the [user persister](#saving-changed-users) of the guard's provider, and moves the current session to it. This works with every session driver:
 
-```php title="app/web/Entity/User.php"
+```php title="app/web/src/Entity/User.php"
 use Marko\Authentication\HasSessionVersionInterface;
 use Marko\Database\Attributes\Column;
 
@@ -577,7 +577,7 @@ Every session guard keeps its user in its own session key, `auth_{guard}_user_id
 
 Features that change a user, such as [password reset](#password-reset), save it through `UserPersisterInterface`. The user provider only reads users; the persister writes them:
 
-```php title="app/web/Auth/UserPersister.php"
+```php title="app/web/src/Auth/UserPersister.php"
 use App\Web\Entity\User;
 use App\Web\Repository\UserRepository;
 use Marko\Authentication\AuthenticatableInterface;
@@ -780,7 +780,7 @@ Tokens are keyed by the user's auth identifier, not their email, so changing an 
 3. Bind a `ResetLinkNotifierInterface` that delivers the link.
 4. Install a persistent cache driver, such as [marko/cache-file](/docs/packages/cache-file/) or [marko/cache-redis](/docs/packages/cache-redis/). Both the default token repository, `CachePasswordResetTokenRepository`, and the throttle keep their data in the cache. To keep reset tokens in a database table instead, so they survive cache flushes, install [marko/authentication-database](/docs/packages/authentication-database/).
 
-```php title="app/web/Entity/User.php"
+```php title="app/web/src/Entity/User.php"
 use Marko\Authentication\CanResetPasswordInterface;
 use Marko\Notification\Contracts\NotifiableInterface;
 
@@ -821,7 +821,7 @@ class User implements CanResetPasswordInterface, NotifiableInterface
 
 The broker never sends email itself. It hands the user and the plain token to your `ResetLinkNotifierInterface`, so you own the message and the URL. This one uses [marko/notification](/docs/packages/notification/) and queues the email: an unknown email returns at once, so sending inline would let the response time reveal which emails are registered.
 
-```php title="app/web/Auth/ResetPasswordNotification.php"
+```php title="app/web/src/Auth/ResetPasswordNotification.php"
 use Marko\Mail\Message;
 use Marko\Notification\Contracts\NotifiableInterface;
 use Marko\Notification\Contracts\NotificationInterface;
@@ -854,7 +854,7 @@ class ResetPasswordNotification implements NotificationInterface
 }
 ```
 
-```php title="app/web/Auth/QueuedResetLinkNotifier.php"
+```php title="app/web/src/Auth/QueuedResetLinkNotifier.php"
 use App\Web\Entity\User;
 use Marko\Authentication\CanResetPasswordInterface;
 use Marko\Authentication\Contracts\ResetLinkNotifierInterface;
@@ -897,7 +897,7 @@ return [
 
 ### Handling the Requests
 
-```php title="app/web/Controller/PasswordResetController.php"
+```php title="app/web/src/Controller/PasswordResetController.php"
 use Marko\Authentication\Contracts\PasswordResetBrokerInterface;
 use Marko\Authentication\Middleware\GuestMiddleware;
 use Marko\Authentication\PasswordReset\ResetLinkStatus;
@@ -1038,7 +1038,7 @@ It returns `VerificationStatus::Verified`. A link that fails any check throws ro
 3. Bind a `VerificationNotifierInterface` that delivers the link. No default ships, so resolving `EmailVerifierInterface` without one fails loudly.
 4. Set `routing.signing.key` (`URL_SIGNING_KEY`, at least 32 bytes), and install a cache driver for the throttle.
 
-```php title="app/web/Entity/User.php"
+```php title="app/web/src/Entity/User.php"
 use DateTimeImmutable;
 use Marko\Authentication\MustVerifyEmailInterface;
 use Marko\Notification\Contracts\NotifiableInterface;
@@ -1071,7 +1071,7 @@ class User implements MustVerifyEmailInterface, NotifiableInterface
 
 `EmailVerifier` hands the user and the finished signed URL to your `VerificationNotifierInterface`, so you own the message. This one queues the email through [marko/notification](/docs/packages/notification/):
 
-```php title="app/web/Auth/VerifyEmailNotification.php"
+```php title="app/web/src/Auth/VerifyEmailNotification.php"
 use Marko\Mail\Message;
 use Marko\Notification\Contracts\NotifiableInterface;
 use Marko\Notification\Contracts\NotificationInterface;
@@ -1104,7 +1104,7 @@ class VerifyEmailNotification implements NotificationInterface
 }
 ```
 
-```php title="app/web/Auth/QueuedVerificationNotifier.php"
+```php title="app/web/src/Auth/QueuedVerificationNotifier.php"
 use App\Web\Entity\User;
 use Marko\Authentication\Contracts\VerificationNotifierInterface;
 use Marko\Authentication\MustVerifyEmailInterface;
@@ -1150,7 +1150,7 @@ $this->emailVerifier->sendVerificationLink($user);
 
 The verify route must have the name in `verification.verify_route`. Its path must not have `{id}` or `{hash}` placeholders, because `verify()` reads both from the query string. The notice page, at `verification.notice_route`, tells the user to check their inbox and offers a resend button:
 
-```php title="app/web/Controller/EmailVerificationController.php"
+```php title="app/web/src/Controller/EmailVerificationController.php"
 use Marko\Authentication\Contracts\EmailVerifierInterface;
 use Marko\Authentication\EmailVerification\CurrentVerifiableUser;
 use Marko\Authentication\EmailVerification\VerificationLinkStatus;
@@ -1205,7 +1205,7 @@ class EmailVerificationController
 
 Add `EnsureEmailVerifiedMiddleware` after `AuthMiddleware`:
 
-```php title="app/web/Controller/DashboardController.php"
+```php title="app/web/src/Controller/DashboardController.php"
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Authentication\Middleware\EnsureEmailVerifiedMiddleware;
 use Marko\Routing\Attributes\Get;
@@ -1250,7 +1250,7 @@ The stamp is removed on every `LoginEvent` and `LogoutEvent`, so a confirmation 
 
 Add `RequirePasswordConfirmationMiddleware` after `AuthMiddleware`:
 
-```php title="app/web/Controller/AccountController.php"
+```php title="app/web/src/Controller/AccountController.php"
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Authentication\Middleware\RequirePasswordConfirmationMiddleware;
 use Marko\Routing\Attributes\Get;
@@ -1281,7 +1281,7 @@ The middleware needs a session guard. When the default guard is stateless, such 
 
 Your app serves `password_confirmation.route`. On a correct password, send the user back to the intended URL:
 
-```php title="app/web/Controller/ConfirmPasswordController.php"
+```php title="app/web/src/Controller/ConfirmPasswordController.php"
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authentication\Contracts\IntendedUrlInterface;
 use Marko\Authentication\Contracts\PasswordConfirmationInterface;
@@ -1328,7 +1328,7 @@ Two [validation](/docs/packages/validation/) rules need authentication services,
 
 `currentPassword(?string $guard = null)` returns a `CurrentPassword` rule that passes when the value is the authenticated user's password, for example before changing an email address or password:
 
-```php title="app/web/Controller/PasswordController.php"
+```php title="app/web/src/Controller/PasswordController.php"
 use Marko\Authentication\Validation\AuthRules;
 use Marko\Validation\Contracts\ValidatorInterface;
 

@@ -833,7 +833,7 @@ namespace App\Shipping\Component;
 use Marko\Layout\Attributes\Component;
 
 #[Component(
-    template: 'shipping::components/estimate.html',
+    template: 'shipping::components/estimate',
     handle: 'products_product_show',
     slot: 'content',
 )]

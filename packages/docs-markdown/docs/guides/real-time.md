@@ -42,7 +42,7 @@ PUBSUB_PGSQL_DATABASE=app
 
 When something happens in your application --- an order is placed, a message is sent, a status changes --- publish it to a channel. Inject `PublisherInterface` and send a `Message`:
 
-```php title="app/blog/Service/CommentService.php"
+```php title="app/blog/src/Service/CommentService.php"
 <?php
 
 declare(strict_types=1);
@@ -77,7 +77,7 @@ class CommentService
 
 Create a controller that subscribes to the channel and returns a `StreamingResponse`. The `SseStream` accepts a `Subscription` directly --- it blocks on the PubSub channel and yields each message the instant it arrives, with no polling:
 
-```php title="app/blog/Controller/CommentStreamController.php"
+```php title="app/blog/src/Controller/CommentStreamController.php"
 <?php
 
 declare(strict_types=1);

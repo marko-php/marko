@@ -46,7 +46,7 @@ The `session` driver is built in. The `token` driver comes from [marko/authentic
 
 Inject `AuthManager` to check authentication state:
 
-```php title="app/dashboard/Controller/DashboardController.php"
+```php title="app/dashboard/src/Controller/DashboardController.php"
 <?php
 
 declare(strict_types=1);
@@ -133,7 +133,7 @@ public function loginForm(): Response { /* ... */ }
 
 Create your own authentication strategy by implementing `GuardInterface`, or `StatelessGuardInterface` for a guard that authenticates each request from credentials it carries:
 
-```php title="app/myapp/Auth/ApiKeyGuard.php"
+```php title="app/myapp/src/Auth/ApiKeyGuard.php"
 <?php
 
 declare(strict_types=1);

@@ -80,7 +80,7 @@ await postJson('/login/passkey', { credential: await getPasskey(requestOptions) 
 
 ### Registering a Passkey
 
-```php title="app/web/Controller/PasskeyController.php"
+```php title="app/web/src/Controller/PasskeyController.php"
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\AuthenticationPasskey\Service\PasskeyRegistration;
 use Marko\Routing\Attributes\Middleware;
@@ -124,7 +124,7 @@ class PasskeyController
 
 ### Signing In
 
-```php title="app/web/Controller/PasskeyLoginController.php"
+```php title="app/web/src/Controller/PasskeyLoginController.php"
 use Marko\Authentication\Middleware\GuestMiddleware;
 use Marko\AuthenticationPasskey\Service\PasskeyAuthentication;
 use Marko\Routing\Attributes\Middleware;
@@ -187,7 +187,7 @@ $passkeyAuthentication->confirm($credentialJson);
 
 ### Managing Passkeys
 
-```php title="app/web/Controller/PasskeySettingsController.php"
+```php title="app/web/src/Controller/PasskeySettingsController.php"
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Authentication\Middleware\RequirePasswordConfirmationMiddleware;
 use Marko\AuthenticationPasskey\Entity\PasskeyCredential;
@@ -250,7 +250,7 @@ Every method acts on the signed-in user's own passkeys; another user's credentia
 
 `PasskeyLoginFailedEvent` carries no secret (a credential id is a public identifier), so it is safe to log:
 
-```php title="app/security/Observer/LogFailedPasskeyLogin.php"
+```php title="app/security/src/Observer/LogFailedPasskeyLogin.php"
 use Marko\AuthenticationPasskey\Event\PasskeyLoginFailedEvent;
 use Marko\Core\Attributes\Observer;
 use Psr\Log\LoggerInterface;
