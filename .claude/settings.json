@@ -1,5 +1,51 @@
 {
   "enabledPlugins": {
     "ralph-wiggum@claude-code-plugins": true
+  },
+  "hooks": {
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}/bin/worktree\" hook-create",
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}/bin/worktree\" hook-remove",
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}/bin/worktree\" hook-session-end",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}/bin/worktree\" hook-session-start",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
   }
 }
