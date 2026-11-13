@@ -152,3 +152,15 @@ it('builds its AppEnvironment from envVars when none is injected', function (): 
     expect($environment->appEnvironment()->name())->toBe('dev')
         ->and($environment->isDevelopment())->toBeTrue();
 });
+
+it('throws warnings only in a development web request', function (string $sapi, string $env, bool $expected): void {
+    $environment = new Environment(sapi: $sapi, envVars: ['MARKO_ENV' => $env]);
+
+    expect($environment->throwsWarnings())->toBe($expected);
+})->with([
+    'development web' => ['fpm-fcgi', 'development', true],
+    'local web' => ['apache2handler', 'local', true],
+    'production web' => ['fpm-fcgi', 'production', false],
+    'staging web' => ['fpm-fcgi', 'staging', false],
+    'development cli' => ['cli', 'development', false],
+]);

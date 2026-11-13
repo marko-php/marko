@@ -167,6 +167,13 @@ class SimpleErrorHandler implements ErrorHandlerInterface
         $exception = new ErrorException($message, 0, $level, $file, $line);
         $severity = Severity::fromErrorLevel($level);
 
+        // In development, a web request stops at a warning: the exception
+        // handler renders the error page and nothing after the warning runs,
+        // so the page never sits in front of a response that keeps going.
+        if ($severity === Severity::Warning && $this->environment->throwsWarnings()) {
+            throw $exception;
+        }
+
         // Non-fatal errors (deprecations, notices, warnings) are reported loudly
         // but don't clear output buffers or replace the in-progress response.
         if ($severity === Severity::Deprecated || $severity === Severity::Notice || $severity === Severity::Warning) {

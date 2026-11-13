@@ -7,6 +7,8 @@ Pretty error pages with syntax-highlighted code, stack traces, and request detai
 
 Non-fatal PHP errors (warnings, notices, deprecations) never replace the response: the web SAPI reports them via `error_log`, and the CLI writes them to `STDERR`. Only fatal errors and uncaught exceptions render the error page, as in errors-simple.
 
+The one exception is a warning in a development web request (`MARKO_ENV` of `development`, `dev` or `local`). It is thrown as an `ErrorException`, so the request stops at the line that warned and the error page shows it. Code that runs on after a warning in production (a failed `imagecreatefromstring()` that returns `false`, for example) shows the error page in development instead, so check its input before the call rather than relying on the warning.
+
 ## Installation
 
 ```bash

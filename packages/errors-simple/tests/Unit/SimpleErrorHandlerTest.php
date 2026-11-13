@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\ErrorsSimple\Tests\Unit;
 
 use DateTimeImmutable;
+use ErrorException;
 use Exception;
 use Marko\Errors\Contracts\ErrorHandlerInterface;
 use Marko\Errors\ErrorReport;
@@ -461,8 +462,8 @@ describe('SimpleErrorHandler', function (): void {
         expect($handler->buffersClearedCount)->toBe(0);
     });
 
-    it('does not replace the response with a 500 page on a recoverable warning', function (): void {
-        $environment = new Environment(sapi: 'cgi', envVars: ['MARKO_ENV' => 'development']);
+    it('does not replace the response with a 500 page on a recoverable warning in production', function (): void {
+        $environment = new Environment(sapi: 'cgi', envVars: ['MARKO_ENV' => 'production']);
         $handler = new TestableErrorHandler($environment, new FakeClock());
 
         $originalLevel = error_reporting();
@@ -479,6 +480,39 @@ describe('SimpleErrorHandler', function (): void {
             ->and($output)->not->toContain('<!DOCTYPE html>')
             ->and($handler->statusCodeSet)->toBeNull();
     });
+
+    it(
+        'throws a warning in a development web request so the error page renders and the code stops',
+        function (): void {
+            $environment = new Environment(sapi: 'cgi', envVars: ['MARKO_ENV' => 'development']);
+            $handler = new TestableErrorHandler($environment, new FakeClock());
+
+            $originalLevel = error_reporting();
+            error_reporting(E_ALL);
+
+            ob_start();
+            echo 'prior response content';
+
+            try {
+                $handler->handleError(E_WARNING, 'Undefined array key "name"', '/app/Controller.php', 27);
+                $thrown = null;
+            } catch (ErrorException $e) {
+                $thrown = $e;
+            } finally {
+                $output = ob_get_clean();
+                error_reporting($originalLevel);
+            }
+
+            expect($thrown)->toBeInstanceOf(ErrorException::class)
+                ->and($thrown->getMessage())->toBe('Undefined array key "name"')
+                ->and($thrown->getSeverity())->toBe(E_WARNING)
+                ->and($thrown->getFile())->toBe('/app/Controller.php')
+                ->and($thrown->getLine())->toBe(27)
+                ->and($output)->toBe('prior response content')
+                ->and($handler->nonFatalReports)->toBe([])
+                ->and($handler->statusCodeSet)->toBeNull();
+        },
+    );
 
     it('reports a non-fatal error in web SAPI instead of discarding it', function (): void {
         $environment = new Environment(sapi: 'cgi', envVars: ['MARKO_ENV' => 'development']);
