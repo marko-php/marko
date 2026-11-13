@@ -195,6 +195,7 @@ views/
 |---|---|
 | `route(string $name, array $parameters = [], bool $absolute = false): string` | URL for a named route (`Marko\View\Functions\RouteFunctionProvider` in `marko/view`) |
 | `signedRoute(string $name, array $parameters = [], ?DateTimeImmutable $expiresAt = null, bool $absolute = true): string` | Signed URL for a named route (`Marko\View\Functions\SignedRouteFunctionProvider` in `marko/view`) |
+| `slot(string $name): string` | The rendered HTML of a [layout](/docs/guides/layout/) slot, printed unescaped (`Marko\View\Twig\SlotExtension`) |
 
 Functions from every other discovered `#[TemplateFunctions]` provider are available the same way.
 

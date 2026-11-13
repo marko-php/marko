@@ -25,7 +25,7 @@ use Marko\Layout\Attributes\Component;
 class DefaultLayout {}
 ```
 
-The template name `theme::layouts/default` resolves to `resources/views/layouts/default.latte` in the `theme` module; the view driver adds the extension. The template marks where child components render with `{slot name/}` tags:
+The template name `theme::layouts/default` resolves to `resources/views/layouts/default.latte` with the Latte driver, or `resources/views/layouts/default.twig` with the Twig driver, in the `theme` module; the view driver adds the extension. The template marks where child components render. In Latte, use `{slot name/}` tags:
 
 ```latte title="app/theme/resources/views/layouts/default.latte"
 <!doctype html>
@@ -35,6 +35,20 @@ The template name `theme::layouts/default` resolves to `resources/views/layouts/
   <header>{slot header/}</header>
   <main>{slot content/}</main>
   <footer>{slot footer/}</footer>
+</body>
+</html>
+```
+
+In Twig, use the `slot()` function. It prints the slot's rendered HTML unescaped:
+
+```twig title="app/theme/resources/views/layouts/default.twig"
+<!doctype html>
+<html>
+<head><title>My App</title></head>
+<body>
+  <header>{{ slot('header') }}</header>
+  <main>{{ slot('content') }}</main>
+  <footer>{{ slot('footer') }}</footer>
 </body>
 </html>
 ```
@@ -190,6 +204,15 @@ class PostTabs {}
 <div class="tabs">
   <div class="tab-panel">{slot tab.details/}</div>
   <div class="tab-panel">{slot tab.reviews/}</div>
+</div>
+```
+
+The same template in Twig:
+
+```twig title="app/blog/resources/views/components/tabs.twig"
+<div class="tabs">
+  <div class="tab-panel">{{ slot('tab.details') }}</div>
+  <div class="tab-panel">{{ slot('tab.reviews') }}</div>
 </div>
 ```
 

@@ -58,6 +58,7 @@ readonly class TwigEngineFactory
             'debug' => $this->config->debug(),
             'charset' => $this->config->charset(),
         ]);
+        $environment->addExtension(new SlotExtension());
         $environment->addExtension($this->templateFunctionExtension);
 
         return $environment;

@@ -37,9 +37,8 @@ class SlotNode extends StatementNode
     public function print(PrintContext $context): string
     {
         return $context->format(
-            'echo (isset($slots) ? ($slots[%dump] ?? \'\') : %dump) %line;',
+            'echo \Marko\View\Slot::render(isset($slots) && is_array($slots) ? $slots : null, %dump) %line;',
             $this->name,
-            '{slot ' . $this->name . '}{/slot}',
             $this->position,
         );
     }

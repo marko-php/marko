@@ -11,6 +11,7 @@ use Marko\Layout\Exceptions\LayoutNotFoundException;
 use Marko\Layout\Exceptions\SlotNotFoundException;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\View\Slot;
 use Marko\View\ViewInterface;
 use Psr\Container\ContainerExceptionInterface;
 
@@ -107,7 +108,7 @@ readonly class LayoutProcessor implements LayoutProcessorInterface
             if ($definition->hasSubSlots()) {
                 foreach ($definition->slots as $subSlot) {
                     $subSlotHtml = $this->renderSlot($subSlot, $collection, $routeParameters, $request);
-                    $placeholder = '{slot ' . $subSlot . '}{/slot}';
+                    $placeholder = Slot::placeholder($subSlot);
                     $componentHtml = str_replace($placeholder, $subSlotHtml, $componentHtml);
                 }
             }
