@@ -48,7 +48,7 @@ it('runs docs:lint in the required Lint job on every pull request', function () 
 it('includes docs:lint in composer ci', function (): void {
     $composer = json_decode((string) file_get_contents(dirname(__DIR__) . '/composer.json'), true);
 
-    expect($composer['scripts']['docs:lint'])->toBe('php bin/docs-lint.php')
+    expect($composer['scripts']['docs:lint'])->toBe(['php bin/docs-lint.php', 'php bin/docs-sidebar-lint.php'])
         ->and($composer['scripts']['ci'])->toContain('@docs:lint');
 });
 

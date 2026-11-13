@@ -114,6 +114,7 @@ export default defineConfig({
 						{ label: 'Preferences', slug: 'concepts/preferences' },
 						{ label: 'Plugins', slug: 'concepts/plugins' },
 						{ label: 'Events & Observers', slug: 'concepts/events' },
+						{ label: 'Known Drivers', slug: 'concepts/known-drivers' },
 					],
 				},
 				{
@@ -124,6 +125,7 @@ export default defineConfig({
 					label: 'Guides',
 					items: [
 						{ label: 'Routing', slug: 'guides/routing' },
+						{ label: 'Layouts', slug: 'guides/layout' },
 						{ label: 'Database', slug: 'guides/database' },
 						{ label: 'Authentication', slug: 'guides/authentication' },
 						{ label: 'Caching', slug: 'guides/caching' },
@@ -137,6 +139,7 @@ export default defineConfig({
 						{ label: 'Validation', slug: 'guides/validation' },
 						{ label: 'Error Handling', slug: 'guides/error-handling' },
 						{ label: 'Testing', slug: 'guides/testing' },
+						{ label: 'Coming From Magento', slug: 'guides/coming-from-magento' },
 					],
 				},
 				{
