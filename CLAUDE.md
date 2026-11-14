@@ -66,7 +66,7 @@ Use this workflow for new features, multi-file changes, or anything requiring mu
 
 Plans are created in the main checkout, never in a worktree. Skip plan-create's "Create feature branch" step so main stays on `develop`. When the plan starts executing, run `bin/worktree create <plan> --plan <plan>`, which copies main's plan into the worktree and keeps main's copy as a backup (`bin/worktree reap` deletes it only after verifying the run merged). Then run `hcf:plan-orchestrate` in that worktree: by default from the current session after `EnterWorktree` with `path` set to the worktree, or from a session started there. Workers edit the worktree's copy, never main's backup. Code changes happen in the worktree.
 
-Plans are ephemeral: they live only in main's `.claude/plans/` (gitignored), are never committed, and are deleted once the work merges. The code is the source of truth.
+Plans are ephemeral: they live in `.claude/plans/` (gitignored), in main and, during a run, as the worktree's working copy. They are never committed, and are deleted once the work merges (the worktree's copy goes with the worktree; `bin/worktree reap` deletes main's backup after verifying the merge). The code is the source of truth.
 
 ## Worktrees
 
