@@ -96,6 +96,27 @@ it('compiles the same merged config as live discovery over the module and root c
         ->and($section['values'])->toBe(['database' => ['host' => 'db.internal', 'port' => 3306, 'name' => 'shop']]);
 })->issue(556);
 
+it('compiles the discovery cache config section in source priority order', function (): void {
+    $fixtures = __DIR__ . '/../fixtures/order';
+    $contributor = new ConfigCacheContributor(
+        discovery: configCacheDiscovery(),
+        loader: new ConfigLoader(),
+        projectPaths: new ProjectPaths($fixtures . '/no-project'),
+    );
+
+    $section = $contributor->compile([
+        new ModuleManifest(name: 'app/my-app', version: '1.0.0', path: $fixtures . '/app-module', source: 'app'),
+        new ModuleManifest(
+            name: 'marko/cache',
+            version: '1.0.0',
+            path: $fixtures . '/vendor-module',
+            source: 'vendor',
+        ),
+    ]);
+
+    expect($section['values'])->toBe(['cache' => ['driver' => 'app', 'ttl' => 60]]);
+});
+
 it('stores a hash of every environment variable the config files read through Env', function (): void {
     $section = $this->contributor->compile($this->modules);
 

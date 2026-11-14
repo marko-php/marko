@@ -92,10 +92,10 @@ Extend the `Job` base class and implement `handle()`:
 ```php
 use Marko\Queue\Job;
 
-readonly class SendWelcomeEmail extends Job
+class SendWelcomeEmail extends Job
 {
     public function __construct(
-        private string $email,
+        private readonly string $email,
     ) {}
 
     public function handle(): void

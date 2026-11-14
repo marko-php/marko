@@ -219,7 +219,7 @@ The config collector default mask list covers both top-level and nested keys:
 - `*.api_key`
 - `*.private_key`
 
-Top-level entries (e.g. `key`, `password`) match root config keys directly. Wildcard entries (e.g. `*.key`) match the same name at any nesting depth. Override via `debugbar.options.config.masked` in app config for project-specific rules.
+Top-level entries (e.g. `key`, `password`) match root config keys directly. Wildcard entries (e.g. `*.key`) match the same name at any nesting depth. Override via `debugbar.options.config.masked` in your project `config/debugbar.php` for project-specific rules.
 
 ## API Reference
 

@@ -94,13 +94,31 @@ This keeps environment variables in one place and makes your application testabl
 
 ## Where Config Defaults Go
 
-Config defaults go in each module's `config/` directory. When multiple modules provide the same config key, higher-priority modules win, so app-level config overrides the defaults that ship with a module:
+Config defaults go in each module's `config/` directory. When several files provide the same config key, the later one wins: vendor modules, then `modules/`, then `app/` modules, then your project-root `config/` directory. Your own config overrides the defaults that ship with a module:
 
 ```
 vendor/marko/cache/config/cache.php     → Base defaults
 modules/acme/cache/config/cache.php     → Third-party overrides
-app/my-app/config/cache.php             → Your overrides (wins)
+app/my-app/config/cache.php             → Your module overrides
+config/cache.php                        → Project overrides (wins)
 ```
+
+## Which Config Location to Use
+
+The four locations do two different jobs:
+
+- **A module's `config/` ships defaults with its code.** The file belongs to the module and travels with it, so every project that installs the module gets the same starting values.
+- **The project-root `config/` holds settings for this installation.** Database credentials, the cache or mail driver, the app URL and anything read from the environment belong to the deployment, not to any one module.
+
+When you're deciding where a value goes:
+
+| You're setting | Put it in |
+|----------------|-----------|
+| Defaults for a module you're writing | That module's `config/` |
+| An override that belongs with one of your app modules, such as a blog's `posts_per_page` | That app module's `config/` (`app/blog/config/blog.php`) |
+| A project-wide or per-environment value, or an override of a vendor package's config | The project-root `config/` (`config/cache.php`) |
+
+Most overrides belong in the project-root `config/`. A fresh project's `app/` is empty, and the root `config/` works without creating a module just to hold settings. It is also the one place that always wins.
 
 ## Next Steps
 

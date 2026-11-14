@@ -561,7 +561,7 @@ In Magento, a module's `config.xml` sets default values, and store-scoped values
 </config>
 ```
 
-In Marko, each module has `config/*.php` files that return arrays. Scoped values sit in the same file under `scopes`. Files merge in module priority order, and the **project-root `config/` directory** is applied last and wins:
+In Marko, each module has `config/*.php` files that return arrays. Scoped values sit in the same file under `scopes`. Files merge in source order (vendor, `modules/`, then `app/` modules, with load order deciding within each), and the **project-root `config/` directory** is applied last and wins:
 
 ```php title="app/blog/config/blog.php"
 <?php
