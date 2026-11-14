@@ -6,6 +6,12 @@ on:
     branches: [develop]
     paths: [docs/**, packages/docs-markdown/docs/**]
 
+# Two pushes to develop close together would otherwise both clone marko.build and race to
+# push it; the later push is rejected. Queue deploys instead, and never cancel one mid-push.
+concurrency:
+  group: deploy-docs
+  cancel-in-progress: false
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
