@@ -212,13 +212,18 @@ use Vendor\Blog\Api\PostRepositoryInterface;
 
 class PostSeoPlugin
 {
-    public function beforeGetById(PostRepositoryInterface $subject, int $id): ?array
-    {
+    public function beforeGetById(
+        PostRepositoryInterface $subject,
+        int $id,
+    ): ?array {
         return null;
     }
 
-    public function afterSave(PostRepositoryInterface $subject, object $result, object $post): object
-    {
+    public function afterSave(
+        PostRepositoryInterface $subject,
+        object $result,
+        object $post,
+    ): object {
         return $result;
     }
 }
@@ -248,8 +253,10 @@ class PostSeoPlugin
     }
 
     #[After(sortOrder: 10)]
-    public function save(object $result, object $post): object
-    {
+    public function save(
+        object $result,
+        object $post,
+    ): object {
         return $result;
     }
 }
@@ -1008,8 +1015,10 @@ class PruneCommand extends Command
         $this->setName('blog:prune')->setDescription('Delete old drafts');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output): int
-    {
+    protected function execute(
+        InputInterface $input,
+        OutputInterface $output,
+    ): int {
         $output->writeln('Pruned.');
 
         return Command::SUCCESS;
@@ -1034,8 +1043,10 @@ use Marko\Core\Command\Output;
 #[Command(name: 'blog:prune', description: 'Delete old drafts')]
 class PruneCommand implements CommandInterface
 {
-    public function execute(Input $input, Output $output): int
-    {
+    public function execute(
+        Input $input,
+        Output $output,
+    ): int {
         $output->writeLine('Pruned.');
 
         return 0;

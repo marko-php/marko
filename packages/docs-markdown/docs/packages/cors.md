@@ -140,7 +140,10 @@ Earlier versions required `#[Middleware(CorsMiddleware::class)]` on controllers 
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 
-public function handle(Request $request, callable $next): Response;
+public function handle(
+    Request $request,
+    callable $next,
+): Response;
 ```
 
 Processes the request: checks `paths` and the `Origin` header, answers preflight requests with a `204` response, and adds CORS headers to all other responses for allowed origins. Implements `MiddlewareInterface`. Registered as `globalMiddleware` in the package's `module.php`.

@@ -309,6 +309,42 @@ public function validate(): ValidationResult
 }
 ```
 
+### 16. One Check Per Line in Compound Conditions
+When `&&` or `||` joins two or more checks, put each check on its own line, with the operator leading each continuation line. This applies to `return` statements, assignments, arrow functions and `if` conditions, in source code and in documentation examples alike.
+
+```php
+// WRONG
+return $user !== null && $user->getAuthIdentifier() === $post->authorId;
+
+if ($stock === null || $stock->available < $quantity) {
+
+// CORRECT
+return $user !== null
+    && $user->getAuthIdentifier() === $post->authorId;
+
+if (
+    $stock === null
+    || $stock->available < $quantity
+) {
+```
+
+A ternary is the exception. When its condition has more than one check, wrap the whole condition in parentheses and keep it on one line, then put `?` and `:` each on their own line, so the two possible results stand out. A ternary with a single-check condition stays on one line.
+
+```php
+// WRONG
+return $userAgent === null || $userAgent === '' ? null : mb_substr($userAgent, 0, 255);
+
+return $userAgent === null
+    || $userAgent === ''
+    ? null
+    : mb_substr($userAgent, 0, 255);
+
+// CORRECT
+return ($userAgent === null || $userAgent === '')
+    ? null
+    : mb_substr($userAgent, 0, 255);
+```
+
 ## Attribute Standards
 
 Attributes go on their own line above the target. Stack multiple attributes vertically:

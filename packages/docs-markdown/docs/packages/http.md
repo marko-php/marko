@@ -190,12 +190,31 @@ All methods throw `InvalidRequestOptionException` for invalid options, `Connecti
 use Marko\Http\Contracts\HttpClientInterface;
 use Marko\Http\HttpResponse;
 
-public function request(string $method, string $url, array $options = []): HttpResponse;
-public function get(string $url, array $options = []): HttpResponse;
-public function post(string $url, array $options = []): HttpResponse;
-public function put(string $url, array $options = []): HttpResponse;
-public function patch(string $url, array $options = []): HttpResponse;
-public function delete(string $url, array $options = []): HttpResponse;
+public function request(
+    string $method,
+    string $url,
+    array $options = [],
+): HttpResponse;
+public function get(
+    string $url,
+    array $options = [],
+): HttpResponse;
+public function post(
+    string $url,
+    array $options = [],
+): HttpResponse;
+public function put(
+    string $url,
+    array $options = [],
+): HttpResponse;
+public function patch(
+    string $url,
+    array $options = [],
+): HttpResponse;
+public function delete(
+    string $url,
+    array $options = [],
+): HttpResponse;
 ```
 
 ### HttpResponse

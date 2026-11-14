@@ -128,7 +128,10 @@ class CustomMenuBuilder extends AdminMenuBuilder
 ```php
 interface AdminMenuBuilderInterface
 {
-    public function build(AdminUserInterface $user, string $currentPath = ''): array;
+    public function build(
+        AdminUserInterface $user,
+        string $currentPath = '',
+    ): array;
     public function buildDashboardSections(AdminUserInterface $user): array;
 }
 ```

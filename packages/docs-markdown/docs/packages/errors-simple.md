@@ -186,7 +186,12 @@ class SimpleErrorHandler implements ErrorHandlerInterface
 
     public function handle(ErrorReport $report): void;
     public function handleException(Throwable $exception): void;
-    public function handleError(int $level, string $message, string $file, int $line): bool;
+    public function handleError(
+        int $level,
+        string $message,
+        string $file,
+        int $line,
+    ): bool;
     public function register(): void;
     public function unregister(): void;
 }
@@ -259,7 +264,11 @@ class JsonFormatter implements FormatterInterface
 ```php
 class CodeSnippetExtractor
 {
-    public function extract(string $filePath, int $lineNumber, int $context = 5): array;
+    public function extract(
+        string $filePath,
+        int $lineNumber,
+        int $context = 5,
+    ): array;
     // Returns: ['lines' => [lineNum => code], 'errorLine' => int]
 }
 ```

@@ -176,8 +176,10 @@ class ApiKeyGuard implements StatelessGuardInterface
         return $this->user()?->getAuthIdentifier();
     }
 
-    public function attempt(array $credentials, bool $remember = false): bool
-    {
+    public function attempt(
+        array $credentials,
+        bool $remember = false,
+    ): bool {
         throw new AuthException(
             message: "Cannot call attempt() on API key guard '$this->name': it is stateless",
             suggestion: 'Issue an API key to the client instead',

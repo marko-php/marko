@@ -264,7 +264,10 @@ use Marko\Search\Value\SearchFilter;
 
 public static function create(string $query = ''): static;
 public function withFilter(SearchFilter $filter): static;
-public function withSort(string $field, string $direction = 'asc'): static;
+public function withSort(
+    string $field,
+    string $direction = 'asc',
+): static;
 public function withPage(int $page): static;
 public function withPerPage(int $perPage): static;
 

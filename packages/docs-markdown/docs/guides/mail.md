@@ -29,8 +29,10 @@ readonly class NotificationService
         private MailerInterface $mailer,
     ) {}
 
-    public function notifyAuthor(string $email, string $postTitle): void
-    {
+    public function notifyAuthor(
+        string $email,
+        string $postTitle,
+    ): void {
         $message = Message::create()
             ->to($email)
             ->subject("Your post '{$postTitle}' was published")

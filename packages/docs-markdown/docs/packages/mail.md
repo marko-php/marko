@@ -120,7 +120,10 @@ use Marko\Mail\Contracts\MailerInterface;
 use Marko\Mail\Message;
 
 public function send(Message $message): bool;
-public function sendRaw(string $to, string $raw): bool;
+public function sendRaw(
+    string $to,
+    string $raw,
+): bool;
 ```
 
 Both methods throw `TransportException` on delivery failure.
@@ -131,20 +134,50 @@ Both methods throw `TransportException` on delivery failure.
 use Marko\Mail\Message;
 
 public static function create(): self;
-public function to(string $email, ?string $name = null): self;
-public function cc(string $email, ?string $name = null): self;
-public function bcc(string $email, ?string $name = null): self;
-public function from(string $email, ?string $name = null): self;
-public function replyTo(string $email, ?string $name = null): self;
+public function to(
+    string $email,
+    ?string $name = null,
+): self;
+public function cc(
+    string $email,
+    ?string $name = null,
+): self;
+public function bcc(
+    string $email,
+    ?string $name = null,
+): self;
+public function from(
+    string $email,
+    ?string $name = null,
+): self;
+public function replyTo(
+    string $email,
+    ?string $name = null,
+): self;
 public function subject(string $subject): self;
 public function html(string $html): self;
 public function text(string $text): self;
-public function attach(string $path, ?string $name = null, ?string $mimeType = null): self;
-public function embed(string $path, string $contentId, ?string $name = null, ?string $mimeType = null): self;
-public function header(string $name, string $value): self;  // throws MessageException if name or value contains CR/LF
+public function attach(
+    string $path,
+    ?string $name = null,
+    ?string $mimeType = null,
+): self;
+public function embed(
+    string $path,
+    string $contentId,
+    ?string $name = null,
+    ?string $mimeType = null,
+): self;
+public function header(
+    string $name,
+    string $value,
+): self;  // throws MessageException if name or value contains CR/LF
 public function priority(int $priority): self;
 public function view(string $template): self;
-public function with(array|string $key, mixed $value = null): self;
+public function with(
+    array|string $key,
+    mixed $value = null,
+): self;
 ```
 
 ### Address
@@ -171,9 +204,22 @@ The `Address` constructor throws `MessageException` if the email address is inva
 ```php
 use Marko\Mail\Attachment;
 
-public static function fromPath(string $path, ?string $name = null, ?string $mimeType = null): self;
-public static function fromContent(string $content, string $name, string $mimeType = 'application/octet-stream'): self;
-public static function inline(string $path, string $contentId, ?string $name = null, ?string $mimeType = null): self;
+public static function fromPath(
+    string $path,
+    ?string $name = null,
+    ?string $mimeType = null,
+): self;
+public static function fromContent(
+    string $content,
+    string $name,
+    string $mimeType = 'application/octet-stream',
+): self;
+public static function inline(
+    string $path,
+    string $contentId,
+    ?string $name = null,
+    ?string $mimeType = null,
+): self;
 ```
 
 Every `Attachment` is validated on creation, so a filename or type taken from user input cannot inject MIME headers. It throws `MessageException` when:

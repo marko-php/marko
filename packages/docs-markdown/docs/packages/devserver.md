@@ -220,7 +220,10 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 
 #[Command(name: 'dev:up', description: 'Start the development environment', aliases: ['up'])]
-public function execute(Input $input, Output $output): int;
+public function execute(
+    Input $input,
+    Output $output,
+): int;
 ```
 
 ### DevDownCommand
@@ -231,7 +234,10 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 
 #[Command(name: 'dev:down', description: 'Stop the development environment', aliases: ['down'])]
-public function execute(Input $input, Output $output): int;
+public function execute(
+    Input $input,
+    Output $output,
+): int;
 ```
 
 ### DevOpenCommand
@@ -242,7 +248,10 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 
 #[Command(name: 'dev:open', description: 'Open the running development server in a browser', aliases: ['open'])]
-public function execute(Input $input, Output $output): int;
+public function execute(
+    Input $input,
+    Output $output,
+): int;
 ```
 
 ### DevStatusCommand
@@ -253,7 +262,10 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 
 #[Command(name: 'dev:status', description: 'Show development environment status', aliases: ['status'])]
-public function execute(Input $input, Output $output): int;
+public function execute(
+    Input $input,
+    Output $output,
+): int;
 ```
 
 ### DockerDetector

@@ -120,7 +120,10 @@ foreach ($subscription as $message) {
 use Marko\PubSub\Message;
 use Marko\PubSub\PublisherInterface;
 
-public function publish(string $channel, Message $message): void;
+public function publish(
+    string $channel,
+    Message $message,
+): void;
 ```
 
 ### SubscriberInterface

@@ -954,13 +954,26 @@ use Marko\Queue\QueueInterface;
 use Marko\Queue\JobInterface;
 use Marko\Queue\PushResult;
 
-public function push(JobInterface $job, ?string $queue = null): PushResult;
-public function later(int $delay, JobInterface $job, ?string $queue = null): PushResult;
-public function pop(?string $queue = null, bool $block = false): ?JobInterface; // $block: the driver may wait for a job (see Queue Priority)
+public function push(
+    JobInterface $job,
+    ?string $queue = null,
+): PushResult;
+public function later(
+    int $delay,
+    JobInterface $job,
+    ?string $queue = null,
+): PushResult;
+public function pop(
+    ?string $queue = null,
+    bool $block = false,
+): ?JobInterface; // $block: the driver may wait for a job (see Queue Priority)
 public function size(?string $queue = null): int;
 public function clear(?string $queue = null): int;
 public function delete(string $jobId): bool;
-public function release(JobInterface $job, int $delay = 0): bool; // stores the given job; false when no reserved job has its id
+public function release(
+    JobInterface $job,
+    int $delay = 0,
+): bool; // stores the given job; false when no reserved job has its id
 ```
 
 ### PushResult
@@ -1058,7 +1071,10 @@ use Marko\Queue\JobInterface;
 use Marko\Queue\RetryDecision;
 use Marko\Queue\RetryPolicy;
 
-public function decide(JobInterface $job, ?Throwable $e = null): RetryDecision; // $e null = the job released itself
+public function decide(
+    JobInterface $job,
+    ?Throwable $e = null,
+): RetryDecision; // $e null = the job released itself
 public function limitReached(JobInterface $job): ?QueueException; // the limit reached, in precedence order, or null
 public function limitReachedOnReservation(JobInterface $job): ?QueueException; // for drivers' pop-time check; attempts exhaustion is reported as crashed reservations
 public function maxAttemptsFor(JobInterface $job): int; // the job's maxAttempts, or queue.max_attempts
@@ -1073,8 +1089,14 @@ Constructed with the `QueueConfig` and the clock. `decide()` returns a readonly 
 use Marko\Queue\JobRunnerInterface;
 use Marko\Queue\JobInterface;
 
-public function run(JobInterface $job, string $queue): void; // rethrows whatever handle() throws
-public function withContainer(JobInterface $job, callable $callback): mixed;
+public function run(
+    JobInterface $job,
+    string $queue,
+): void; // rethrows whatever handle() throws
+public function withContainer(
+    JobInterface $job,
+    callable $callback,
+): mixed;
 ```
 
 Bound to `JobRunner`, which is constructed with the container, the `JobEnvelope` and the `EventDispatcherInterface`. See [Running One Attempt](#running-one-attempt).
@@ -1085,7 +1107,12 @@ Bound to `JobRunner`, which is constructed with the container, the `JobEnvelope`
 use Marko\Queue\FailedJobHandlerInterface;
 use Marko\Queue\JobInterface;
 
-public function handle(JobInterface $job, string $queue, Throwable $exception, string $note = ''): void;
+public function handle(
+    JobInterface $job,
+    string $queue,
+    Throwable $exception,
+    string $note = '',
+): void;
 ```
 
 Bound to `FailedJobHandler`, which is constructed with the failed-job repository, the `JobEnvelope`, the `JobRunnerInterface`, the `EventDispatcherInterface`, the clock and the `LoggerInterface`. `$note` is appended to the stored exception text. The handler never touches the queue: the caller deletes the job. When the repository can't store the job, `handle()` throws `FailedJobNotStoredException` without calling `failed()` or dispatching the event, and the caller must not delete the job. See [When a Job Fails for Good](#when-a-job-fails-for-good).
@@ -1218,7 +1245,10 @@ Implement this interface on any job class that needs to resolve services from th
 use Marko\Core\Event\Event;
 use Marko\Queue\QueueAsyncObserverDispatcher;
 
-public function dispatch(string $observerClass, Event $event): void;
+public function dispatch(
+    string $observerClass,
+    Event $event,
+): void;
 ```
 
 Implements `Marko\Core\Event\AsyncObserverDispatcherInterface` and is bound to it in `module.php`. Pushes an `AsyncObserverJob` whose event data is the serialized event wrapped in a `JobEnvelope`. Throws `SerializationException` when the event can't be serialized.

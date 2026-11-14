@@ -250,10 +250,21 @@ use Marko\Routing\Http\Response;
 
 class Inertia implements ResettableInterface
 {
-    public function share(array|string $key, mixed $value = null): void;
+    public function share(
+        array|string $key,
+        mixed $value = null,
+    ): void;
     public function reset(): void;
-    public function flash(string $key, string|array $value): void;
-    public function render(Request $request, string $component, array $props = [], ?string $assetEntry = null): Response;
+    public function flash(
+        string $key,
+        string|array $value,
+    ): void;
+    public function render(
+        Request $request,
+        string $component,
+        array $props = [],
+        ?string $assetEntry = null,
+    ): Response;
     public function location(string $url): Response;
     public function isInertiaRequest(Request $request): bool;
     public function version(): ?string;
@@ -265,7 +276,10 @@ namespace Marko\Inertia\Ssr;
 
 interface SsrTransportInterface
 {
-    public function post(string $url, string $body): ?string;
+    public function post(
+        string $url,
+        string $body,
+    ): ?string;
 }
 ```
 

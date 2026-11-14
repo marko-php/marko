@@ -61,7 +61,10 @@ return [
 ```php
 interface PublisherInterface
 {
-    public function publish(string $channel, Message $message): void;
+    public function publish(
+        string $channel,
+        Message $message,
+    ): void;
 }
 ```
 

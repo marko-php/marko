@@ -238,15 +238,34 @@ class Debugbar
     public function id(): string;
     public function profilerUrl(): string;
 
-    public function addMessage(string $message, string $level = 'info', array $context = []): void;
-    public function debug(string $message, array $context = []): void;
-    public function info(string $message, array $context = []): void;
-    public function warning(string $message, array $context = []): void;
-    public function error(string $message, array $context = []): void;
+    public function addMessage(
+        string $message,
+        string $level = 'info',
+        array $context = [],
+    ): void;
+    public function debug(
+        string $message,
+        array $context = [],
+    ): void;
+    public function info(
+        string $message,
+        array $context = [],
+    ): void;
+    public function warning(
+        string $message,
+        array $context = [],
+    ): void;
+    public function error(
+        string $message,
+        array $context = [],
+    ): void;
 
     public function startMeasure(string $name): void;
     public function stopMeasure(string $name): void;
-    public function measure(string $name, Closure $callback): mixed;
+    public function measure(
+        string $name,
+        Closure $callback,
+    ): mixed;
 
     public function inject(string $html): string;
     public function collect(?string $responseBody = null): array;
@@ -256,7 +275,11 @@ class Debugbar
 The `debugbar()` helper is registered globally:
 
 ```php
-function debugbar(?string $message = null, string $level = 'info', array $context = []): ?Debugbar;
+function debugbar(
+    ?string $message = null,
+    string $level = 'info',
+    array $context = [],
+): ?Debugbar;
 ```
 
 It returns the current `Debugbar` instance (or `null` when no request is active) and adds the message when one is provided.

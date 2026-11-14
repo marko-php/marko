@@ -41,8 +41,10 @@ class SeatService
         private BroadcasterInterface $broadcaster,
     ) {}
 
-    public function sell(int $showId, string $seat): void
-    {
+    public function sell(
+        int $showId,
+        string $seat,
+    ): void {
         // ... persist the sale ...
 
         // Public: anyone watching the show sees the seat map update
@@ -111,7 +113,8 @@ class CustomerChannelAuthorizer implements ChannelAuthorizerInterface
         ?AuthenticatableInterface $user,
         array $params,
     ): bool {
-        return $user !== null && (string) $user->getAuthIdentifier() === $params['customerId'];
+        return $user !== null
+            && (string) $user->getAuthIdentifier() === $params['customerId'];
     }
 }
 ```
@@ -196,7 +199,12 @@ $broadcaster->assertBroadcast('shows.42', 'seat.sold', fn (array $data): bool =>
 use Marko\Broadcasting\BroadcasterInterface;
 
 /** @throws BroadcastException */
-public function broadcast(string|Channel $channel, string $event, array $data, ?string $id = null): void;
+public function broadcast(
+    string|Channel $channel,
+    string $event,
+    array $data,
+    ?string $id = null,
+): void;
 
 /** @throws BroadcastException */
 public function dispatch(BroadcastableInterface $broadcastable): void;
@@ -233,7 +241,10 @@ use Marko\Broadcasting\PresenceMember;
 readonly class PresenceMember
 {
     /** @param array<string, scalar|null> $info Public info shared with other members */
-    public function __construct(public string|int $id, public array $info = []); // throws BroadcastException when $id is ''
+    public function __construct(
+        public string|int $id,
+        public array $info = [],
+    ); // throws BroadcastException when $id is ''
 }
 ```
 
@@ -258,7 +269,10 @@ use Marko\Broadcasting\ChannelAuthorizerInterface;
 #[BroadcastChannel(pattern: 'shows.{showId}')]
 
 /** @param array<string, string> $params */
-public function authorize(?AuthenticatableInterface $user, array $params): bool;
+public function authorize(
+    ?AuthenticatableInterface $user,
+    array $params,
+): bool;
 ```
 
 ### PresenceChannelAuthorizerInterface
@@ -270,7 +284,10 @@ use Marko\Broadcasting\PresenceChannelAuthorizerInterface;
  * @param array<string, string> $params
  * @return PresenceMember|null The member to announce, or null to deny
  */
-public function authorize(?AuthenticatableInterface $user, array $params): ?PresenceMember;
+public function authorize(
+    ?AuthenticatableInterface $user,
+    array $params,
+): ?PresenceMember;
 ```
 
 Registered with the same `#[BroadcastChannel]` attribute. A class implements one authorizer interface or the other.
@@ -281,10 +298,16 @@ Registered with the same `#[BroadcastChannel]` attribute. A class implements one
 use Marko\Broadcasting\ChannelRegistry;
 
 /** @throws ChannelAuthorizationException when no authorizer matches, or the match is a presence authorizer */
-public function authorize(string $channelName, ?AuthenticatableInterface $user): bool;
+public function authorize(
+    string $channelName,
+    ?AuthenticatableInterface $user,
+): bool;
 
 /** @throws ChannelAuthorizationException when no authorizer matches, or the match is a private-channel authorizer */
-public function authorizePresence(string $channelName, ?AuthenticatableInterface $user): ?PresenceMember;
+public function authorizePresence(
+    string $channelName,
+    ?AuthenticatableInterface $user,
+): ?PresenceMember;
 
 /** @return list<string> */
 public function patterns(): array;

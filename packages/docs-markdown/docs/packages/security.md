@@ -261,7 +261,10 @@ public function __construct(
     SessionInterface $session,
     SessionConfig $sessionConfig,
 );
-public function handle(Request $request, callable $next): Response;
+public function handle(
+    Request $request,
+    callable $next,
+): Response;
 ```
 
 ### RouteCsrfMiddleware
@@ -291,7 +294,10 @@ use Marko\Security\Middleware\SecurityHeadersMiddleware;
 
 #[RunsOnUnmatched]
 public function __construct(SecurityConfig $securityConfig);
-public function handle(Request $request, callable $next): Response;
+public function handle(
+    Request $request,
+    callable $next,
+): Response;
 ```
 
 ### SecurityConfig
@@ -333,5 +339,8 @@ public function getResponseData(): array;   // ['message' => 'CSRF token mismatc
 ```php
 use Marko\Security\Exceptions\CsrfSessionUnavailableException;
 
-public static function forRequest(string $method, string $path): self;
+public static function forRequest(
+    string $method,
+    string $path,
+): self;
 ```

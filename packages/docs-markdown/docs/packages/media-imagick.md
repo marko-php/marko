@@ -200,10 +200,27 @@ Choose `marko/media-gd` when `ext-gd` is sufficient and memory is constrained. C
 ```php
 use Marko\MediaImagick\Driver\ImagickImageProcessor;
 
-public function resize(string $imagePath, int $width, int $height, bool $maintainAspect = true): string;
-public function crop(string $imagePath, int $x, int $y, int $width, int $height): string;
-public function convert(string $imagePath, string $format): string;
-public function thumbnail(string $imagePath, int $maxDimension): string;
+public function resize(
+    string $imagePath,
+    int $width,
+    int $height,
+    bool $maintainAspect = true,
+): string;
+public function crop(
+    string $imagePath,
+    int $x,
+    int $y,
+    int $width,
+    int $height,
+): string;
+public function convert(
+    string $imagePath,
+    string $format,
+): string;
+public function thumbnail(
+    string $imagePath,
+    int $maxDimension,
+): string;
 ```
 
 All methods return the absolute path to the processed output file in the system temp directory. All methods run the pre-read checks described under [Security](#security): they throw `ImageFormatException` (from `marko/media`) for unsafe paths and non-raster content, and `ImagickProcessingException` for formats outside `allowed_raster_formats`, images exceeding the configured `limits`, and processing failures. `convert()` also checks the target `$format` against `allowed_raster_formats`.

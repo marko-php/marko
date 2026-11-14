@@ -108,8 +108,11 @@ class MessageRepository extends Repository
 {
     protected const string ENTITY_CLASS = Message::class;
 
-    public function create(string $room, string $username, string $body): Message
-    {
+    public function create(
+        string $room,
+        string $username,
+        string $body,
+    ): Message {
         $message = new Message();
         $message->room = $room;
         $message->username = $username;
@@ -123,8 +126,10 @@ class MessageRepository extends Repository
     /**
      * @return array<Message>
      */
-    public function forRoom(string $room, int $limit = 50): array
-    {
+    public function forRoom(
+        string $room,
+        int $limit = 50,
+    ): array {
         return $this->query()
             ->where('room', '=', $room)
             ->orderBy('id', 'DESC')
@@ -135,8 +140,10 @@ class MessageRepository extends Repository
     /**
      * @return array<Message>
      */
-    public function sinceId(string $room, int $lastId): array
-    {
+    public function sinceId(
+        string $room,
+        int $lastId,
+    ): array {
         return $this->query()
             ->where('room', '=', $room)
             ->where('id', '>', $lastId)
@@ -197,8 +204,10 @@ readonly class ChatController
      * @throws JsonException
      */
     #[Post('/chat/{room}/messages')]
-    public function send(string $room, Request $request): Response
-    {
+    public function send(
+        string $room,
+        Request $request,
+    ): Response {
         $data = json_decode($request->body(), true, flags: JSON_THROW_ON_ERROR);
         $username = (string) $this->authManager->id();
 
@@ -253,8 +262,10 @@ readonly class StreamController
     ) {}
 
     #[Get('/chat/{room}/stream')]
-    public function stream(string $room, Request $request): StreamingResponse
-    {
+    public function stream(
+        string $room,
+        Request $request,
+    ): StreamingResponse {
         $lastEventId = $request->header('Last-Event-ID');
 
         if ($lastEventId !== null) {
@@ -271,8 +282,10 @@ readonly class StreamController
         return new StreamingResponse(stream: $stream);
     }
 
-    private function replayMissed(string $room, int $lastId): void
-    {
+    private function replayMissed(
+        string $room,
+        int $lastId,
+    ): void {
         $missed = $this->messageRepository->sinceId($room, $lastId);
 
         foreach ($missed as $message) {
@@ -413,8 +426,10 @@ readonly class StreamController
     ) {}
 
     #[Get('/chat/{room}/stream')]
-    public function stream(string $room, Request $request): StreamingResponse
-    {
+    public function stream(
+        string $room,
+        Request $request,
+    ): StreamingResponse {
         $lastEventId = $request->header('Last-Event-ID');
 
         if ($lastEventId !== null) {
@@ -434,8 +449,10 @@ readonly class StreamController
     /**
      * @throws JsonException
      */
-    private function replayMissed(string $room, int $lastId): void
-    {
+    private function replayMissed(
+        string $room,
+        int $lastId,
+    ): void {
         $missed = $this->messageRepository->sinceId($room, $lastId);
 
         foreach ($missed as $message) {

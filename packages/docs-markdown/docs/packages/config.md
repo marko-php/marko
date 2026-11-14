@@ -438,13 +438,34 @@ class CachedConfigRepository extends ConfigRepository
 ### ConfigRepositoryInterface
 
 ```php
-public function get(string $key, ?string $scope = null): mixed
-public function has(string $key, ?string $scope = null): bool
-public function getString(string $key, ?string $scope = null): string
-public function getInt(string $key, ?string $scope = null): int
-public function getBool(string $key, ?string $scope = null): bool
-public function getFloat(string $key, ?string $scope = null): float
-public function getArray(string $key, ?string $scope = null): array
+public function get(
+    string $key,
+    ?string $scope = null,
+): mixed
+public function has(
+    string $key,
+    ?string $scope = null,
+): bool
+public function getString(
+    string $key,
+    ?string $scope = null,
+): string
+public function getInt(
+    string $key,
+    ?string $scope = null,
+): int
+public function getBool(
+    string $key,
+    ?string $scope = null,
+): bool
+public function getFloat(
+    string $key,
+    ?string $scope = null,
+): float
+public function getArray(
+    string $key,
+    ?string $scope = null,
+): array
 public function all(?string $scope = null): array
 public function withScope(string $scope): ConfigRepositoryInterface
 ```
@@ -454,13 +475,40 @@ All getter methods throw `ConfigNotFoundException` when the key does not exist. 
 ### Env
 
 ```php
-public static function string(string $name, string $default): string
-public static function nullableString(string $name, ?string $default = null): ?string
-public static function int(string $name, int $default, ?int $min = null, ?int $max = null): int
-public static function nullableInt(string $name, ?int $default = null, ?int $min = null, ?int $max = null): ?int
-public static function float(string $name, float $default, ?float $min = null, ?float $max = null): float
-public static function bool(string $name, bool $default): bool
-public static function list(string $name, array $default): array
+public static function string(
+    string $name,
+    string $default,
+): string
+public static function nullableString(
+    string $name,
+    ?string $default = null,
+): ?string
+public static function int(
+    string $name,
+    int $default,
+    ?int $min = null,
+    ?int $max = null,
+): int
+public static function nullableInt(
+    string $name,
+    ?int $default = null,
+    ?int $min = null,
+    ?int $max = null,
+): ?int
+public static function float(
+    string $name,
+    float $default,
+    ?float $min = null,
+    ?float $max = null,
+): float
+public static function bool(
+    string $name,
+    bool $default,
+): bool
+public static function list(
+    string $name,
+    array $default,
+): array
 ```
 
 `Env::TRUE_VALUES` and `Env::FALSE_VALUES` hold the accepted boolean tokens. Every method throws `ConfigException` for a value it can't parse or one outside `min`/`max`.
@@ -488,7 +536,10 @@ Load errors throw `ConfigLoadException`, whose message ends with `[file: <path>]
 ### ConfigMerger
 
 ```php
-public function merge(array $base, array $override): array
+public function merge(
+    array $base,
+    array $override,
+): array
 public function mergeAll(array ...$configs): array
 ```
 
@@ -505,8 +556,14 @@ A marker for a config value that deletes the key from the lower-priority config.
 ### ConfigDiscovery
 
 ```php
-public function discover(array $modulePaths, string $rootConfigPath): array
-public function files(array $modulePaths, string $rootConfigPath): array
+public function discover(
+    array $modulePaths,
+    string $rootConfigPath,
+): array
+public function files(
+    array $modulePaths,
+    string $rootConfigPath,
+): array
 ```
 
 `files()` lists every config file in merge order: each module's `config/*.php` in module load order, then the root config directory. `discover()` loads and merges them in that order.
@@ -514,7 +571,11 @@ public function files(array $modulePaths, string $rootConfigPath): array
 ### ConfigServiceProvider
 
 ```php
-public function createRepository(array $modulePaths, string $rootConfigPath, ?CachedDiscovery $cachedDiscovery = null): ConfigRepositoryInterface
+public function createRepository(
+    array $modulePaths,
+    string $rootConfigPath,
+    ?CachedDiscovery $cachedDiscovery = null,
+): ConfigRepositoryInterface
 ```
 
 When `$cachedDiscovery` comes from a boot that used the discovery cache, the repository is built from its `config` section. Otherwise config files are discovered and merged live.

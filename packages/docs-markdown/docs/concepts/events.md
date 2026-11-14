@@ -25,8 +25,10 @@ readonly class PostService
         private EventDispatcherInterface $eventDispatcher,
     ) {}
 
-    public function createPost(string $title, string $body): Post
-    {
+    public function createPost(
+        string $title,
+        string $body,
+    ): Post {
         $post = new Post(title: $title, body: $body);
         // ... save to database
 

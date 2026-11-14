@@ -331,7 +331,10 @@ public function __construct(
 );
 
 // Encrypts the secret; @throws InvalidWebhookSecretException|EncryptionException
-public static function seal(WebhookPayload $payload, EncryptorInterface $encryptor): SealedWebhookPayload;
+public static function seal(
+    WebhookPayload $payload,
+    EncryptorInterface $encryptor,
+): SealedWebhookPayload;
 
 // Decrypts the secret; @throws DecryptionException
 public function unseal(EncryptorInterface $encryptor): WebhookPayload;
@@ -352,7 +355,10 @@ public function __construct(
 
 // Seals the payload and pushes a DispatchWebhookJob; returns the queue's PushResult (the job ID, or why it was skipped)
 // @throws InvalidWebhookSecretException|EncryptionException
-public function push(WebhookPayload $payload, ?string $queue = null): PushResult;
+public function push(
+    WebhookPayload $payload,
+    ?string $queue = null,
+): PushResult;
 ```
 
 ### WebhookResponse
@@ -457,7 +463,10 @@ public function __construct(
 // Returns the decoded JSON object or array
 // @throws InvalidSignatureException|InvalidWebhookSecretException|InvalidWebhookPayloadException
 // @throws ConfigException when webhook.replay_protection is true but no replay guard was given
-public function receive(Request $request, string $secret): array;
+public function receive(
+    Request $request,
+    string $secret,
+): array;
 ```
 
 ### WebhookVerifier
@@ -467,7 +476,14 @@ use Marko\Webhook\Receiving\WebhookVerifier;
 
 // Checks the signature over "{webhookId}.{timestamp}.{body}" and the timestamp freshness
 // @throws InvalidWebhookSecretException when $secret is shorter than WebhookSecret::MIN_LENGTH
-public function verify(string $body, string $timestamp, string $signature, string $secret, int $tolerance, string $webhookId): bool;
+public function verify(
+    string $body,
+    string $timestamp,
+    string $signature,
+    string $secret,
+    int $tolerance,
+    string $webhookId,
+): bool;
 ```
 
 ### WebhookSignature
@@ -477,7 +493,12 @@ use Marko\Webhook\Sending\WebhookSignature;
 
 // Returns "sha256={hash}"; message is "{webhookId}.{timestamp}.{payload}"
 // @throws InvalidWebhookSecretException when $secret is shorter than WebhookSecret::MIN_LENGTH
-public static function sign(string $payload, string $secret, int $timestamp, string $webhookId): string;
+public static function sign(
+    string $payload,
+    string $secret,
+    int $timestamp,
+    string $webhookId,
+): string;
 ```
 
 ### WebhookEndpoint (Attribute)
@@ -515,7 +536,10 @@ public function __construct(
 );
 
 // True the first time $webhookId is claimed within $ttl seconds; uses CacheInterface::increment()
-public function claim(string $webhookId, int $ttl): bool;
+public function claim(
+    string $webhookId,
+    int $ttl,
+): bool;
 ```
 
 ### DispatchWebhookJob
@@ -541,9 +565,21 @@ use Marko\Webhook\Value\WebhookPayload;
 use Marko\Webhook\Value\WebhookResponse;
 
 // Both store the response body trimmed and capped at 500 bytes (HttpResponse::bodyExcerpt())
-public function recordSuccess(WebhookPayload $payload, WebhookResponse $response, int $attempt): void;   // 2xx
-public function recordRejection(WebhookPayload $payload, WebhookResponse $response, int $attempt): void; // non-2xx
-public function recordFailure(WebhookPayload $payload, string $error, int $attempt): void;
+public function recordSuccess(
+    WebhookPayload $payload,
+    WebhookResponse $response,
+    int $attempt,
+): void;   // 2xx
+public function recordRejection(
+    WebhookPayload $payload,
+    WebhookResponse $response,
+    int $attempt,
+): void; // non-2xx
+public function recordFailure(
+    WebhookPayload $payload,
+    string $error,
+    int $attempt,
+): void;
 ```
 
 ### WebhookAttempt (Entity)
@@ -666,7 +702,10 @@ use Marko\Routing\Http\Request;
 use Marko\Webhook\Contracts\WebhookReceiverInterface;
 
 interface WebhookReceiverInterface {
-    public function receive(Request $request, string $secret): array;
+    public function receive(
+        Request $request,
+        string $secret,
+    ): array;
 }
 ```
 
@@ -675,7 +714,10 @@ use Marko\Webhook\Contracts\WebhookReplayGuardInterface;
 
 interface WebhookReplayGuardInterface {
     // Atomically record $webhookId for $ttl seconds; false when it was already recorded
-    public function claim(string $webhookId, int $ttl): bool;
+    public function claim(
+        string $webhookId,
+        int $ttl,
+    ): bool;
 }
 ```
 

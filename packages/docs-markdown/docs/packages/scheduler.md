@@ -84,8 +84,10 @@ use Marko\Core\Command\Output;
 #[Command(name: 'app:prune', description: 'Prune old records')]
 readonly class PruneCommand implements CommandInterface
 {
-    public function execute(Input $input, Output $output): int
-    {
+    public function execute(
+        Input $input,
+        Output $output,
+    ): int {
         // The body of the old closure...
 
         return 0;
@@ -375,7 +377,10 @@ Overlap protection depends on `TaskMutexInterface`, which `marko/scheduler` bind
 ```php
 public function __construct(CommandRegistry $commandRegistry);
 public function call(Closure $callback): ScheduledTask;
-public function command(string $name, array $arguments = []): ScheduledTask;
+public function command(
+    string $name,
+    array $arguments = [],
+): ScheduledTask;
 public function tasks(): array;
 public function dueTasksAt(DateTimeInterface $time): array;
 ```
@@ -397,9 +402,19 @@ public function weekly(): self;
 public function monthly(): self;
 public function dailyAt(string $time): self;
 public function at(string $time): self;
-public function twiceDaily(int $firstHour, int $secondHour, int $minute = 0): self;
-public function weeklyOn(int $dayOfWeek, string $time): self;
-public function monthlyOn(int $dayOfMonth, string $time): self;
+public function twiceDaily(
+    int $firstHour,
+    int $secondHour,
+    int $minute = 0,
+): self;
+public function weeklyOn(
+    int $dayOfWeek,
+    string $time,
+): self;
+public function monthlyOn(
+    int $dayOfMonth,
+    string $time,
+): self;
 public function cron(string $expression): self;
 public function timezone(DateTimeZone|string $timezone): self;
 public function getTimezone(): ?DateTimeZone;
@@ -448,8 +463,17 @@ use Marko\Scheduler\Mutex\TaskServerClaimInterface;
 use Marko\Scheduler\Process\BackgroundCommandLauncherInterface;
 use Marko\Scheduler\ScheduleRunResult;
 
-public function __construct(Schedule $schedule, TaskMutexInterface $taskMutex, CommandRunner $commandRunner, BackgroundCommandLauncherInterface $backgroundCommandLauncher, TaskServerClaimInterface $taskServerClaim);
-public function run(DateTimeInterface $now, Output $output): ScheduleRunResult;
+public function __construct(
+    Schedule $schedule,
+    TaskMutexInterface $taskMutex,
+    CommandRunner $commandRunner,
+    BackgroundCommandLauncherInterface $backgroundCommandLauncher,
+    TaskServerClaimInterface $taskServerClaim,
+);
+public function run(
+    DateTimeInterface $now,
+    Output $output,
+): ScheduleRunResult;
 ```
 
 ### ScheduleRunResult
@@ -467,7 +491,10 @@ public function hasFailures(): bool;
 ### TaskMutexInterface
 
 ```php
-public function acquire(string $name, int $expiresAfterSeconds): bool;
+public function acquire(
+    string $name,
+    int $expiresAfterSeconds,
+): bool;
 public function release(string $name): void;
 public function exists(string $name): bool;
 ```
@@ -479,7 +506,10 @@ public function exists(string $name): bool;
 ```php
 use Marko\Scheduler\ScheduledTask;
 
-public function claim(ScheduledTask $task, DateTimeInterface $dueAt): bool;
+public function claim(
+    ScheduledTask $task,
+    DateTimeInterface $dueAt,
+): bool;
 public function assertCanClaim(ScheduledTask $task): void;
 ```
 
@@ -488,7 +518,12 @@ public function assertCanClaim(ScheduledTask $task): void;
 ### BackgroundCommandLauncherInterface
 
 ```php
-public function launch(string $command, array $arguments, ?string $mutexName, ?int $mutexExpiresAfterSeconds): void;
+public function launch(
+    string $command,
+    array $arguments,
+    ?string $mutexName,
+    ?int $mutexExpiresAfterSeconds,
+): void;
 ```
 
 `ProcOpenBackgroundCommandLauncher` throws `SchedulerException` when `vendor/bin/marko` is missing or the process cannot be started.
@@ -499,7 +534,10 @@ public function launch(string $command, array $arguments, ?string $mutexName, ?i
 use Marko\Scheduler\CronExpression;
 use Marko\Scheduler\Exceptions\InvalidCronExpressionException;
 
-public static function matches(string $expression, DateTimeInterface $time): bool;
+public static function matches(
+    string $expression,
+    DateTimeInterface $time,
+): bool;
 ```
 
 Throws `InvalidCronExpressionException` if the expression does not have exactly 5 fields or contains characters that cannot be parsed. All fields are validated before any matching occurs.

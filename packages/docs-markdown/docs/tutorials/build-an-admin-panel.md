@@ -368,8 +368,10 @@ readonly class PostController
 
     #[Get(path: '/admin/posts/{id}')]
     #[RequiresPermission(permission: 'posts.edit')]
-    public function edit(int $id, Request $request): Response
-    {
+    public function edit(
+        int $id,
+        Request $request,
+    ): Response {
         // Fetch post from your repository
         return $this->view->render('admin::post/edit', [
             'post' => $post,
@@ -378,8 +380,10 @@ readonly class PostController
 
     #[Put(path: '/admin/posts/{id}')]
     #[RequiresPermission(permission: 'posts.edit')]
-    public function update(int $id, Request $request): Response
-    {
+    public function update(
+        int $id,
+        Request $request,
+    ): Response {
         $title = $request->post('title');
         $body = $request->post('body');
 
@@ -390,8 +394,10 @@ readonly class PostController
 
     #[Delete(path: '/admin/posts/{id}')]
     #[RequiresPermission(permission: 'posts.delete')]
-    public function destroy(int $id, Request $request): Response
-    {
+    public function destroy(
+        int $id,
+        Request $request,
+    ): Response {
         // Delete the post from the database...
 
         return Response::redirect('/admin/posts');

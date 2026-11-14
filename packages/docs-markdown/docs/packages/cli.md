@@ -42,8 +42,10 @@ use Marko\Core\Command\Output;
 #[Command(name: 'greet', description: 'Say hello')]
 class GreetCommand implements CommandInterface
 {
-    public function execute(Input $input, Output $output): int
-    {
+    public function execute(
+        Input $input,
+        Output $output,
+    ): int {
         $name = $input->getArgument(0) ?? 'World';
         $output->writeLine("Hello, $name!");
 
@@ -93,10 +95,13 @@ use Marko\Core\Command\Output;
 #[Command(name: 'report:send', description: 'Send a report', flags: ['force', 'f'], options: ['to'])]
 class SendReportCommand implements CommandInterface
 {
-    public function execute(Input $input, Output $output): int
-    {
+    public function execute(
+        Input $input,
+        Output $output,
+    ): int {
         $reportId = $input->getArgument(0);
-        $force = $input->hasOption('force') || $input->hasOption('f');
+        $force = $input->hasOption('force')
+            || $input->hasOption('f');
         $recipients = $input->getOptionValues('to');
 
         // ...
@@ -177,7 +182,10 @@ use Marko\Core\Command\Output;
 
 interface CommandInterface
 {
-    public function execute(Input $input, Output $output): int;
+    public function execute(
+        Input $input,
+        Output $output,
+    ): int;
 }
 ```
 
@@ -192,7 +200,10 @@ class Input
      * @param array<int, string> $arguments Raw argv (index 0 = script, index 1 = command)
      * @param list<string> $flags Option names that never take a value
      */
-    public function __construct(array $arguments, array $flags = []);
+    public function __construct(
+        array $arguments,
+        array $flags = [],
+    );
     public function withFlags(array $flags): self;
     public function getCommand(): ?string;
     public function getArgument(int $index): ?string;   // Positional arguments only

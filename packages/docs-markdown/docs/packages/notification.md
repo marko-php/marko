@@ -196,8 +196,14 @@ use Marko\Notification\Contracts\NotificationInterface;
 
 interface NotificationSenderInterface
 {
-    public function send(NotifiableInterface|array $notifiables, NotificationInterface $notification): void;
-    public function queue(NotifiableInterface|array $notifiables, NotificationInterface $notification): void;
+    public function send(
+        NotifiableInterface|array $notifiables,
+        NotificationInterface $notification,
+    ): void;
+    public function queue(
+        NotifiableInterface|array $notifiables,
+        NotificationInterface $notification,
+    ): void;
 }
 ```
 
@@ -207,7 +213,10 @@ interface NotificationSenderInterface
 use Marko\Notification\ChannelResolver;
 use Marko\Notification\Contracts\NotificationInterface;
 
-public function resolve(array $notifiables, NotificationInterface $notification): array; // array<string, list<NotifiableInterface>>
+public function resolve(
+    array $notifiables,
+    NotificationInterface $notification,
+): array; // array<string, list<NotifiableInterface>>
 ```
 
 ### NotificationManager
@@ -216,7 +225,10 @@ public function resolve(array $notifiables, NotificationInterface $notification)
 use Marko\Notification\NotificationManager;
 use Marko\Notification\Contracts\ChannelInterface;
 
-public function register(string $name, ChannelInterface $channel): void;
+public function register(
+    string $name,
+    ChannelInterface $channel,
+): void;
 public function channel(string $name): ChannelInterface;
 public function hasChannel(string $name): bool;
 public function getRegisteredChannels(): array;
@@ -259,7 +271,10 @@ use Marko\Notification\Contracts\NotificationInterface;
 
 interface ChannelInterface
 {
-    public function send(NotifiableInterface $notifiable, NotificationInterface $notification): void;
+    public function send(
+        NotifiableInterface $notifiable,
+        NotificationInterface $notification,
+    ): void;
 }
 ```
 
@@ -301,7 +316,10 @@ use Marko\Notification\Contracts\NotificationInterface;
 interface BatchChannelInterface
 {
     /** @param array<NotifiableInterface> $notifiables */
-    public function sendMany(array $notifiables, NotificationInterface $notification): void;
+    public function sendMany(
+        array $notifiables,
+        NotificationInterface $notification,
+    ): void;
 }
 ```
 

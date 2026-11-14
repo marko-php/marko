@@ -63,7 +63,10 @@ return [
 Implements `PublisherInterface`. Applies the configured channel prefix and issues a PostgreSQL `NOTIFY`.
 
 ```php
-public function publish(string $channel, Message $message): void;
+public function publish(
+    string $channel,
+    Message $message,
+): void;
 ```
 
 ### `PgSqlSubscriber`

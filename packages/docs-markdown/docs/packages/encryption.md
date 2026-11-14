@@ -137,8 +137,14 @@ Generate a key with: `base64_encode(random_bytes(32))` (use `random_bytes(16)` f
 ```php
 use Marko\Encryption\Contracts\EncryptorInterface;
 
-public function encrypt(string $value, string $aad = ''): string;
-public function decrypt(string $encrypted, string $aad = ''): string;
+public function encrypt(
+    string $value,
+    string $aad = '',
+): string;
+public function decrypt(
+    string $encrypted,
+    string $aad = '',
+): string;
 ```
 
 `encrypt()` throws `EncryptionException` on failure. `decrypt()` throws `DecryptionException` for invalid payloads, wrong keys, mismatched associated data, or tampered data.

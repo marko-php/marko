@@ -19,7 +19,10 @@ $setup = $twoFactorManager->enable($user, label: $user->email);
 $twoFactorManager->confirm($user, $codeFromApp);
 
 // Login: with TwoFactorLoginChallenge on the guard, attempt() holds the user
-if (!$authManager->attempt($credentials) && $twoFactorChallenge->isPending()) {
+if (
+    !$authManager->attempt($credentials)
+    && $twoFactorChallenge->isPending()
+) {
     // ...show the code form, then:
     $twoFactorChallenge->verify($submittedCode);
 }

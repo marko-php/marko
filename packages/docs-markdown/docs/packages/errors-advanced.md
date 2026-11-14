@@ -110,7 +110,12 @@ class AdvancedErrorHandler implements ErrorHandlerInterface
 
     public function handle(ErrorReport $report): void;
     public function handleException(Throwable $exception): void;
-    public function handleError(int $level, string $message, string $file, int $line): bool;
+    public function handleError(
+        int $level,
+        string $message,
+        string $file,
+        int $line,
+    ): bool;
     public function register(): void;
     public function unregister(): void;
 }
@@ -147,7 +152,11 @@ class SyntaxHighlighter
 {
     public function getCss(): string;
     public function highlight(string $code): string;
-    public function highlightWithContext(string $code, int $errorLine, int $contextLines = 3): string;
+    public function highlightWithContext(
+        string $code,
+        int $errorLine,
+        int $contextLines = 3,
+    ): string;
 }
 ```
 

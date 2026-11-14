@@ -24,8 +24,10 @@ $broadcaster->broadcast(new PrivateChannel('customers.7'), 'order.shipped', ['or
 #[BroadcastChannel('customers.{customerId}')]
 class CustomerChannelAuthorizer implements ChannelAuthorizerInterface
 {
-    public function authorize(?AuthenticatableInterface $user, array $params): bool
-    {
+    public function authorize(
+        ?AuthenticatableInterface $user,
+        array $params,
+    ): bool {
         return (string) $user?->getAuthIdentifier() === $params['customerId'];
     }
 }

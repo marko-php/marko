@@ -65,7 +65,10 @@ Parameters in `{braces}` are automatically injected into the method by name:
 
 ```php
 #[Get('/users/{userId}/posts/{postId}')]
-public function show(int $userId, int $postId): Response
+public function show(
+    int $userId,
+    int $postId,
+): Response
 {
     // $userId and $postId are extracted from the URL
 }

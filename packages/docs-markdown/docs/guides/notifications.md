@@ -241,7 +241,10 @@ class SmsChannel implements ChannelInterface
     ): void {
         $phone = $notifiable->routeNotificationFor('sms');
 
-        if ($phone === null || $phone === '') {
+        if (
+            $phone === null
+            || $phone === ''
+        ) {
             throw ChannelException::routeMissing('sms', $notifiable->getNotifiableType());
         }
 

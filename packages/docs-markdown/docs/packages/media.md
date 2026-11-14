@@ -416,14 +416,25 @@ use Marko\Media\Contracts\AttachmentInterface;
 use Marko\Media\Entity\Media;
 
 // Associate a Media entity with any entity type.
-public function attach(Media $media, string $attachableType, int|string $attachableId): void;
+public function attach(
+    Media $media,
+    string $attachableType,
+    int|string $attachableId,
+): void;
 
 // Dissociate a Media entity from an entity.
-public function detach(Media $media, string $attachableType, int|string $attachableId): void;
+public function detach(
+    Media $media,
+    string $attachableType,
+    int|string $attachableId,
+): void;
 
 // Return all Media entities attached to an entity.
 /** @return array<Media> */
-public function findByAttachable(string $attachableType, int|string $attachableId): array;
+public function findByAttachable(
+    string $attachableType,
+    int|string $attachableId,
+): array;
 ```
 
 ### MediaRepositoryInterface
@@ -449,10 +460,21 @@ Consumers implementing `MediaRepositoryInterface` must add this method.
 ```php
 use Marko\Media\Contracts\MediaAttachmentRepositoryInterface;
 
-public function attach(int $mediaId, string $attachableType, int|string $attachableId): void;
-public function detach(int $mediaId, string $attachableType, int|string $attachableId): void;
+public function attach(
+    int $mediaId,
+    string $attachableType,
+    int|string $attachableId,
+): void;
+public function detach(
+    int $mediaId,
+    string $attachableType,
+    int|string $attachableId,
+): void;
 /** @return array<int> */
-public function findByAttachable(string $attachableType, int|string $attachableId): array;
+public function findByAttachable(
+    string $attachableType,
+    int|string $attachableId,
+): array;
 ```
 
 ### ImageProcessorInterface
@@ -461,13 +483,27 @@ public function findByAttachable(string $attachableType, int|string $attachableI
 use Marko\Media\Contracts\ImageProcessorInterface;
 
 // Resize an image, optionally preserving the aspect ratio.
-public function resize(string $imagePath, int $width, int $height, bool $maintainAspect = true): string;
+public function resize(
+    string $imagePath,
+    int $width,
+    int $height,
+    bool $maintainAspect = true,
+): string;
 
 // Crop an image at the given coordinates.
-public function crop(string $imagePath, int $x, int $y, int $width, int $height): string;
+public function crop(
+    string $imagePath,
+    int $x,
+    int $y,
+    int $width,
+    int $height,
+): string;
 
 // Convert an image to a different format (e.g. 'webp', 'png').
-public function convert(string $imagePath, string $format): string;
+public function convert(
+    string $imagePath,
+    string $format,
+): string;
 ```
 
 ### ImageFormatSniffer

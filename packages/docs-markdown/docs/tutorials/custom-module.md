@@ -104,7 +104,10 @@ namespace Acme\Analytics;
 
 interface AnalyticsInterface
 {
-    public function trackPageView(string $path, ?string $userId = null): void;
+    public function trackPageView(
+        string $path,
+        ?string $userId = null,
+    ): void;
 
     public function getPageViews(string $path): int;
 }
@@ -127,8 +130,10 @@ readonly class DatabaseAnalytics implements AnalyticsInterface
         private QueryBuilderInterface $queryBuilder,
     ) {}
 
-    public function trackPageView(string $path, ?string $userId = null): void
-    {
+    public function trackPageView(
+        string $path,
+        ?string $userId = null,
+    ): void {
         $this->queryBuilder->table('page_views')->insert([
             'path' => $path,
             'user_id' => $userId,

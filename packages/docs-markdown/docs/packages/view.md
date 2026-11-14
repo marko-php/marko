@@ -303,8 +303,14 @@ class ThemeTemplateResolver extends ModuleTemplateResolver
 use Marko\Routing\Http\Response;
 use Marko\View\ViewInterface;
 
-public function render(string $template, array $data = []): Response;
-public function renderToString(string $template, array $data = []): string;
+public function render(
+    string $template,
+    array $data = [],
+): Response;
+public function renderToString(
+    string $template,
+    array $data = [],
+): string;
 ```
 
 ### TemplateResolverInterface
@@ -330,7 +336,11 @@ public function functions(): array; // list<TemplateFunction>
 ```php
 use Marko\View\TemplateFunction;
 
-public function __construct(string $name, Closure $callable, bool $isSafeHtml = false);
+public function __construct(
+    string $name,
+    Closure $callable,
+    bool $isSafeHtml = false,
+);
 ```
 
 ### ViewDataProviderInterface

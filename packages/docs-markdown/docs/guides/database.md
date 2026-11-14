@@ -135,8 +135,10 @@ readonly class PostRepository
             ->get();
     }
 
-    public function create(string $title, string $body): int
-    {
+    public function create(
+        string $title,
+        string $body,
+    ): int {
         return $this->queryBuilder->table('posts')->insert([
             'title' => $title,
             'body' => $body,

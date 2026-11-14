@@ -232,7 +232,10 @@ Reading never consumes the state. It is stored with [next-request flash data](/d
 ```php
 use Marko\Forms\ValidationErrorResponder;
 
-public function respond(HttpExceptionInterface $exception, Request $request): ?Response;
+public function respond(
+    HttpExceptionInterface $exception,
+    Request $request,
+): ?Response;
 ```
 
 ### FlashedFormStateWriter
@@ -240,7 +243,10 @@ public function respond(HttpExceptionInterface $exception, Request $request): ?R
 ```php
 use Marko\Forms\FlashedFormStateWriter;
 
-public function flash(ValidationErrors $errors, array $input): void;
+public function flash(
+    ValidationErrors $errors,
+    array $input,
+): void;
 ```
 
 ### SessionFlashedFormState
@@ -252,7 +258,10 @@ use Marko\Forms\SessionFlashedFormState;
 
 public function errors(): ValidationErrors;
 public function hasErrors(): bool;
-public function old(string $key, mixed $default = null): mixed;
+public function old(
+    string $key,
+    mixed $default = null,
+): mixed;
 ```
 
 ### FormTemplateFunctionProvider

@@ -1203,8 +1203,10 @@ class CheckoutService
         private PaymentRepository $payments,
     ) {}
 
-    public function checkout(Invoice $invoice, Payment $payment): void
-    {
+    public function checkout(
+        Invoice $invoice,
+        Payment $payment,
+    ): void {
         $this->transaction->transaction(function () use ($invoice, $payment): void {
             $this->invoices->save($invoice);
             $this->payments->save($payment);
@@ -1224,7 +1226,10 @@ Under a long-running worker, the connection's `reset()` (from `ResettableInterfa
 Transactions nest, so a service that wraps its work in `transaction()` can be called from another service that does the same. The outermost call opens a real transaction (`BEGIN`). Each nested call opens a savepoint (`SAVEPOINT marko_sp_1`, `marko_sp_2`, ...). An inner `commit()` releases its savepoint, and only the outermost `commit()` makes the data durable. An inner `rollback()` returns to its savepoint, which undoes only the inner work:
 
 ```php title="app/billing/src/Service/CheckoutService.php"
-public function checkout(Invoice $invoice, Payment $payment): void
+public function checkout(
+    Invoice $invoice,
+    Payment $payment,
+): void
 {
     $this->transaction->transaction(function () use ($invoice, $payment): void {
         $this->invoices->save($invoice);
@@ -1273,7 +1278,10 @@ A test that wraps each case in a transaction that is rolled back afterwards (`Re
 Read-modify-write sequences, such as counters, inventory or state machines, need the rows they read to stay put until they write. Lock them from the query builder inside a transaction:
 
 ```php title="app/inventory/src/Service/StockService.php"
-public function reserve(int $productId, int $quantity): void
+public function reserve(
+    int $productId,
+    int $quantity,
+): void
 {
     $this->transaction->transaction(function () use ($productId, $quantity): void {
         $stock = $this->stockRepository->query()
@@ -1281,7 +1289,10 @@ public function reserve(int $productId, int $quantity): void
             ->lockForUpdate()
             ->firstEntity();
 
-        if ($stock === null || $stock->available < $quantity) {
+        if (
+            $stock === null
+            || $stock->available < $quantity
+        ) {
             throw StockException::insufficient($productId, $quantity);
         }
 
@@ -1482,7 +1493,10 @@ A failed `COMMIT` is translated too, so a serialization failure PostgreSQL detec
 Pass `attempts` to `transaction()` to retry the whole transaction on a `TransactionConflictException`:
 
 ```php title="app/inventory/src/Service/StockService.php"
-public function reserve(int $productId, int $quantity): void
+public function reserve(
+    int $productId,
+    int $quantity,
+): void
 {
     $this->transaction->transaction(function () use ($productId, $quantity): void {
         $stock = $this->stockRepository->query()

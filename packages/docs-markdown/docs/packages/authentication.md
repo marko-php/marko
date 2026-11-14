@@ -223,7 +223,10 @@ if ($this->authManager->attempt($credentials)) {
 
 $guard = $this->authManager->guard();
 
-if ($guard instanceof ChallengeableGuardInterface && $guard->hasPendingChallenge()) {
+if (
+    $guard instanceof ChallengeableGuardInterface
+    && $guard->hasPendingChallenge()
+) {
     return Response::redirect('/login/challenge');
 }
 
@@ -703,7 +706,10 @@ public function retrieveByRememberToken(
     $user = $this->userRepository->find((int) $identifier);
     $storedToken = $user?->getRememberToken();
 
-    if ($storedToken === null || !hash_equals($storedToken, $token)) {
+    if (
+        $storedToken === null
+        || !hash_equals($storedToken, $token)
+    ) {
         return null;
     }
 
@@ -1614,13 +1620,22 @@ class NotifyOtherDevicesLoggedOutObserver
 
 ```php
 public function guard(?string $name = null): GuardInterface;
-public function useGuard(string $name, GuardInterface $guard): void;
+public function useGuard(
+    string $name,
+    GuardInterface $guard,
+): void;
 public function check(): bool;
 public function user(): ?AuthenticatableInterface;
 public function id(): int|string|null;
-public function attempt(array $credentials, bool $remember = false): bool;
+public function attempt(
+    array $credentials,
+    bool $remember = false,
+): bool;
 public function logout(): void;
-public function logoutOtherDevices(AuthenticatableInterface $user, ?string $guard = null): void; // throws AuthException for a guard without OtherDeviceLogoutInterface
+public function logoutOtherDevices(
+    AuthenticatableInterface $user,
+    ?string $guard = null,
+): void; // throws AuthException for a guard without OtherDeviceLogoutInterface
 public function reset(): void;
 ```
 
@@ -1633,7 +1648,10 @@ public function check(): bool;
 public function guest(): bool;
 public function user(): ?AuthenticatableInterface;
 public function id(): int|string|null;
-public function attempt(array $credentials, bool $remember = false): bool;
+public function attempt(
+    array $credentials,
+    bool $remember = false,
+): bool;
 public function login(AuthenticatableInterface $user): void;
 public function loginById(int|string $id): ?AuthenticatableInterface;
 public function logout(): void;
@@ -1700,10 +1718,18 @@ public static function forGuard(GuardInterface $guard): self; // 401; adds WWW-A
 ### GuardDriverRegistry
 
 ```php
-public function extend(string $driver, Closure $factory): void; // Closure(string $name, array $config, UserProviderInterface $provider): GuardInterface
+public function extend(
+    string $driver,
+    Closure $factory,
+): void; // Closure(string $name, array $config, UserProviderInterface $provider): GuardInterface
 public function has(string $driver): bool;
 public function drivers(): array; // list<string>
-public function create(string $driver, string $name, array $config, UserProviderInterface $provider): ?GuardInterface;
+public function create(
+    string $driver,
+    string $name,
+    array $config,
+    UserProviderInterface $provider,
+): ?GuardInterface;
 ```
 
 ### AuthenticatableInterface
@@ -1722,7 +1748,10 @@ public function getRememberTokenName(): string;
 ### UserProviderResolver
 
 ```php
-public function forGuard(string $guard, array $guardConfig): UserProviderInterface;
+public function forGuard(
+    string $guard,
+    array $guardConfig,
+): UserProviderInterface;
 public function forProvider(string $providerName): UserProviderInterface;
 ```
 
@@ -1736,8 +1765,15 @@ public function persist(AuthenticatableInterface $user): void;
 
 ```php
 public function forProvider(string $providerName): UserPersisterInterface;
-public function forGuardProvider(string $guard, ?string $providerName): UserPersisterInterface; // null: the UserPersisterInterface binding
-public function assertUserSupports(AuthenticatableInterface $user, string $interface, string $providerName): void;
+public function forGuardProvider(
+    string $guard,
+    ?string $providerName,
+): UserPersisterInterface; // null: the UserPersisterInterface binding
+public function assertUserSupports(
+    AuthenticatableInterface $user,
+    string $interface,
+    string $providerName,
+): void;
 ```
 
 ### CanResetPasswordInterface
@@ -1753,14 +1789,25 @@ public function getEmailForPasswordReset(): string;
 
 ```php
 public function sendResetLink(array $credentials): ResetLinkStatus; // Sent | Throttled
-public function tokenIsValid(array $credentials, string $token): bool; // read-only: never deletes the token
-public function reset(array $credentials, string $token, string $newPassword): ResetStatus; // PasswordReset | InvalidToken | InvalidUser
+public function tokenIsValid(
+    array $credentials,
+    string $token,
+): bool; // read-only: never deletes the token
+public function reset(
+    array $credentials,
+    string $token,
+    string $newPassword,
+): ResetStatus; // PasswordReset | InvalidToken | InvalidUser
 ```
 
 ### PasswordResetTokenRepositoryInterface
 
 ```php
-public function store(int|string $userId, string $tokenHash, DateTimeImmutable $createdAt): void;
+public function store(
+    int|string $userId,
+    string $tokenHash,
+    DateTimeImmutable $createdAt,
+): void;
 public function find(int|string $userId): ?PasswordResetTokenRecord; // ->tokenHash, ->createdAt
 public function delete(int|string $userId): void;
 public function deleteExpired(DateTimeImmutable $before): int;
@@ -1769,7 +1816,10 @@ public function deleteExpired(DateTimeImmutable $before): int;
 ### ResetLinkNotifierInterface
 
 ```php
-public function send(CanResetPasswordInterface $user, string $token): void;
+public function send(
+    CanResetPasswordInterface $user,
+    string $token,
+): void;
 ```
 
 ### MustVerifyEmailInterface
@@ -1792,7 +1842,10 @@ public function verify(Request $request): VerificationStatus; // Verified | Alre
 ### VerificationNotifierInterface
 
 ```php
-public function send(MustVerifyEmailInterface $user, string $url): void;
+public function send(
+    MustVerifyEmailInterface $user,
+    string $url,
+): void;
 ```
 
 ### CurrentVerifiableUser
@@ -1805,14 +1858,20 @@ public function guardName(): string;
 ### PasswordVerifierInterface
 
 ```php
-public function verify(?AuthenticatableInterface $user, string $password): bool; // null user: verifyDummy(), false
+public function verify(
+    ?AuthenticatableInterface $user,
+    string $password,
+): bool; // null user: verifyDummy(), false
 ```
 
 ### PasswordConfirmationInterface
 
 ```php
 public const string SESSION_KEY = 'auth.password_confirmed_at';
-public function confirm(AuthenticatableInterface $user, string $password): bool; // throws TooManyPasswordConfirmationAttemptsException
+public function confirm(
+    AuthenticatableInterface $user,
+    string $password,
+): bool; // throws TooManyPasswordConfirmationAttemptsException
 public function markConfirmed(): void;
 public function isRecentlyConfirmed(): bool;
 ```
@@ -1865,10 +1924,23 @@ public function getRetryAfter(): int;
 ```php
 public function retrieveById(int|string $identifier): ?AuthenticatableInterface;
 public function retrieveByCredentials(array $credentials): ?AuthenticatableInterface;
-public function validateCredentials(AuthenticatableInterface $user, array $credentials): bool;
-public function rehashPasswordIfNeeded(AuthenticatableInterface $user, array $credentials): void;
-public function retrieveByRememberToken(int|string $identifier, string $token): ?AuthenticatableInterface;
-public function updateRememberToken(AuthenticatableInterface $user, ?string $token, ?DateTimeImmutable $expiresAt): void;
+public function validateCredentials(
+    AuthenticatableInterface $user,
+    array $credentials,
+): bool;
+public function rehashPasswordIfNeeded(
+    AuthenticatableInterface $user,
+    array $credentials,
+): void;
+public function retrieveByRememberToken(
+    int|string $identifier,
+    string $token,
+): ?AuthenticatableInterface;
+public function updateRememberToken(
+    AuthenticatableInterface $user,
+    ?string $token,
+    ?DateTimeImmutable $expiresAt,
+): void;
 ```
 
 `retrieveByRememberToken()` receives the SHA-256 hash of the cookie's token, the same value previously passed to `updateRememberToken()`.
@@ -1884,7 +1956,10 @@ public function rehashPasswordIfNeeded(
 ): void {
     $password = $credentials['password'] ?? null;
 
-    if (!is_string($password) || !$this->hasher->needsRehash($user->getAuthPassword())) {
+    if (
+        !is_string($password)
+        || !$this->hasher->needsRehash($user->getAuthPassword())
+    ) {
         return;
     }
 
@@ -1897,7 +1972,10 @@ public function rehashPasswordIfNeeded(
 
 ```php
 public function hash(string $password): string;
-public function verify(string $password, string $hash): bool;
+public function verify(
+    string $password,
+    string $hash,
+): bool;
 public function needsRehash(string $hash): bool;
 public function verifyDummy(string $password): void;
 ```
@@ -1909,7 +1987,10 @@ Bcrypt only uses the first 72 bytes of a password and cannot hash a NUL (`\0`) b
 ```php
 use Marko\Authentication\Hashing\BcryptPasswordHasher;
 
-if (strlen($password) > BcryptPasswordHasher::MAX_PASSWORD_BYTES || str_contains($password, "\0")) {
+if (
+    strlen($password) > BcryptPasswordHasher::MAX_PASSWORD_BYTES
+    || str_contains($password, "\0")
+) {
     // Reject with a validation error
 }
 ```
@@ -1917,7 +1998,10 @@ if (strlen($password) > BcryptPasswordHasher::MAX_PASSWORD_BYTES || str_contains
 ### SessionGuard
 
 ```php
-public function login(AuthenticatableInterface $user, bool $remember = false): void;
+public function login(
+    AuthenticatableInterface $user,
+    bool $remember = false,
+): void;
 public function logoutOtherDevices(AuthenticatableInterface $user): void;
 ```
 
@@ -1928,9 +2012,18 @@ If you construct a `SessionGuard` by hand, pass `userPersisterResolver` (and the
 Bound to `LoginThrottle` (or `NullLoginThrottle` when `authentication.throttle.enabled` is `false`). Replace the binding with a Preference to change the policy.
 
 ```php
-public function ensureNotLockedOut(string $guard, array $credentials): void; // throws TooManyLoginAttemptsException
-public function recordFailure(string $guard, array $credentials): void;
-public function clear(string $guard, array $credentials): void;
+public function ensureNotLockedOut(
+    string $guard,
+    array $credentials,
+): void; // throws TooManyLoginAttemptsException
+public function recordFailure(
+    string $guard,
+    array $credentials,
+): void;
+public function clear(
+    string $guard,
+    array $credentials,
+): void;
 ```
 
 ### TooManyLoginAttemptsException
@@ -1938,7 +2031,10 @@ public function clear(string $guard, array $credentials): void;
 Extends `AuthException` and implements `HttpExceptionInterface` (429, `Retry-After`).
 
 ```php
-public static function lockedOut(string $guard, int $retryAfter): self;
+public static function lockedOut(
+    string $guard,
+    int $retryAfter,
+): self;
 public function getRetryAfter(): int;
 public function getStatusCode(): int; // 429
 public function getHeaders(): array; // ['Retry-After' => '...']
@@ -1949,18 +2045,28 @@ public function getResponseData(): array; // ['message' => ..., 'retry_after' =>
 
 ```php
 public function get(string $name): ?string;
-public function set(string $name, string $value, int $minutes = 0): void;
+public function set(
+    string $name,
+    string $value,
+    int $minutes = 0,
+): void;
 public function delete(string $name): void;
 ```
 
 ### RememberTokenManager
 
 ```php
-public function __construct(ClockInterface $clock, ?int $lifetimeMinutes = null);
+public function __construct(
+    ClockInterface $clock,
+    ?int $lifetimeMinutes = null,
+);
 public function generate(): string;
 public function generateSelector(): string;
 public function hash(string $token): string;
-public function validate(string $token, string $storedHash): bool;
+public function validate(
+    string $token,
+    string $storedHash,
+): bool;
 public function expiresAt(): DateTimeImmutable;
 public function hasExpired(DateTimeImmutable $expiresAt): bool;
 public function minutesUntil(DateTimeImmutable $expiresAt): int;
@@ -1973,10 +2079,25 @@ Per-device remember-me tokens. Bound by [marko/admin-auth](/docs/packages/admin-
 
 ```php
 public function store(RememberTokenRecord $token): void;
-public function findBySelector(string $guard, string $selector): ?RememberTokenRecord;
-public function rotateValidator(string $guard, string $selector, string $currentValidatorHash, string $newValidatorHash): bool;
-public function deleteBySelector(string $guard, string $selector): void;
-public function deleteAllForUser(string $guard, int|string $userId, ?string $exceptSelector = null): int;
+public function findBySelector(
+    string $guard,
+    string $selector,
+): ?RememberTokenRecord;
+public function rotateValidator(
+    string $guard,
+    string $selector,
+    string $currentValidatorHash,
+    string $newValidatorHash,
+): bool;
+public function deleteBySelector(
+    string $guard,
+    string $selector,
+): void;
+public function deleteAllForUser(
+    string $guard,
+    int|string $userId,
+    ?string $exceptSelector = null,
+): int;
 public function clearExpiredTokens(): int;
 public function clearAllTokens(): int;
 ```
@@ -1986,7 +2107,10 @@ public function clearAllTokens(): int;
 ### RequestCookieJar
 
 ```php
-public function __construct(AuthConfig $config, ClockInterface $clock);
+public function __construct(
+    AuthConfig $config,
+    ClockInterface $clock,
+);
 public function setRequest(Request $request): void;
 public function pullQueuedCookies(): array; // array<int, Cookie>
 public function reset(): void;
