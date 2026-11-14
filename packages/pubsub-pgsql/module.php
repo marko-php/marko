@@ -24,7 +24,9 @@ return [
                 user: $config->getString(key: 'pubsub-pgsql.user'),
                 password: $config->getString(key: 'pubsub-pgsql.password'),
                 database: $config->getString(key: 'pubsub-pgsql.database'),
-                sslMode: $sslMode === null || $sslMode === '' ? null : (string) $sslMode,
+                sslMode: ($sslMode === null || $sslMode === '')
+                    ? null
+                    : (string) $sslMode,
             );
         },
     ],

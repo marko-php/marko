@@ -22,7 +22,10 @@ class Base64Url
     public static function decode(
         string $value,
     ): ?string {
-        if (preg_match('/^[A-Za-z0-9_-]*$/', $value) !== 1 || strlen($value) % 4 === 1) {
+        if (
+            preg_match('/^[A-Za-z0-9_-]*$/', $value) !== 1
+            || strlen($value) % 4 === 1
+        ) {
             return null;
         }
 

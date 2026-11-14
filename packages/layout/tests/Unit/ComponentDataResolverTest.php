@@ -35,8 +35,9 @@ it('injects route parameters by name into data method', function (): void {
     $resolver = new ComponentDataResolver();
     $component = new class ()
     {
-        public function data(string $slug): array
-        {
+        public function data(
+            string $slug,
+        ): array {
             return ['slug' => $slug];
         }
     };
@@ -51,8 +52,9 @@ it('casts route parameters to int when type-hinted', function (): void {
     $resolver = new ComponentDataResolver();
     $component = new class ()
     {
-        public function data(int $id): array
-        {
+        public function data(
+            int $id,
+        ): array {
             return ['id' => $id];
         }
     };
@@ -67,8 +69,9 @@ it('casts route parameters to float when type-hinted', function (): void {
     $resolver = new ComponentDataResolver();
     $component = new class ()
     {
-        public function data(float $price): array
-        {
+        public function data(
+            float $price,
+        ): array {
             return ['price' => $price];
         }
     };
@@ -83,8 +86,9 @@ it('casts route parameters to bool when type-hinted', function (): void {
     $resolver = new ComponentDataResolver();
     $component = new class ()
     {
-        public function data(bool $active): array
-        {
+        public function data(
+            bool $active,
+        ): array {
             return ['active' => $active];
         }
     };
@@ -99,8 +103,9 @@ it('injects Request object when type-hinted', function (): void {
     $resolver = new ComponentDataResolver();
     $component = new class ()
     {
-        public function data(Request $request): array
-        {
+        public function data(
+            Request $request,
+        ): array {
             return ['method' => $request->method()];
         }
     };
@@ -115,8 +120,9 @@ it('uses default values when route parameter is not available', function (): voi
     $resolver = new ComponentDataResolver();
     $component = new class ()
     {
-        public function data(string $color = 'blue'): array
-        {
+        public function data(
+            string $color = 'blue',
+        ): array {
             return ['color' => $color];
         }
     };

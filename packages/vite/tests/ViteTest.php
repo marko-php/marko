@@ -13,8 +13,9 @@ beforeEach(function () {
     $this->paths = new ProjectPaths($this->basePath);
 });
 
-function makeProjectPathsWithManifest(array|string $manifest): ProjectPaths
-{
+function makeProjectPathsWithManifest(
+    array|string $manifest,
+): ProjectPaths {
     $basePath = sys_get_temp_dir().'/marko-vite-test-'.bin2hex(random_bytes(6));
     $manifestDirectory = $basePath.'/public/build/.vite';
 

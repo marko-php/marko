@@ -47,7 +47,10 @@ readonly class PluginInterceptor
             $hasOriginal = $this->registry->hasPluginsFor($originalId);
             $hasResolved = $this->registry->hasPluginsForClassOrInterfaces($resolvedId);
 
-            if (!$hasOriginal && !$hasResolved) {
+            if (
+                !$hasOriginal
+                && !$hasResolved
+            ) {
                 return $target;
             }
         }
@@ -55,7 +58,10 @@ readonly class PluginInterceptor
         // --- 2. Choose strategy and generate interceptor class ---------------
 
         // Interface wrapper: $originalId is an interface with plugins.
-        if (interface_exists($originalId) && $this->registry->hasPluginsFor($originalId)) {
+        if (
+            interface_exists($originalId)
+            && $this->registry->hasPluginsFor($originalId)
+        ) {
             $className = $this->generator->generateInterfaceWrapper(
                 $originalId,
                 $this->registry,
@@ -71,7 +77,10 @@ readonly class PluginInterceptor
         // Fall back: check the concrete class and its interfaces.
         $effectiveTarget = $this->registry->getEffectiveTargetClass($resolvedId);
 
-        if ($effectiveTarget !== null && interface_exists($effectiveTarget)) {
+        if (
+            $effectiveTarget !== null
+            && interface_exists($effectiveTarget)
+        ) {
             // Effective target is an interface → interface wrapper strategy.
             $className = $this->generator->generateInterfaceWrapper(
                 $effectiveTarget,

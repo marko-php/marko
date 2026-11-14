@@ -66,7 +66,10 @@ readonly class DateTimeCast implements EquatableCastInterface
         mixed $b,
         PropertyMetadata $meta,
     ): bool {
-        if ($a instanceof DateTimeInterface && $b instanceof DateTimeInterface) {
+        if (
+            $a instanceof DateTimeInterface
+            && $b instanceof DateTimeInterface
+        ) {
             return $a->getTimestamp() === $b->getTimestamp();
         }
 

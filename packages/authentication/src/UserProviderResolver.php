@@ -93,7 +93,10 @@ class UserProviderResolver
             return $this->defaultProvider();
         }
 
-        if (!is_string($class) || !is_a($class, UserProviderInterface::class, true)) {
+        if (
+            !is_string($class)
+            || !is_a($class, UserProviderInterface::class, true)
+        ) {
             throw AuthException::invalidProviderClass(
                 $providerName,
                 is_string($class) ? $class : get_debug_type($class),

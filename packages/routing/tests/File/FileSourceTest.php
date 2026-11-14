@@ -47,7 +47,10 @@ describe('LocalFileSource', function (): void {
     });
 
     it('throws loudly for an unreadable file', function (): void {
-        if (function_exists('posix_getuid') && posix_getuid() === 0) {
+        if (
+            function_exists('posix_getuid')
+            && posix_getuid() === 0
+        ) {
             $this->markTestSkipped('root can read any file');
         }
 

@@ -67,8 +67,9 @@ function createInMemorySessionHandler(): SessionHandlerInterface
             return true;
         }
 
-        public function read(string $id): string|false
-        {
+        public function read(
+            string $id,
+        ): string|false {
             $this->handlerCalls[] = 'read';
 
             return $this->written[$id] ?? '';
@@ -86,8 +87,9 @@ function createInMemorySessionHandler(): SessionHandlerInterface
             return true;
         }
 
-        public function destroy(string $id): bool
-        {
+        public function destroy(
+            string $id,
+        ): bool {
             $this->handlerCalls[] = 'destroy';
 
             unset($this->written[$id]);
@@ -95,15 +97,17 @@ function createInMemorySessionHandler(): SessionHandlerInterface
             return true;
         }
 
-        public function gc(int $max_lifetime): int|false
-        {
+        public function gc(
+            int $max_lifetime,
+        ): int|false {
             $this->handlerCalls[] = 'gc';
 
             return 0;
         }
 
-        public function validateId(string $id): bool
-        {
+        public function validateId(
+            string $id,
+        ): bool {
             $this->handlerCalls[] = 'validateId';
 
             return isset($this->written[$id]);
@@ -615,8 +619,9 @@ describe('lazy start', function (): void {
     });
 });
 
-function catchInvalidSessionId(Closure $callback): ?InvalidSessionIdException
-{
+function catchInvalidSessionId(
+    Closure $callback,
+): ?InvalidSessionIdException {
     try {
         $callback();
     } catch (InvalidSessionIdException $exception) {

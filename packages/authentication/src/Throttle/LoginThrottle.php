@@ -140,7 +140,8 @@ readonly class LoginThrottle implements LoginThrottleInterface
     ): int {
         $duration = $this->lockoutSeconds;
 
-        for ($i = 1; $i < $lockouts && $duration < $this->maxLockoutSeconds; $i++) {
+        for ($i = 1; $i < $lockouts
+            && $duration < $this->maxLockoutSeconds; $i++) {
             $duration *= 2;
         }
 
@@ -180,7 +181,10 @@ readonly class LoginThrottle implements LoginThrottleInterface
         $parts = [];
 
         foreach ($credentials as $name => $value) {
-            if (str_contains(strtolower((string) $name), 'password') || !is_scalar($value)) {
+            if (
+                str_contains(strtolower((string) $name), 'password')
+                || !is_scalar($value)
+            ) {
                 continue;
             }
 
@@ -197,7 +201,11 @@ readonly class LoginThrottle implements LoginThrottleInterface
         $request = $this->currentRequest->get();
         $ip = $request?->ip();
 
-        if ($request === null || $ip === null || $ip === '') {
+        if (
+            $request === null
+            || $ip === null
+            || $ip === ''
+        ) {
             return '';
         }
 

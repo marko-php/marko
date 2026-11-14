@@ -55,7 +55,9 @@ readonly class BasePathResolver
     {
         $value = getenv(self::ENV_VAR);
 
-        return $value === false || $value === '' ? null : $value;
+        return ($value === false || $value === '')
+            ? null
+            : $value;
     }
 
     private function fromAutoloader(): ?string
@@ -76,7 +78,10 @@ readonly class BasePathResolver
         $path = rtrim($path, '/');
 
         foreach (self::REQUIRED_DIRECTORIES as $directory) {
-            if ($path === '' || !is_dir("$path/$directory")) {
+            if (
+                $path === ''
+                || !is_dir("$path/$directory")
+            ) {
                 throw BasePathNotResolvableException::whenDirectoryMissing($path, $directory, $source);
             }
         }

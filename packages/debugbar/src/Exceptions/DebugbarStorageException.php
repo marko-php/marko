@@ -8,8 +8,9 @@ use Marko\Core\Exceptions\MarkoException;
 
 class DebugbarStorageException extends MarkoException
 {
-    public static function directoryNotCreatable(string $directory): self
-    {
+    public static function directoryNotCreatable(
+        string $directory,
+    ): self {
         return new self(
             message: "Unable to create debugbar storage directory '$directory'",
             context: 'While storing a debugbar profile',
@@ -17,8 +18,9 @@ class DebugbarStorageException extends MarkoException
         );
     }
 
-    public static function fileNotWritable(string $file): self
-    {
+    public static function fileNotWritable(
+        string $file,
+    ): self {
         return new self(
             message: "Unable to write debugbar profile '$file'",
             context: 'While storing a debugbar profile',

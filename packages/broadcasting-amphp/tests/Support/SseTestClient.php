@@ -109,8 +109,9 @@ class SseTestClient
     /**
      * Read until the server ends the response or closes the socket.
      */
-    public function waitForEnd(float $timeout = self::WAIT_TIMEOUT): string
-    {
+    public function waitForEnd(
+        float $timeout = self::WAIT_TIMEOUT,
+    ): string {
         $cancellation = new TimeoutCancellation($timeout, 'Timed out waiting for the response to end');
 
         while (!$this->ended) {
@@ -134,8 +135,9 @@ class SseTestClient
         }
     }
 
-    private function readMore(TimeoutCancellation $cancellation): void
-    {
+    private function readMore(
+        TimeoutCancellation $cancellation,
+    ): void {
         $chunk = $this->socket->read($cancellation);
 
         if ($chunk === null) {
@@ -174,9 +176,12 @@ class SseTestClient
             $this->body .= $this->raw;
             $this->raw = '';
 
-            if (isset($this->headers['content-length']) && strlen(
-                $this->body,
-            ) >= (int) $this->headers['content-length']) {
+            if (
+                isset($this->headers['content-length'])
+                && strlen(
+                    $this->body,
+                ) >= (int) $this->headers['content-length']
+            ) {
                 $this->ended = true;
             }
 

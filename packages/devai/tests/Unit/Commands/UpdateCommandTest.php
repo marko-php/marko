@@ -57,8 +57,9 @@ class UpdateCommandTestNullRunner implements CommandRunnerInterface
         return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
     }
 
-    public function isOnPath(string $binary): bool
-    {
+    public function isOnPath(
+        string $binary,
+    ): bool {
         return false;
     }
 }
@@ -95,8 +96,9 @@ function makeUpdateTestInputOutput(): array
     ];
 }
 
-function readUpdateTestStream(mixed $stream): string
-{
+function readUpdateTestStream(
+    mixed $stream,
+): string {
     rewind($stream);
 
     return (string) stream_get_contents($stream);

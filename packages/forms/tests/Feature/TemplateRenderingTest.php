@@ -61,13 +61,15 @@ function formsTemplateResolver(
             private string $path,
         ) {}
 
-        public function resolve(string $template): string
-        {
+        public function resolve(
+            string $template,
+        ): string {
             return $this->path;
         }
 
-        public function getSearchedPaths(string $template): array
-        {
+        public function getSearchedPaths(
+            string $template,
+        ): array {
             return [$this->path];
         }
 

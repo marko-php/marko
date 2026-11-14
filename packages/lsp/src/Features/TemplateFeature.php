@@ -11,17 +11,22 @@ readonly class TemplateFeature
     public function __construct(private IndexCache $index) {}
 
     /** @return list<array{label: string, kind: int, detail: string, insertText: string}> */
-    public function complete(string $partial): array
-    {
+    public function complete(
+        string $partial,
+    ): array {
         $items = [];
 
         foreach ($this->index->getTemplates() as $t) {
             $fullName = "$t->moduleName::$t->templateName";
 
-            if ($partial !== '' && !str_starts_with($fullName, $partial) && !str_starts_with(
-                $t->templateName,
-                $partial,
-            )) {
+            if (
+                $partial !== ''
+                && !str_starts_with($fullName, $partial)
+                && !str_starts_with(
+                    $t->templateName,
+                    $partial,
+                )
+            ) {
                 continue;
             }
 
@@ -37,15 +42,19 @@ readonly class TemplateFeature
     }
 
     /** @return ?array{uri: string, range: array} */
-    public function gotoDefinition(string $template): ?array
-    {
+    public function gotoDefinition(
+        string $template,
+    ): ?array {
         $parts = explode('::', $template, 2);
 
         if (count($parts) === 2) {
             [$module, $name] = $parts;
 
             foreach ($this->index->getTemplates() as $t) {
-                if ($t->moduleName === $module && $t->templateName === $name) {
+                if (
+                    $t->moduleName === $module
+                    && $t->templateName === $name
+                ) {
                     return [
                         'uri' => 'file://' . $t->absolutePath,
                         'range' => [
@@ -76,13 +85,15 @@ readonly class TemplateFeature
     /**
      * Markdown hover content for a template, or null if unknown.
      */
-    public function hover(string $template): ?string
-    {
+    public function hover(
+        string $template,
+    ): ?string {
         $parts = explode('::', $template, 2);
 
         foreach ($this->index->getTemplates() as $t) {
             $matches = count($parts) === 2
-                ? ($t->moduleName === $parts[0] && $t->templateName === $parts[1])
+                ? ($t->moduleName === $parts[0]
+                && $t->templateName === $parts[1])
                 : ($t->templateName === $template);
 
             if ($matches) {
@@ -94,8 +105,9 @@ readonly class TemplateFeature
     }
 
     /** @return list<array{range: array, severity: int, message: string, code: string}> */
-    public function diagnostics(string $documentText): array
-    {
+    public function diagnostics(
+        string $documentText,
+    ): array {
         $known = [];
 
         foreach ($this->index->getTemplates() as $t) {

@@ -23,21 +23,13 @@ use Marko\Testing\Fake\FakeConfigRepository;
  */
 class MockPostgresListener implements PostgresListener, IteratorAggregate
 {
-    /** @var PostgresNotification[] */
-    private array $notifications;
-
     public bool $unlistenCalled = false;
-
-    private string $channel;
 
     /** @param PostgresNotification[] $notifications */
     public function __construct(
-        string $channel,
-        array $notifications = [],
-    ) {
-        $this->channel = $channel;
-        $this->notifications = $notifications;
-    }
+        private string $channel,
+        private array $notifications = [],
+    ) {}
 
     public function getChannel(): string
     {
@@ -68,17 +60,14 @@ class SubscriberStubPostgresConnection implements PostgresConnection
     /** @var array<string, MockPostgresListener> */
     public array $listeners = [];
 
-    /** @var PostgresNotification[] */
-    private array $notificationsToReturn;
-
     /** @param PostgresNotification[] $notificationsToReturn */
-    public function __construct(array $notificationsToReturn = [])
-    {
-        $this->notificationsToReturn = $notificationsToReturn;
-    }
+    public function __construct(
+        private array $notificationsToReturn = [],
+    ) {}
 
-    public function listen(string $channel): PostgresListener
-    {
+    public function listen(
+        string $channel,
+    ): PostgresListener {
         $listener = new MockPostgresListener($channel, $this->notificationsToReturn);
         $this->listeners[$channel] = $listener;
 
@@ -97,13 +86,15 @@ class SubscriberStubPostgresConnection implements PostgresConnection
         throw new RuntimeException('Not implemented in stub');
     }
 
-    public function query(string $sql): PostgresResult
-    {
+    public function query(
+        string $sql,
+    ): PostgresResult {
         throw new RuntimeException('Not implemented in stub');
     }
 
-    public function prepare(string $sql): PostgresStatement
-    {
+    public function prepare(
+        string $sql,
+    ): PostgresStatement {
         throw new RuntimeException('Not implemented in stub');
     }
 
@@ -114,18 +105,21 @@ class SubscriberStubPostgresConnection implements PostgresConnection
         throw new RuntimeException('Not implemented in stub');
     }
 
-    public function quoteLiteral(string $data): string
-    {
+    public function quoteLiteral(
+        string $data,
+    ): string {
         throw new RuntimeException('Not implemented in stub');
     }
 
-    public function quoteIdentifier(string $name): string
-    {
+    public function quoteIdentifier(
+        string $name,
+    ): string {
         throw new RuntimeException('Not implemented in stub');
     }
 
-    public function escapeByteA(string $data): string
-    {
+    public function escapeByteA(
+        string $data,
+    ): string {
         throw new RuntimeException('Not implemented in stub');
     }
 
@@ -156,8 +150,9 @@ class SubscriberStubPostgresConnection implements PostgresConnection
     public function setTransactionIsolation(SqlTransactionIsolation $isolation): void {}
 }
 
-function createPgSqlSubscriberConfig(string $prefix = 'marko_'): PubSubConfig
-{
+function createPgSqlSubscriberConfig(
+    string $prefix = 'marko_',
+): PubSubConfig {
     return new PubSubConfig(new FakeConfigRepository([
         'pubsub.driver' => 'pgsql',
         'pubsub.prefix' => $prefix,

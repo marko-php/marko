@@ -36,12 +36,18 @@ class BackoffValidator
             );
         }
 
-        if ($backoff === [] || !array_is_list($backoff)) {
+        if (
+            $backoff === []
+            || !array_is_list($backoff)
+        ) {
             throw QueueException::invalidBackoff($source, 'a backoff array must be a non-empty list of ints');
         }
 
         foreach ($backoff as $delay) {
-            if (!is_int($delay) || $delay < 0) {
+            if (
+                !is_int($delay)
+                || $delay < 0
+            ) {
                 throw QueueException::invalidBackoff(
                     $source,
                     'every backoff list entry must be a non-negative int; got ' . var_export($delay, true),

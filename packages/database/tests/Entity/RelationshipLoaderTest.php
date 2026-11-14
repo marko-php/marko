@@ -241,8 +241,9 @@ function makeCountryMetadata(): EntityMetadata
     );
 }
 
-function makeFakeQueryBuilder(array $rows): QueryBuilderInterface
-{
+function makeFakeQueryBuilder(
+    array $rows,
+): QueryBuilderInterface {
     return new class ($rows) implements QueryBuilderInterface
     {
         private array $capturedColumns = [];
@@ -260,8 +261,9 @@ function makeFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function select(string ...$columns): static
-        {
+        public function select(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -283,13 +285,15 @@ function makeFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function whereNull(string $column): static
-        {
+        public function whereNull(
+            string $column,
+        ): static {
             return $this;
         }
 
-        public function whereNotNull(string $column): static
-        {
+        public function whereNotNull(
+            string $column,
+        ): static {
             return $this;
         }
 
@@ -300,13 +304,15 @@ function makeFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function whereJsonExists(string $path): static
-        {
+        public function whereJsonExists(
+            string $path,
+        ): static {
             return $this;
         }
 
-        public function whereJsonMissing(string $path): static
-        {
+        public function whereJsonMissing(
+            string $path,
+        ): static {
             return $this;
         }
 
@@ -325,13 +331,15 @@ function makeFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function whereExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
-        public function whereNotExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereNotExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
@@ -398,13 +406,15 @@ function makeFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function limit(int $limit): static
-        {
+        public function limit(
+            int $limit,
+        ): static {
             return $this;
         }
 
-        public function offset(int $offset): static
-        {
+        public function offset(
+            int $offset,
+        ): static {
             return $this;
         }
 
@@ -413,13 +423,15 @@ function makeFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function union(QueryBuilderInterface $other): static
-        {
+        public function union(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
-        public function unionAll(QueryBuilderInterface $other): static
-        {
+        public function unionAll(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
@@ -428,8 +440,9 @@ function makeFakeQueryBuilder(array $rows): QueryBuilderInterface
             return 1;
         }
 
-        public function compileSubquery(array &$bindings): string
-        {
+        public function compileSubquery(
+            array &$bindings,
+        ): string {
             return '';
         }
 
@@ -450,8 +463,9 @@ function makeFakeQueryBuilder(array $rows): QueryBuilderInterface
             return 0;
         }
 
-        public function update(array $data): int
-        {
+        public function update(
+            array $data,
+        ): int {
             return 0;
         }
 
@@ -460,8 +474,9 @@ function makeFakeQueryBuilder(array $rows): QueryBuilderInterface
             return 0;
         }
 
-        public function count(?string $column = null): int
-        {
+        public function count(
+            ?string $column = null,
+        ): int {
             return count($this->rows);
         }
 
@@ -500,8 +515,9 @@ function makeFakeQueryBuilder(array $rows): QueryBuilderInterface
             return count($rows);
         }
 
-        public function groupBy(string ...$columns): static
-        {
+        public function groupBy(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -512,30 +528,35 @@ function makeFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function min(string $column): int|float|null
-        {
+        public function min(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function max(string $column): int|float|null
-        {
+        public function max(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function sum(string $column): int|float|null
-        {
+        public function sum(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function avg(string $column): int|float|null
-        {
+        public function avg(
+            string $column,
+        ): int|float|null {
             return null;
         }
     };
 }
 
-function makeFakeQueryBuilderFactory(array $rows): QueryBuilderFactoryInterface
-{
+function makeFakeQueryBuilderFactory(
+    array $rows,
+): QueryBuilderFactoryInterface {
     return new class ($rows) implements QueryBuilderFactoryInterface
     {
         public function __construct(
@@ -549,8 +570,9 @@ function makeFakeQueryBuilderFactory(array $rows): QueryBuilderFactoryInterface
     };
 }
 
-function makeTrackingQueryBuilderFactory(array &$queries): QueryBuilderFactoryInterface
-{
+function makeTrackingQueryBuilderFactory(
+    array &$queries,
+): QueryBuilderFactoryInterface {
     return new class ($queries) implements QueryBuilderFactoryInterface
     {
         public function __construct(
@@ -576,8 +598,9 @@ function makeTrackingQueryBuilderFactory(array &$queries): QueryBuilderFactoryIn
                     return $this;
                 }
 
-                public function select(string ...$columns): static
-                {
+                public function select(
+                    string ...$columns,
+                ): static {
                     return $this;
                 }
 
@@ -598,13 +621,15 @@ function makeTrackingQueryBuilderFactory(array &$queries): QueryBuilderFactoryIn
                     return $this;
                 }
 
-                public function whereNull(string $column): static
-                {
+                public function whereNull(
+                    string $column,
+                ): static {
                     return $this;
                 }
 
-                public function whereNotNull(string $column): static
-                {
+                public function whereNotNull(
+                    string $column,
+                ): static {
                     return $this;
                 }
 
@@ -615,13 +640,15 @@ function makeTrackingQueryBuilderFactory(array &$queries): QueryBuilderFactoryIn
                     return $this;
                 }
 
-                public function whereJsonExists(string $path): static
-                {
+                public function whereJsonExists(
+                    string $path,
+                ): static {
                     return $this;
                 }
 
-                public function whereJsonMissing(string $path): static
-                {
+                public function whereJsonMissing(
+                    string $path,
+                ): static {
                     return $this;
                 }
 
@@ -640,13 +667,15 @@ function makeTrackingQueryBuilderFactory(array &$queries): QueryBuilderFactoryIn
                     return $this;
                 }
 
-                public function whereExists(callable|QueryBuilderInterface $subquery): static
-                {
+                public function whereExists(
+                    callable|QueryBuilderInterface $subquery,
+                ): static {
                     return $this;
                 }
 
-                public function whereNotExists(callable|QueryBuilderInterface $subquery): static
-                {
+                public function whereNotExists(
+                    callable|QueryBuilderInterface $subquery,
+                ): static {
                     return $this;
                 }
 
@@ -713,13 +742,15 @@ function makeTrackingQueryBuilderFactory(array &$queries): QueryBuilderFactoryIn
                     return $this;
                 }
 
-                public function limit(int $limit): static
-                {
+                public function limit(
+                    int $limit,
+                ): static {
                     return $this;
                 }
 
-                public function offset(int $offset): static
-                {
+                public function offset(
+                    int $offset,
+                ): static {
                     return $this;
                 }
 
@@ -728,13 +759,15 @@ function makeTrackingQueryBuilderFactory(array &$queries): QueryBuilderFactoryIn
                     return $this;
                 }
 
-                public function union(QueryBuilderInterface $other): static
-                {
+                public function union(
+                    QueryBuilderInterface $other,
+                ): static {
                     return $this;
                 }
 
-                public function unionAll(QueryBuilderInterface $other): static
-                {
+                public function unionAll(
+                    QueryBuilderInterface $other,
+                ): static {
                     return $this;
                 }
 
@@ -743,8 +776,9 @@ function makeTrackingQueryBuilderFactory(array &$queries): QueryBuilderFactoryIn
                     return 1;
                 }
 
-                public function compileSubquery(array &$bindings): string
-                {
+                public function compileSubquery(
+                    array &$bindings,
+                ): string {
                     return '';
                 }
 
@@ -765,8 +799,9 @@ function makeTrackingQueryBuilderFactory(array &$queries): QueryBuilderFactoryIn
                     return 0;
                 }
 
-                public function update(array $data): int
-                {
+                public function update(
+                    array $data,
+                ): int {
                     return 0;
                 }
 
@@ -775,8 +810,9 @@ function makeTrackingQueryBuilderFactory(array &$queries): QueryBuilderFactoryIn
                     return 0;
                 }
 
-                public function count(?string $column = null): int
-                {
+                public function count(
+                    ?string $column = null,
+                ): int {
                     return count($this->rows);
                 }
 
@@ -815,8 +851,9 @@ function makeTrackingQueryBuilderFactory(array &$queries): QueryBuilderFactoryIn
                     return count($rows);
                 }
 
-                public function groupBy(string ...$columns): static
-                {
+                public function groupBy(
+                    string ...$columns,
+                ): static {
                     return $this;
                 }
 
@@ -827,23 +864,27 @@ function makeTrackingQueryBuilderFactory(array &$queries): QueryBuilderFactoryIn
                     return $this;
                 }
 
-                public function min(string $column): int|float|null
-                {
+                public function min(
+                    string $column,
+                ): int|float|null {
                     return null;
                 }
 
-                public function max(string $column): int|float|null
-                {
+                public function max(
+                    string $column,
+                ): int|float|null {
                     return null;
                 }
 
-                public function sum(string $column): int|float|null
-                {
+                public function sum(
+                    string $column,
+                ): int|float|null {
                     return null;
                 }
 
-                public function avg(string $column): int|float|null
-                {
+                public function avg(
+                    string $column,
+                ): int|float|null {
                     return null;
                 }
             };
@@ -851,8 +892,9 @@ function makeTrackingQueryBuilderFactory(array &$queries): QueryBuilderFactoryIn
     };
 }
 
-function makeMultiResponseQueryBuilderFactory(array $responsesQueue): QueryBuilderFactoryInterface
-{
+function makeMultiResponseQueryBuilderFactory(
+    array $responsesQueue,
+): QueryBuilderFactoryInterface {
     return new class ($responsesQueue) implements QueryBuilderFactoryInterface
     {
         private int $callCount = 0;
@@ -871,8 +913,10 @@ function makeMultiResponseQueryBuilderFactory(array $responsesQueue): QueryBuild
     };
 }
 
-function makeLoader(QueryBuilderFactoryInterface $factory, ?EntityMetadataFactory $metadataFactory = null): RelationshipLoader
-{
+function makeLoader(
+    QueryBuilderFactoryInterface $factory,
+    ?EntityMetadataFactory $metadataFactory = null,
+): RelationshipLoader {
     $metadataFactory ??= new EntityMetadataFactory();
 
     return new RelationshipLoader(
@@ -882,16 +926,18 @@ function makeLoader(QueryBuilderFactoryInterface $factory, ?EntityMetadataFactor
     );
 }
 
-function makeParentMetadataFactory(array $metadataMap): EntityMetadataFactory
-{
+function makeParentMetadataFactory(
+    array $metadataMap,
+): EntityMetadataFactory {
     return new class ($metadataMap) extends EntityMetadataFactory
     {
         public function __construct(
             private array $metadataMap,
         ) {}
 
-        public function parse(string $entityClass): EntityMetadata
-        {
+        public function parse(
+            string $entityClass,
+        ): EntityMetadata {
             return $this->metadataMap[$entityClass];
         }
     };

@@ -30,7 +30,10 @@ readonly class Size extends AbstractSizeRule
         mixed $value,
         array $data,
     ): bool {
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return true;
         }
 
@@ -41,7 +44,8 @@ readonly class Size extends AbstractSizeRule
 
         $size = $this->size($value);
 
-        return $size !== null && (float) $size === (float) $this->size;
+        return $size !== null
+            && (float) $size === (float) $this->size;
     }
 
     public function message(

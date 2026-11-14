@@ -92,8 +92,10 @@ readonly class ReadonlySampleClass
 }
 
 // Helper to build a PluginRegistry with a plugin for ConcreteSampleClass::pluggedMethod
-function makeRegistryWithPlugin(string $targetClass, string $targetMethod): PluginRegistry
-{
+function makeRegistryWithPlugin(
+    string $targetClass,
+    string $targetMethod,
+): PluginRegistry {
     $registry = new PluginRegistry();
     $registry->register(new PluginDefinition(
         pluginClass: 'FakePlugin',
@@ -217,7 +219,8 @@ it('handles methods with union return types', function (): void {
 
     $code = $generator->generateInterfaceWrapperCode(UnionReturnInterface::class, $registry);
 
-    expect(str_contains($code, 'string|int') || str_contains($code, 'int|string'))->toBeTrue();
+    expect(str_contains($code, 'string|int')
+        || str_contains($code, 'int|string'))->toBeTrue();
 });
 
 it('handles methods with void return type', function (): void {
@@ -488,8 +491,9 @@ interface DefaultValueInterface
 /**
  * Build a plugged subclass of DefaultValueSampleClass (no plugins run) and return a live instance.
  */
-function makeDefaultValueInterceptor(ContainerInterface $container): DefaultValueSampleClass
-{
+function makeDefaultValueInterceptor(
+    ContainerInterface $container,
+): DefaultValueSampleClass {
     $methods = [
         'withArray',
         'withNestedArray',

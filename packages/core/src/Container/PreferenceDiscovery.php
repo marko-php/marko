@@ -19,8 +19,9 @@ class PreferenceDiscovery
      *
      * @return array<PreferenceRecord>
      */
-    public function discoverInModule(ModuleManifest $manifest): array
-    {
+    public function discoverInModule(
+        ModuleManifest $manifest,
+    ): array {
         $srcDir = $manifest->path . '/src';
 
         if (!is_dir($srcDir)) {
@@ -36,7 +37,10 @@ class PreferenceDiscovery
             // Cheap pre-filter: skip files that obviously don't declare a preference
             // before paying for class extraction, autoload, and reflection.
             $contents = file_get_contents($filepath);
-            if ($contents === false || !str_contains($contents, '#[Preference')) {
+            if (
+                $contents === false
+                || !str_contains($contents, '#[Preference')
+            ) {
                 continue;
             }
 

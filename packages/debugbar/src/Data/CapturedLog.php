@@ -19,8 +19,9 @@ readonly class CapturedLog
     /**
      * @return array<string, mixed>
      */
-    public function toArray(float $requestStart): array
-    {
+    public function toArray(
+        float $requestStart,
+    ): array {
         return [
             'level' => $this->level,
             'message' => $this->message,

@@ -83,7 +83,10 @@ class GdImageProcessor implements ImageProcessorInterface
     ): string {
         $this->assertTargetDimensions('crop', $width, $height);
 
-        if ($x < 0 || $y < 0) {
+        if (
+            $x < 0
+            || $y < 0
+        ) {
             throw GdProcessingException::invalidCropOffset($x, $y);
         }
 
@@ -282,7 +285,11 @@ class GdImageProcessor implements ImageProcessorInterface
         int $width,
         int $height,
     ): void {
-        if ($width < 1 || $height < 1 || !$this->withinLimits($width, $height)) {
+        if (
+            $width < 1
+            || $height < 1
+            || !$this->withinLimits($width, $height)
+        ) {
             throw GdProcessingException::invalidTargetDimensions(
                 $operation,
                 $width,

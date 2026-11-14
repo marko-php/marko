@@ -82,7 +82,8 @@ class RequestBody
      */
     public function exceedsLimit(): bool
     {
-        return $this->maxLength > 0 && $this->declaredLength > $this->maxLength;
+        return $this->maxLength > 0
+            && $this->declaredLength > $this->maxLength;
     }
 
     /**

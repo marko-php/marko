@@ -24,11 +24,17 @@ readonly class Cookie
         private ?string $sameSite = null,
         private ?int $maxAge = null,
     ) {
-        if ($this->name === '' || preg_match(self::INVALID_NAME_PATTERN, $this->name) === 1) {
+        if (
+            $this->name === ''
+            || preg_match(self::INVALID_NAME_PATTERN, $this->name) === 1
+        ) {
             throw CookieException::invalidName($this->name);
         }
 
-        if ($this->sameSite === 'None' && !$this->secure) {
+        if (
+            $this->sameSite === 'None'
+            && !$this->secure
+        ) {
             throw CookieException::sameSiteNoneRequiresSecure($this->name);
         }
     }
@@ -97,7 +103,10 @@ readonly class Cookie
     {
         $parts = [$this->name . '=' . rawurlencode($this->value)];
 
-        if ($this->expires !== null && $this->expires !== 0) {
+        if (
+            $this->expires !== null
+            && $this->expires !== 0
+        ) {
             $parts[] = 'Expires=' . gmdate('D, d M Y H:i:s \G\M\T', $this->expires);
         }
 

@@ -61,19 +61,26 @@ readonly class FilePageCacheDriver implements PageCacheInterface
 
         $data = unserialize($content, ['allowed_classes' => false]);
 
-        if (!is_array($data)
+        if (
+            !is_array($data)
             || !isset($data['status_code'], $data['body'], $data['headers'])
             || !array_key_exists('expires_at', $data)
             || !is_int($data['status_code'])
             || !is_string($data['body'])
             || !is_array($data['headers'])
-            || !($data['expires_at'] === null || is_int($data['expires_at']))
+            || !(
+                $data['expires_at'] === null
+                || is_int($data['expires_at'])
+            )
         ) {
             return null;
         }
 
         // A null expiry means the entry never expires; it lives until purged by URL, by tag or cleared.
-        if ($data['expires_at'] !== null && $data['expires_at'] < $this->clock->now()->getTimestamp()) {
+        if (
+            $data['expires_at'] !== null
+            && $data['expires_at'] < $this->clock->now()->getTimestamp()
+        ) {
             @unlink($path);
 
             return null;
@@ -153,8 +160,10 @@ readonly class FilePageCacheDriver implements PageCacheInterface
 
         $this->ensureDirectory($variantDir);
 
-        if ($this->countVariants($variantDir, $max, sweep: false) >= $max
+        if (
+            $this->countVariants($variantDir, $max, sweep: false) >= $max
             && $this->countVariants($variantDir, $max, sweep: true) >= $max
+
         ) {
             return false;
         }
@@ -179,7 +188,10 @@ readonly class FilePageCacheDriver implements PageCacheInterface
 
         foreach (new FilesystemIterator($variantDir) as $marker) {
             /** @var SplFileInfo $marker */
-            if ($sweep && !file_exists($this->pagePath($marker->getFilename()))) {
+            if (
+                $sweep
+                && !file_exists($this->pagePath($marker->getFilename()))
+            ) {
                 @unlink($marker->getPathname());
 
                 continue;
@@ -201,8 +213,9 @@ readonly class FilePageCacheDriver implements PageCacheInterface
      *
      * @throws ConfigNotFoundException|PageCacheException
      */
-    public function purgeUrl(string $url): bool
-    {
+    public function purgeUrl(
+        string $url,
+    ): bool {
         $parsed = parse_url($url);
 
         if ($parsed === false) {
@@ -225,7 +238,10 @@ readonly class FilePageCacheDriver implements PageCacheInterface
                 );
                 $filePath = $this->pagePath($key->hash());
 
-                if (file_exists($filePath) && !unlink($filePath)) {
+                if (
+                    file_exists($filePath)
+                    && !unlink($filePath)
+                ) {
                     $success = false;
                 }
             }
@@ -267,8 +283,9 @@ readonly class FilePageCacheDriver implements PageCacheInterface
      *
      * @throws ConfigNotFoundException
      */
-    public function purgeTag(string $tag): bool
-    {
+    public function purgeTag(
+        string $tag,
+    ): bool {
         $success = $this->purgeLegacyTagIndex($tag);
         $tagDir = $this->tagDir($tag);
 
@@ -280,7 +297,10 @@ readonly class FilePageCacheDriver implements PageCacheInterface
             /** @var SplFileInfo $marker */
             $this->deletePage($marker->getFilename());
 
-            if (!@unlink($marker->getPathname()) && file_exists($marker->getPathname())) {
+            if (
+                !@unlink($marker->getPathname())
+                && file_exists($marker->getPathname())
+            ) {
                 $success = false;
             }
         }
@@ -296,8 +316,9 @@ readonly class FilePageCacheDriver implements PageCacheInterface
      *
      * @throws ConfigNotFoundException
      */
-    private function purgeLegacyTagIndex(string $tag): bool
-    {
+    private function purgeLegacyTagIndex(
+        string $tag,
+    ): bool {
         $indexPath = $this->tagsDir() . '/' . hash('xxh128', $tag) . '.tag';
 
         if (!file_exists($indexPath)) {
@@ -305,7 +326,7 @@ readonly class FilePageCacheDriver implements PageCacheInterface
         }
 
         $content = file_get_contents($indexPath);
-        $decoded = is_string($content) && $content !== ''
+        $decoded = (is_string($content) && $content !== '')
             ? unserialize($content, ['allowed_classes' => false])
             : [];
 
@@ -315,14 +336,16 @@ readonly class FilePageCacheDriver implements PageCacheInterface
             }
         }
 
-        return @unlink($indexPath) || !file_exists($indexPath);
+        return @unlink($indexPath)
+            || !file_exists($indexPath);
     }
 
     /**
      * @throws ConfigNotFoundException
      */
-    private function deletePage(string $hash): void
-    {
+    private function deletePage(
+        string $hash,
+    ): void {
         if (preg_match(self::HASH_PATTERN, $hash) !== 1) {
             return;
         }
@@ -356,8 +379,9 @@ readonly class FilePageCacheDriver implements PageCacheInterface
     /**
      * Remove the marker directories (and legacy *.tag index files) under a tags or variants directory.
      */
-    private function clearMarkerDirectories(string $dir): void
-    {
+    private function clearMarkerDirectories(
+        string $dir,
+    ): void {
         if (!is_dir($dir)) {
             return;
         }
@@ -398,13 +422,15 @@ readonly class FilePageCacheDriver implements PageCacheInterface
     /**
      * @throws ConfigNotFoundException
      */
-    private function pagePath(string $hash): string
-    {
+    private function pagePath(
+        string $hash,
+    ): string {
         return $this->pagesDir() . '/' . $hash . '.cache';
     }
 
-    private function ensureDirectory(string $dir): void
-    {
+    private function ensureDirectory(
+        string $dir,
+    ): void {
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
@@ -421,8 +447,9 @@ readonly class FilePageCacheDriver implements PageCacheInterface
     /**
      * @throws ConfigNotFoundException
      */
-    private function tagDir(string $tag): string
-    {
+    private function tagDir(
+        string $tag,
+    ): string {
         return $this->tagsDir() . '/' . hash('xxh128', $tag);
     }
 

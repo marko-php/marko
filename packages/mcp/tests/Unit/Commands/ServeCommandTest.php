@@ -20,12 +20,14 @@ function serveConfig(
 /**
  * A server that records whether serve() was called.
  */
-function recordingServer(ArrayObject $served): McpServer
-{
+function recordingServer(
+    ArrayObject $served,
+): McpServer {
     return new class ($served) extends McpServer
     {
-        public function __construct(private readonly ArrayObject $served)
-        {
+        public function __construct(
+            private readonly ArrayObject $served,
+        ) {
             // skip parent constructor
         }
 
@@ -85,8 +87,9 @@ it('boots the MCP server and attaches JsonRpcProtocol to stdio', function (): vo
     $served = false;
     $server = new class ($served) extends McpServer
     {
-        public function __construct(private bool &$served)
-        {
+        public function __construct(
+            private bool &$served,
+        ) {
             // skip parent constructor — no protocol needed
         }
 

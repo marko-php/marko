@@ -32,7 +32,11 @@ class RabbitmqConnection
     ) {
         // guest/guest is public knowledge. RabbitMQ itself only accepts it from loopback by default, so a
         // remote broker that accepts it has had that protection switched off.
-        if ($user === 'guest' && $password === 'guest' && !self::isLoopbackHost($host)) {
+        if (
+            $user === 'guest'
+            && $password === 'guest'
+            && !self::isLoopbackHost($host)
+        ) {
             throw RabbitmqException::defaultCredentialsOnRemoteHost($host);
         }
     }

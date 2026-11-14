@@ -109,7 +109,10 @@ readonly class PasskeyAuthentication
         // A password login abandoned at its challenge (e.g. a two-factor code) is superseded:
         // the passkey already proves both factors, so drop the pending challenge rather than
         // leaving it in the session, and log in directly instead of through attempt().
-        if ($guard instanceof ChallengeableGuardInterface && $guard->hasPendingChallenge()) {
+        if (
+            $guard instanceof ChallengeableGuardInterface
+            && $guard->hasPendingChallenge()
+        ) {
             $guard->cancelChallenge();
         }
 
@@ -186,14 +189,20 @@ readonly class PasskeyAuthentication
 
             $passkey = $this->passkeyCredentialRepository->findByCredentialId($response->credentialId);
 
-            if ($passkey === null || $passkey->provider !== $this->passkeyGuard->providerName()) {
+            if (
+                $passkey === null
+                || $passkey->provider !== $this->passkeyGuard->providerName()
+            ) {
                 throw PasskeyVerificationException::because(
                     PasskeyFailureReason::UnknownCredential,
                     'no passkey with this credential id is registered for the guard\'s user provider',
                 );
             }
 
-            if ($expectedUser !== null && !$this->passkeyGuard->owns($expectedUser, $passkey)) {
+            if (
+                $expectedUser !== null
+                && !$this->passkeyGuard->owns($expectedUser, $passkey)
+            ) {
                 throw PasskeyVerificationException::because(
                     PasskeyFailureReason::UnknownCredential,
                     'the passkey belongs to another user than the signed-in one',
@@ -202,7 +211,10 @@ readonly class PasskeyAuthentication
 
             $expectedHandle = PasskeyUserEntity::handleFor($passkey->provider, $passkey->userId);
 
-            if ($response->userHandle !== null && !hash_equals($expectedHandle, $response->userHandle)) {
+            if (
+                $response->userHandle !== null
+                && !hash_equals($expectedHandle, $response->userHandle)
+            ) {
                 throw PasskeyVerificationException::because(
                     PasskeyFailureReason::UserHandleMismatch,
                     'the response\'s user handle does not belong to the passkey\'s owner',
@@ -212,7 +224,13 @@ readonly class PasskeyAuthentication
             $verified = $this->passkeyVerifier->verifyAssertion($response, $passkey, $challenge);
 
             // Authenticators that keep no counter always report 0 (WebAuthn §6.1.1); any other counter must grow.
-            if (($verified->signCount !== 0 || $passkey->signCount !== 0) && $verified->signCount <= $passkey->signCount) {
+            if (
+                (
+                    $verified->signCount !== 0
+                    || $passkey->signCount !== 0
+                )
+                && $verified->signCount <= $passkey->signCount
+            ) {
                 throw PasskeyVerificationException::because(
                     PasskeyFailureReason::SignCountRegressed,
                     "the signature counter went from $passkey->signCount to $verified->signCount; the authenticator may have been cloned",
@@ -257,7 +275,11 @@ readonly class PasskeyAuthentication
     {
         $request = $this->currentRequest->get();
 
-        if ($request === null || $request->ip() === null || $request->ip() === '') {
+        if (
+            $request === null
+            || $request->ip() === null
+            || $request->ip() === ''
+        ) {
             return '';
         }
 

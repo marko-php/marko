@@ -13,7 +13,10 @@ class Integer implements RuleInterface
         mixed $value,
         array $data,
     ): bool {
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return true;
         }
 
@@ -21,7 +24,10 @@ class Integer implements RuleInterface
             return true;
         }
 
-        if (is_string($value) && ctype_digit(ltrim($value, '-'))) {
+        if (
+            is_string($value)
+            && ctype_digit(ltrim($value, '-'))
+        ) {
             return str_starts_with($value, '-')
                 ? ctype_digit(substr($value, 1))
                 : ctype_digit($value);

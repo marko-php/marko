@@ -66,8 +66,9 @@ readonly class MarkoConsoleDispatcher
         ];
     }
 
-    private static function readStream(mixed $stream): string
-    {
+    private static function readStream(
+        mixed $stream,
+    ): string {
         rewind($stream);
 
         return (string) stream_get_contents($stream);

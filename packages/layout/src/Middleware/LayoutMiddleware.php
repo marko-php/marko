@@ -87,7 +87,10 @@ readonly class LayoutMiddleware implements MiddlewareInterface
         foreach ($result->headers() as $name => $value) {
             $lower = strtolower($name);
 
-            if (in_array($lower, ['content-type', 'content-length'], true) || in_array($lower, $layoutHeaders, true)) {
+            if (
+                in_array($lower, ['content-type', 'content-length'], true)
+                || in_array($lower, $layoutHeaders, true)
+            ) {
                 continue;
             }
 
@@ -112,7 +115,10 @@ readonly class LayoutMiddleware implements MiddlewareInterface
     ): bool {
         $status = $response->statusCode();
 
-        if ($status < 200 || $status >= 300) {
+        if (
+            $status < 200
+            || $status >= 300
+        ) {
             return false;
         }
 

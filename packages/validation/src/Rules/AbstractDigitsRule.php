@@ -17,11 +17,17 @@ abstract readonly class AbstractDigitsRule implements RuleInterface
         mixed $value,
         array $data,
     ): bool {
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return true;
         }
 
-        if (is_int($value) && $value >= 0) {
+        if (
+            is_int($value)
+            && $value >= 0
+        ) {
             $value = (string) $value;
         }
 

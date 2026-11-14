@@ -21,18 +21,25 @@ class DebugbarStorage
      *
      * @throws JsonException|DebugbarStorageException
      */
-    public function put(array $dataset): void
-    {
+    public function put(
+        array $dataset,
+    ): void {
         $id = $dataset['id'] ?? null;
 
-        if (! is_string($id) || ! $this->validId($id)) {
+        if (
+            ! is_string($id)
+            || ! $this->validId($id)
+        ) {
             return;
         }
 
         $directory = $this->directory();
 
         if (! is_dir($directory)) {
-            if (! $this->privately(static fn (): bool => mkdir($directory, 0700, true)) && ! is_dir($directory)) {
+            if (
+                ! $this->privately(static fn (): bool => mkdir($directory, 0700, true))
+                && ! is_dir($directory)
+            ) {
                 throw DebugbarStorageException::directoryNotCreatable($directory);
             }
 
@@ -75,8 +82,9 @@ class DebugbarStorage
     /**
      * @return array<string, mixed>|null
      */
-    public function get(string $id): ?array
-    {
+    public function get(
+        string $id,
+    ): ?array {
         if (! $this->validId($id)) {
             return null;
         }
@@ -167,7 +175,10 @@ class DebugbarStorage
                 continue;
             }
 
-            if (is_file($file) && unlink($file)) {
+            if (
+                is_file($file)
+                && unlink($file)
+            ) {
                 $deleted++;
             }
         }
@@ -202,8 +213,9 @@ class DebugbarStorage
      * Run a filesystem call under a 0077 umask so new files and directories are never
      * briefly group- or world-readable before their mode is tightened.
      */
-    private function privately(callable $operation): mixed
-    {
+    private function privately(
+        callable $operation,
+    ): mixed {
         $previous = umask(0077);
 
         try {
@@ -251,8 +263,9 @@ class DebugbarStorage
         }
     }
 
-    private function validId(string $id): bool
-    {
+    private function validId(
+        string $id,
+    ): bool {
         return preg_match('/^[a-f0-9]{12,40}$/', $id) === 1;
     }
 
@@ -283,7 +296,10 @@ class DebugbarStorage
             return $value;
         }
 
-        if (is_string($value) && is_numeric($value)) {
+        if (
+            is_string($value)
+            && is_numeric($value)
+        ) {
             return (int) $value;
         }
 
@@ -298,7 +314,11 @@ class DebugbarStorage
             return $value;
         }
 
-        if (is_int($value) || is_float($value) || is_bool($value)) {
+        if (
+            is_int($value)
+            || is_float($value)
+            || is_bool($value)
+        ) {
             return (string) $value;
         }
 
@@ -309,8 +329,9 @@ class DebugbarStorage
      * @param array<mixed> $value
      * @return array<string, mixed>
      */
-    private function stringKeyArray(array $value): array
-    {
+    private function stringKeyArray(
+        array $value,
+    ): array {
         $result = [];
 
         foreach ($value as $key => $item) {

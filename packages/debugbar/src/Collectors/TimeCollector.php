@@ -13,8 +13,9 @@ class TimeCollector implements CollectorInterface
         return 'time';
     }
 
-    public function collect(Debugbar $debugbar): array
-    {
+    public function collect(
+        Debugbar $debugbar,
+    ): array {
         return [
             'label' => 'Time',
             'badge' => $debugbar->durationMs().' ms',

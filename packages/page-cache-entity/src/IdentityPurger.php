@@ -14,8 +14,9 @@ readonly class IdentityPurger
         private PageCacheInterface $pageCache,
     ) {}
 
-    public function purge(Entity $entity): void
-    {
+    public function purge(
+        Entity $entity,
+    ): void {
         if (!$entity instanceof IdentityInterface) {
             return;
         }

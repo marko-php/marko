@@ -340,8 +340,9 @@ function makeNestedCommentWithTagsMetadata(): EntityMetadata
     );
 }
 
-function makeNestedFakeQueryBuilder(array $rows): QueryBuilderInterface
-{
+function makeNestedFakeQueryBuilder(
+    array $rows,
+): QueryBuilderInterface {
     return new class ($rows) implements QueryBuilderInterface
     {
         public function __construct(
@@ -355,8 +356,9 @@ function makeNestedFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function select(string ...$columns): static
-        {
+        public function select(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -375,13 +377,15 @@ function makeNestedFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function whereNull(string $column): static
-        {
+        public function whereNull(
+            string $column,
+        ): static {
             return $this;
         }
 
-        public function whereNotNull(string $column): static
-        {
+        public function whereNotNull(
+            string $column,
+        ): static {
             return $this;
         }
 
@@ -392,13 +396,15 @@ function makeNestedFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function whereJsonExists(string $path): static
-        {
+        public function whereJsonExists(
+            string $path,
+        ): static {
             return $this;
         }
 
-        public function whereJsonMissing(string $path): static
-        {
+        public function whereJsonMissing(
+            string $path,
+        ): static {
             return $this;
         }
 
@@ -417,13 +423,15 @@ function makeNestedFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function whereExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
-        public function whereNotExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereNotExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
@@ -490,13 +498,15 @@ function makeNestedFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function limit(int $limit): static
-        {
+        public function limit(
+            int $limit,
+        ): static {
             return $this;
         }
 
-        public function offset(int $offset): static
-        {
+        public function offset(
+            int $offset,
+        ): static {
             return $this;
         }
 
@@ -505,13 +515,15 @@ function makeNestedFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function union(QueryBuilderInterface $other): static
-        {
+        public function union(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
-        public function unionAll(QueryBuilderInterface $other): static
-        {
+        public function unionAll(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
@@ -520,8 +532,9 @@ function makeNestedFakeQueryBuilder(array $rows): QueryBuilderInterface
             return 1;
         }
 
-        public function compileSubquery(array &$bindings): string
-        {
+        public function compileSubquery(
+            array &$bindings,
+        ): string {
             return '';
         }
 
@@ -542,8 +555,9 @@ function makeNestedFakeQueryBuilder(array $rows): QueryBuilderInterface
             return 0;
         }
 
-        public function update(array $data): int
-        {
+        public function update(
+            array $data,
+        ): int {
             return 0;
         }
 
@@ -552,8 +566,9 @@ function makeNestedFakeQueryBuilder(array $rows): QueryBuilderInterface
             return 0;
         }
 
-        public function count(?string $column = null): int
-        {
+        public function count(
+            ?string $column = null,
+        ): int {
             return count($this->rows);
         }
 
@@ -592,8 +607,9 @@ function makeNestedFakeQueryBuilder(array $rows): QueryBuilderInterface
             return count($rows);
         }
 
-        public function groupBy(string ...$columns): static
-        {
+        public function groupBy(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -604,38 +620,45 @@ function makeNestedFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function min(string $column): int|float|null
-        {
+        public function min(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function max(string $column): int|float|null
-        {
+        public function max(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function sum(string $column): int|float|null
-        {
+        public function sum(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function avg(string $column): int|float|null
-        {
+        public function avg(
+            string $column,
+        ): int|float|null {
             return null;
         }
     };
 }
 
-function makeNestedLoader(array $metadataMap, array $responseQueue): RelationshipLoader
-{
+function makeNestedLoader(
+    array $metadataMap,
+    array $responseQueue,
+): RelationshipLoader {
     $metadataFactory = new class ($metadataMap) extends EntityMetadataFactory
     {
         public function __construct(
             private array $metadataMap,
         ) {}
 
-        public function parse(string $entityClass): EntityMetadata
-        {
+        public function parse(
+            string $entityClass,
+        ): EntityMetadata {
             return $this->metadataMap[$entityClass];
         }
     };

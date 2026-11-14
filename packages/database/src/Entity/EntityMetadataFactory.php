@@ -96,11 +96,17 @@ class EntityMetadataFactory
             $columnAttr = $columnAttributes[0]->newInstance();
             $propertyName = $property->getName();
 
-            if ($isExtender && $columnAttr->autoIncrement) {
+            if (
+                $isExtender
+                && $columnAttr->autoIncrement
+            ) {
                 throw EntityException::extenderDeclaresAutoIncrement($entityClass, $propertyName);
             }
 
-            if ($isExtender && $columnAttr->primaryKey) {
+            if (
+                $isExtender
+                && $columnAttr->primaryKey
+            ) {
                 throw EntityException::extenderDeclaresPrimaryKey($entityClass, $propertyName);
             }
 
@@ -150,11 +156,19 @@ class EntityMetadataFactory
                 $dbType = 'text';
             }
 
-            if ($castClass === null && $columnAttr->type === 'json' && $phpType !== 'array') {
+            if (
+                $castClass === null
+                && $columnAttr->type === 'json'
+                && $phpType !== 'array'
+            ) {
                 throw EntityException::jsonColumnTypeMismatch($entityClass, $propertyName, $phpType);
             }
 
-            if ($columnAttr->type === 'json' && $columnAttr->nullable !== null && $columnAttr->nullable !== $nullable) {
+            if (
+                $columnAttr->type === 'json'
+                && $columnAttr->nullable !== null
+                && $columnAttr->nullable !== $nullable
+            ) {
                 throw EntityException::jsonColumnNullableMismatch(
                     $entityClass,
                     $propertyName,
@@ -163,7 +177,10 @@ class EntityMetadataFactory
                 );
             }
 
-            if ($columnAttr->autoIncrement && !$columnAttr->primaryKey) {
+            if (
+                $columnAttr->autoIncrement
+                && !$columnAttr->primaryKey
+            ) {
                 throw EntityException::autoIncrementWithoutPrimaryKey($entityClass, $propertyName);
             }
 
@@ -191,7 +208,10 @@ class EntityMetadataFactory
 
             // Detect if the type is a BackedEnum
             $enumClass = null;
-            if (enum_exists($phpType) && is_subclass_of($phpType, BackedEnum::class)) {
+            if (
+                enum_exists($phpType)
+                && is_subclass_of($phpType, BackedEnum::class)
+            ) {
                 $enumClass = $phpType;
             }
 
@@ -216,7 +236,10 @@ class EntityMetadataFactory
             throw EntityException::noColumns($entityClass);
         }
 
-        if ($primaryKey === null && !$isExtender) {
+        if (
+            $primaryKey === null
+            && !$isExtender
+        ) {
             throw MissingPrimaryKeyException::noPrimaryKey($entityClass);
         }
 
@@ -224,9 +247,11 @@ class EntityMetadataFactory
         foreach ($indexAttributes as $indexAttr) {
             $index = $indexAttr->newInstance();
             foreach ($properties as $propertyName => $propertyMetadata) {
-                if ($propertyMetadata->encrypted
+                if (
+                    $propertyMetadata->encrypted
                     && (in_array($propertyMetadata->columnName, $index->columns, true)
                         || in_array($propertyName, $index->columns, true))
+
                 ) {
                     throw EntityException::encryptedUniqueOrIndexed($entityClass, $propertyName);
                 }
@@ -292,12 +317,18 @@ class EntityMetadataFactory
 
         $timestamps = $attributes[0]->newInstance();
 
-        if ($timestamps->createdAt === null && $timestamps->updatedAt === null) {
+        if (
+            $timestamps->createdAt === null
+            && $timestamps->updatedAt === null
+        ) {
             throw EntityException::timestampsWithoutProperties($entityClass);
         }
 
         foreach (['createdAt' => $timestamps->createdAt, 'updatedAt' => $timestamps->updatedAt] as $role => $name) {
-            if ($name !== null && ($properties[$name] ?? null)?->type !== DateTimeImmutable::class) {
+            if (
+                $name !== null
+                && ($properties[$name] ?? null)?->type !== DateTimeImmutable::class
+            ) {
                 throw EntityException::invalidTimestampProperty($entityClass, $name, $role);
             }
         }
@@ -356,7 +387,10 @@ class EntityMetadataFactory
             throw EntityException::encryptedUniqueOrIndexed($entityClass, $propertyName);
         }
 
-        if ($columnAttr->type !== null && $columnAttr->type !== 'text') {
+        if (
+            $columnAttr->type !== null
+            && $columnAttr->type !== 'text'
+        ) {
             throw EntityException::encryptedColumnTypeMismatch($entityClass, $propertyName, $columnAttr->type);
         }
 
@@ -465,7 +499,10 @@ class EntityMetadataFactory
 
         $tableAttr = $tableAttributes[0]->newInstance();
 
-        if ($tableAttr->name === null && $tableAttr->extends === null) {
+        if (
+            $tableAttr->name === null
+            && $tableAttr->extends === null
+        ) {
             throw EntityException::missingNameAndExtends($entityClass);
         }
 
@@ -650,7 +687,10 @@ class EntityMetadataFactory
         }
 
         $typeName = $type->getName();
-        if (!$type->allowsNull() || !is_a($typeName, Entity::class, true)) {
+        if (
+            !$type->allowsNull()
+            || !is_a($typeName, Entity::class, true)
+        ) {
             throw EntityException::singularRelationshipTypeMismatch($entityClass, $propertyName);
         }
     }
@@ -668,8 +708,12 @@ class EntityMetadataFactory
     ): void {
         $type = $property->getType();
 
-        if (!$type instanceof ReflectionNamedType
-            || ($type->getName() !== 'array' && !is_a($type->getName(), EntityCollection::class, true))
+        if (
+            !$type instanceof ReflectionNamedType
+            || (
+                $type->getName() !== 'array'
+                && !is_a($type->getName(), EntityCollection::class, true)
+            )
         ) {
             throw EntityException::collectionRelationshipTypeMismatch($entityClass, $propertyName);
         }

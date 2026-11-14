@@ -120,7 +120,10 @@ class RequestDataCollector
 
         foreach (self::SENSITIVE_FIELD_PATTERNS as $pattern) {
             $normalizedPattern = str_replace('_', '', $pattern);
-            if ($normalizedName === $normalizedPattern || str_contains($normalizedName, $normalizedPattern)) {
+            if (
+                $normalizedName === $normalizedPattern
+                || str_contains($normalizedName, $normalizedPattern)
+            ) {
                 return true;
             }
         }
@@ -136,7 +139,10 @@ class RequestDataCollector
         array $headers,
     ): array {
         foreach ($headers as $key => $value) {
-            if (in_array(strtolower($key), self::SENSITIVE_HEADERS, true) || $this->isSensitiveField($key)) {
+            if (
+                in_array(strtolower($key), self::SENSITIVE_HEADERS, true)
+                || $this->isSensitiveField($key)
+            ) {
                 $headers[$key] = self::MASK;
             }
         }

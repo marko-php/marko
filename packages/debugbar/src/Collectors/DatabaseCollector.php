@@ -13,8 +13,9 @@ class DatabaseCollector implements CollectorInterface
         return 'database';
     }
 
-    public function collect(Debugbar $debugbar): array
-    {
+    public function collect(
+        Debugbar $debugbar,
+    ): array {
         $queries = $debugbar->queries();
         $duration = array_reduce(
             $queries,

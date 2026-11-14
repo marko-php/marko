@@ -41,7 +41,10 @@ class InMemoryRememberTokenStorage implements RememberTokenStorageInterface
     ): bool {
         $token = $this->tokens["$guard:$selector"] ?? null;
 
-        if ($token === null || $token->validatorHash !== $currentValidatorHash) {
+        if (
+            $token === null
+            || $token->validatorHash !== $currentValidatorHash
+        ) {
             return false;
         }
 

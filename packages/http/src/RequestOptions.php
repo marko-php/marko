@@ -119,18 +119,30 @@ class RequestOptions
             throw InvalidRequestOptionException::conflictingBodies($bodies);
         }
 
-        if (array_key_exists(self::AUTH, $options) && !self::isValidAuth($options[self::AUTH])) {
+        if (
+            array_key_exists(self::AUTH, $options)
+            && !self::isValidAuth($options[self::AUTH])
+        ) {
             throw InvalidRequestOptionException::invalidAuth();
         }
 
-        if (array_key_exists(self::HTTP_ERRORS, $options) && !is_bool($options[self::HTTP_ERRORS])) {
+        if (
+            array_key_exists(self::HTTP_ERRORS, $options)
+            && !is_bool($options[self::HTTP_ERRORS])
+        ) {
             throw InvalidRequestOptionException::invalidType(self::HTTP_ERRORS, 'bool', $options[self::HTTP_ERRORS]);
         }
 
         if (array_key_exists(self::ALLOW_REDIRECTS, $options)) {
             $value = $options[self::ALLOW_REDIRECTS];
 
-            if (!is_bool($value) && !(is_int($value) && $value >= 0)) {
+            if (
+                !is_bool($value)
+                && !(
+                    is_int($value)
+                    && $value >= 0
+                )
+            ) {
                 throw InvalidRequestOptionException::invalidType(
                     self::ALLOW_REDIRECTS,
                     'bool or a non-negative int',
@@ -142,7 +154,10 @@ class RequestOptions
         if (array_key_exists(self::VERIFY, $options)) {
             $value = $options[self::VERIFY];
 
-            if (!is_bool($value) && !is_string($value)) {
+            if (
+                !is_bool($value)
+                && !is_string($value)
+            ) {
                 throw InvalidRequestOptionException::invalidType(self::VERIFY, 'bool or a CA bundle path', $value);
             }
         }
@@ -150,7 +165,10 @@ class RequestOptions
         if (array_key_exists(self::RESOLVE_TO, $options)) {
             $value = $options[self::RESOLVE_TO];
 
-            if (!is_string($value) || filter_var($value, FILTER_VALIDATE_IP) === false) {
+            if (
+                !is_string($value)
+                || filter_var($value, FILTER_VALIDATE_IP) === false
+            ) {
                 throw InvalidRequestOptionException::invalidType(
                     self::RESOLVE_TO,
                     'an IPv4 or IPv6 address string',
@@ -193,7 +211,11 @@ class RequestOptions
     ): ?string {
         $auth = $options[self::AUTH] ?? null;
 
-        if (is_array($auth) && isset($auth['bearer']) && is_string($auth['bearer'])) {
+        if (
+            is_array($auth)
+            && isset($auth['bearer'])
+            && is_string($auth['bearer'])
+        ) {
             return $auth['bearer'];
         }
 
@@ -208,7 +230,8 @@ class RequestOptions
         }
 
         if (array_keys($auth) === ['bearer']) {
-            return is_string($auth['bearer']) && $auth['bearer'] !== '';
+            return is_string($auth['bearer'])
+                && $auth['bearer'] !== '';
         }
 
         return array_is_list($auth)

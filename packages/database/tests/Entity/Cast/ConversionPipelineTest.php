@@ -68,8 +68,9 @@ function pipelineConnection(): RecordingSqliteConnection
     return $connection;
 }
 
-function fillPipelineItem(PipelineItem $item): void
-{
+function fillPipelineItem(
+    PipelineItem $item,
+): void {
     $item->count = 7;
     $item->price = 19.95;
     $item->active = true;

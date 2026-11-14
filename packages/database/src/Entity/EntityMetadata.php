@@ -62,8 +62,9 @@ readonly class EntityMetadata
      *
      * @param array<class-string> $extenders
      */
-    public function withExtenders(array $extenders): self
-    {
+    public function withExtenders(
+        array $extenders,
+    ): self {
         return new self(
             entityClass: $this->entityClass,
             tableName: $this->tableName,
@@ -125,8 +126,9 @@ readonly class EntityMetadata
     /**
      * Get relationship metadata by property name.
      */
-    public function getRelationship(string $name): ?RelationshipMetadata
-    {
+    public function getRelationship(
+        string $name,
+    ): ?RelationshipMetadata {
         return $this->relationships[$name] ?? null;
     }
 

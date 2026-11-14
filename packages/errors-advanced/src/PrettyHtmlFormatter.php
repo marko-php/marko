@@ -170,7 +170,10 @@ CSS;
                 $output .= htmlspecialchars($part, ENT_QUOTES | ENT_HTML5, 'UTF-8');
             } else {
                 $trailing = '';
-                while (strlen($part) > 0 && in_array($part[-1], ['.', ',', ';', ':', '!', '?', ')', ']'], true)) {
+                while (
+                    strlen($part) > 0
+                    && in_array($part[-1], ['.', ',', ';', ':', '!', '?', ')', ']'], true)
+                ) {
                     $trailing = $part[-1] . $trailing;
                     $part = substr($part, 0, -1);
                 }
@@ -322,7 +325,10 @@ HTML;
     private function stringifyValue(
         mixed $value,
     ): string {
-        if (is_scalar($value) || $value === null) {
+        if (
+            is_scalar($value)
+            || $value === null
+        ) {
             return (string) $value;
         }
 

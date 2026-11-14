@@ -14,8 +14,9 @@ use Marko\Mail\Smtp\StreamSocket;
 class TestableStreamSocket extends StreamSocket
 {
     /** @param resource $stream */
-    public function injectStream(mixed $stream): void
-    {
+    public function injectStream(
+        mixed $stream,
+    ): void {
         $this->stream = $stream;
     }
 }

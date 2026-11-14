@@ -35,7 +35,10 @@ readonly class ByteRange
         ?string $range,
         int $size,
     ): ?self {
-        if ($range === null || trim($range) === '') {
+        if (
+            $range === null
+            || trim($range) === ''
+        ) {
             return null;
         }
 
@@ -55,14 +58,20 @@ readonly class ByteRange
 
         [, $first, $last] = $matches;
 
-        if ($first === '' && $last === '') {
+        if (
+            $first === ''
+            && $last === ''
+        ) {
             throw RangeNotSatisfiableException::forRange($range, $size);
         }
 
         if ($first === '') {
             $suffixLength = (int) $last;
 
-            if ($suffixLength === 0 || $size === 0) {
+            if (
+                $suffixLength === 0
+                || $size === 0
+            ) {
                 throw RangeNotSatisfiableException::forRange($range, $size);
             }
 
@@ -72,7 +81,10 @@ readonly class ByteRange
         $start = (int) $first;
         $end = $last === '' ? $size - 1 : min((int) $last, $size - 1);
 
-        if ($start >= $size || $start > $end) {
+        if (
+            $start >= $size
+            || $start > $end
+        ) {
             throw RangeNotSatisfiableException::forRange($range, $size);
         }
 

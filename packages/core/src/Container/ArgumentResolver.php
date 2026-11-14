@@ -74,7 +74,10 @@ class ArgumentResolver
             return;
         }
 
-        if ($value === null && $parameter->allowsNull()) {
+        if (
+            $value === null
+            && $parameter->allowsNull()
+        ) {
             return;
         }
 
@@ -110,11 +113,19 @@ class ArgumentResolver
             return $this->checkFactoryResult($parameter, $value($container), $class);
         }
 
-        if ($type instanceof ReflectionNamedType && !$type->isBuiltin() && is_string($value)) {
+        if (
+            $type instanceof ReflectionNamedType
+            && !$type->isBuiltin()
+            && is_string($value)
+        ) {
             return $container->get($value);
         }
 
-        if ($type instanceof ReflectionNamedType && $type->getName() === 'float' && is_int($value)) {
+        if (
+            $type instanceof ReflectionNamedType
+            && $type->getName() === 'float'
+            && is_int($value)
+        ) {
             return (float) $value;
         }
 
@@ -131,7 +142,10 @@ class ArgumentResolver
     ): mixed {
         $type = $parameter->getType();
 
-        if ($type !== null && !$this->matchesType($type, $result, $parameter)) {
+        if (
+            $type !== null
+            && !$this->matchesType($type, $result, $parameter)
+        ) {
             throw ArgumentException::typeMismatch(
                 $class,
                 $parameter->getName(),
@@ -166,7 +180,10 @@ class ArgumentResolver
             return false;
         }
 
-        if ($value === null && $type->allowsNull()) {
+        if (
+            $value === null
+            && $type->allowsNull()
+        ) {
             return true;
         }
 
@@ -183,14 +200,16 @@ class ArgumentResolver
         if (!$type->isBuiltin()) {
             $target = in_array($name, ['self', 'static'], true) ? $parameter->getDeclaringClass()?->getName() : $name;
 
-            return $target !== null && $value instanceof $target;
+            return $target !== null
+                && $value instanceof $target;
         }
 
         return match ($name) {
             'mixed' => true,
             'string' => is_string($value),
             'int' => is_int($value),
-            'float' => is_float($value) || is_int($value),
+            'float' => is_float($value)
+                || is_int($value),
             'bool' => is_bool($value),
             'false' => $value === false,
             'true' => $value === true,
@@ -212,7 +231,10 @@ class ArgumentResolver
         mixed $value,
         string $class,
     ): void {
-        if ($value instanceof UnitEnum && $value instanceof $type) {
+        if (
+            $value instanceof UnitEnum
+            && $value instanceof $type
+        ) {
             return;
         }
 
@@ -246,7 +268,8 @@ class ArgumentResolver
         $matches = match ($type) {
             'string' => is_string($value),
             'int' => is_int($value),
-            'float' => is_float($value) || is_int($value),
+            'float' => is_float($value)
+                || is_int($value),
             'bool' => is_bool($value),
             'array', 'iterable' => is_array($value),
             default => throw ArgumentException::ambiguousType($class, $parameter->getName(), $type),

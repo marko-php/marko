@@ -42,8 +42,9 @@ it('reports a serverInfo.name with no slash so MCP tool prefixes stay valid', fu
 it('advertises tools capability when tools are registered', function (): void {
     $handler = new class () implements ToolHandlerInterface
     {
-        public function handle(array $arguments): array
-        {
+        public function handle(
+            array $arguments,
+        ): array {
             return ['content' => [['type' => 'text', 'text' => 'ok']]];
         }
     };
@@ -70,8 +71,9 @@ it('serializes tools with empty properties as a JSON object, not a JSON array', 
     // list disappears. The server must coerce empty properties to `{}`.
     $handler = new class () implements ToolHandlerInterface
     {
-        public function handle(array $arguments): array
-        {
+        public function handle(
+            array $arguments,
+        ): array {
             return ['content' => [['type' => 'text', 'text' => 'ok']]];
         }
     };
@@ -93,8 +95,9 @@ it('serializes tools with empty properties as a JSON object, not a JSON array', 
 it('returns all registered tools via tools/list', function (): void {
     $handler = new class () implements ToolHandlerInterface
     {
-        public function handle(array $arguments): array
-        {
+        public function handle(
+            array $arguments,
+        ): array {
             return ['content' => [['type' => 'text', 'text' => 'ok']]];
         }
     };
@@ -116,8 +119,9 @@ it('returns all registered tools via tools/list', function (): void {
 it('dispatches tools/call to the correct handler by name', function (): void {
     $handler = new class () implements ToolHandlerInterface
     {
-        public function handle(array $arguments): array
-        {
+        public function handle(
+            array $arguments,
+        ): array {
             return ['content' => [['type' => 'text', 'text' => 'hello ' . ($arguments['name'] ?? '')]]];
         }
     };
@@ -154,8 +158,9 @@ it('returns JSON-RPC error for unknown tool names', function (): void {
 it('validates tool call arguments against declared schema', function (): void {
     $handler = new class () implements ToolHandlerInterface
     {
-        public function handle(array $arguments): array
-        {
+        public function handle(
+            array $arguments,
+        ): array {
             return ['content' => [['type' => 'text', 'text' => 'ok']]];
         }
     };
@@ -182,8 +187,9 @@ it('validates tool call arguments against declared schema', function (): void {
 it('returns tool result as MCP-formatted content', function (): void {
     $handler = new class () implements ToolHandlerInterface
     {
-        public function handle(array $arguments): array
-        {
+        public function handle(
+            array $arguments,
+        ): array {
             return ['content' => [['type' => 'text', 'text' => 'result text']]];
         }
     };

@@ -34,7 +34,10 @@ readonly class StreamLogHandlerFactory
         }
 
         // RoadRunner sets RR_MODE in every worker; its relay protocol owns the worker's stdout.
-        if ($target === 'php://stdout' && $this->underRoadRunner()) {
+        if (
+            $target === 'php://stdout'
+            && $this->underRoadRunner()
+        ) {
             throw InvalidStreamTargetException::stdoutUnderRoadRunner();
         }
 
@@ -51,6 +54,7 @@ readonly class StreamLogHandlerFactory
     {
         $mode = getenv('RR_MODE');
 
-        return is_string($mode) && $mode !== '';
+        return is_string($mode)
+            && $mode !== '';
     }
 }

@@ -27,11 +27,17 @@ readonly class SseStream implements IteratorAggregate
         private int $pollInterval = 1,
         private ClockInterface $clock = new SystemClock(),
     ) {
-        if ($this->dataProvider !== null && $this->subscription !== null) {
+        if (
+            $this->dataProvider !== null
+            && $this->subscription !== null
+        ) {
             throw SseException::ambiguousSource();
         }
 
-        if ($this->dataProvider === null && $this->subscription === null) {
+        if (
+            $this->dataProvider === null
+            && $this->subscription === null
+        ) {
             throw SseException::noSource();
         }
     }
@@ -121,7 +127,10 @@ readonly class SseStream implements IteratorAggregate
                 $lastHeartbeat = $this->now();
             }
 
-            if (!$hasEvents && ($this->now() - $lastHeartbeat) >= $this->heartbeatInterval) {
+            if (
+                !$hasEvents
+                && ($this->now() - $lastHeartbeat) >= $this->heartbeatInterval
+            ) {
                 yield ": keepalive\n\n";
                 $lastHeartbeat = $this->now();
             }

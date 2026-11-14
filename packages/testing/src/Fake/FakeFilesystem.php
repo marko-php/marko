@@ -74,7 +74,8 @@ class FakeFilesystem implements FilesystemInterface
     ): bool {
         $normalized = $this->normalize($path);
 
-        return isset($this->files[$normalized]) || isset($this->directories[$normalized]);
+        return isset($this->files[$normalized])
+            || isset($this->directories[$normalized]);
     }
 
     /**
@@ -265,7 +266,10 @@ class FakeFilesystem implements FilesystemInterface
         $sourcePath = $this->normalize($source);
         $this->normalize($destination);
 
-        if (isset($this->directories[$sourcePath]) && $sourcePath !== '') {
+        if (
+            isset($this->directories[$sourcePath])
+            && $sourcePath !== ''
+        ) {
             $this->moveDirectory($sourcePath, $destination);
 
             return true;
@@ -382,7 +386,10 @@ class FakeFilesystem implements FilesystemInterface
         foreach (array_keys($this->directories) as $directory) {
             $directory = (string) $directory;
 
-            if ($directory === $normalized || str_starts_with($directory, $prefix)) {
+            if (
+                $directory === $normalized
+                || str_starts_with($directory, $prefix)
+            ) {
                 unset($this->directories[$directory]);
             }
         }
@@ -579,7 +586,10 @@ class FakeFilesystem implements FilesystemInterface
         foreach ($this->directories as $directory => $attributes) {
             $directory = (string) $directory;
 
-            if ($directory === $source || str_starts_with($directory, $source . '/')) {
+            if (
+                $directory === $source
+                || str_starts_with($directory, $source . '/')
+            ) {
                 unset($this->directories[$directory]);
                 $this->directories[$target . substr($directory, $length)] = $attributes;
             }
@@ -656,7 +666,10 @@ class FakeFilesystem implements FilesystemInterface
         foreach ([...array_keys($this->files), ...array_keys($this->directories)] as $path) {
             $path = (string) $path;
 
-            if ($path === '' || !str_starts_with($path, $prefix)) {
+            if (
+                $path === ''
+                || !str_starts_with($path, $prefix)
+            ) {
                 continue;
             }
 

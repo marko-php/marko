@@ -22,8 +22,9 @@ use Revolt\EventLoop\Driver\StreamSelectDriver;
 /**
  * @param array<string, mixed> $overrides AmphpBroadcastingConfig constructor arguments
  */
-function sseServerConfig(array $overrides = []): AmphpBroadcastingConfig
-{
+function sseServerConfig(
+    array $overrides = [],
+): AmphpBroadcastingConfig {
     return new AmphpBroadcastingConfig(...[
         'host' => '127.0.0.1',
         'port' => 0,

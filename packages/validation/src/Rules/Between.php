@@ -27,7 +27,10 @@ readonly class Between extends AbstractSizeRule
         mixed $value,
         array $data,
     ): bool {
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return true;
         }
 
@@ -38,7 +41,9 @@ readonly class Between extends AbstractSizeRule
 
         $size = $this->size($value);
 
-        return $size !== null && $size >= $this->minimum && $size <= $this->maximum;
+        return $size !== null
+            && $size >= $this->minimum
+            && $size <= $this->maximum;
     }
 
     public function message(

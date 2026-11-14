@@ -262,7 +262,9 @@ class Env
     ): ?string {
         $value = self::read($name);
 
-        return $value === null || trim($value) === '' ? null : $value;
+        return ($value === null || trim($value) === '')
+            ? null
+            : $value;
     }
 
     /**
@@ -285,14 +287,19 @@ class Env
     private static function lookup(
         string $name,
     ): ?string {
-        if (array_key_exists($name, $_ENV) && $_ENV[$name] !== null) {
+        if (
+            array_key_exists($name, $_ENV)
+            && $_ENV[$name] !== null
+        ) {
             $value = self::stringify($name, $_ENV[$name]);
         } else {
             $fromGetenv = getenv($name);
             $value = $fromGetenv === false ? null : $fromGetenv;
         }
 
-        return $value === null || $value === '' ? null : $value;
+        return ($value === null || $value === '')
+            ? null
+            : $value;
     }
 
     /**
@@ -329,20 +336,26 @@ class Env
         int|float|null $min,
         int|float|null $max,
     ): void {
-        $belowMin = $min !== null && $value < $min;
-        $aboveMax = $max !== null && $value > $max;
+        $belowMin = $min !== null
+            && $value < $min;
+        $aboveMax = $max !== null
+            && $value > $max;
 
-        if (!$belowMin && !$aboveMax) {
+        if (
+            !$belowMin
+            && !$aboveMax
+        ) {
             return;
         }
 
         $message = match (true) {
-            $min !== null && $max !== null => sprintf(
-                'Environment variable "%s" must be between %s and %s',
-                $name,
-                $min,
-                $max,
-            ),
+            $min !== null
+                && $max !== null => sprintf(
+                    'Environment variable "%s" must be between %s and %s',
+                    $name,
+                    $min,
+                    $max,
+                ),
             $belowMin => sprintf('Environment variable "%s" must be at least %s', $name, $min),
             default => sprintf('Environment variable "%s" must be at most %s', $name, $max),
         };
@@ -359,7 +372,8 @@ class Env
         int|float|null $max,
     ): string {
         return match (true) {
-            $min !== null && $max !== null => sprintf(' from %s to %s', $min, $max),
+            $min !== null
+                && $max !== null => sprintf(' from %s to %s', $min, $max),
             $min !== null => sprintf(' of %s or greater', $min),
             $max !== null => sprintf(' of %s or less', $max),
             default => '',

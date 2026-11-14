@@ -77,8 +77,15 @@ class SqliteQueryBuilder extends SqlQueryBuilder
         $elements = is_array($value) ? $value : [$value];
 
         if (
-            (is_array($value) && !array_is_list($value))
-            || array_any($elements, fn (mixed $element): bool => is_array($element) || is_object($element))
+            (
+                is_array($value)
+                && !array_is_list($value)
+            )
+            || array_any(
+                $elements,
+                fn (mixed $element): bool => is_array($element)
+                || is_object($element),
+            )
         ) {
             throw UnsupportedFeatureException::fromUnsupportedFeature(new UnsupportedFeature(
                 feature: 'whereJsonContains() with an object or nested-array needle',
@@ -99,8 +106,9 @@ class SqliteQueryBuilder extends SqlQueryBuilder
      *
      * @throws InvalidJsonPathException
      */
-    protected function compileJsonPath(string $expression): string
-    {
+    protected function compileJsonPath(
+        string $expression,
+    ): string {
         $path = JsonPathParser::parse($expression);
         $sql = $this->quoteIdentifier($path->column);
         $lastIndex = count($path->segments) - 1;
@@ -120,8 +128,9 @@ class SqliteQueryBuilder extends SqlQueryBuilder
      *
      * @throws InvalidJsonPathException
      */
-    protected function compileJsonContains(string $path): string
-    {
+    protected function compileJsonContains(
+        string $path,
+    ): string {
         return sprintf(
             'NOT EXISTS (SELECT 1 FROM json_each(?) AS needle WHERE NOT EXISTS (SELECT 1 FROM json_each(%s) AS haystack WHERE haystack.value IS needle.value))',
             $this->jsonEachSource($path),
@@ -131,8 +140,9 @@ class SqliteQueryBuilder extends SqlQueryBuilder
     /**
      * @throws InvalidJsonPathException
      */
-    protected function compileJsonPathExists(string $path): string
-    {
+    protected function compileJsonPathExists(
+        string $path,
+    ): string {
         $parsed = JsonPathParser::parse($path);
 
         return sprintf(
@@ -145,8 +155,9 @@ class SqliteQueryBuilder extends SqlQueryBuilder
     /**
      * @throws InvalidJsonPathException
      */
-    private function jsonEachSource(string $path): string
-    {
+    private function jsonEachSource(
+        string $path,
+    ): string {
         if (!JsonPathParser::isJsonPath($path)) {
             return $this->quoteIdentifier($path);
         }
@@ -198,8 +209,9 @@ class SqliteQueryBuilder extends SqlQueryBuilder
     /**
      * SQLite rejects parenthesised compound SELECT operands, so each operand becomes a derived table.
      */
-    protected function wrapUnionPart(string $sql): string
-    {
+    protected function wrapUnionPart(
+        string $sql,
+    ): string {
         return "SELECT * FROM ($sql)";
     }
 

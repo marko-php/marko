@@ -22,8 +22,9 @@ afterEach(function () use (&$composerStateRoots): void {
     $composerStateRoots = [];
 });
 
-function composerStateRemoveDir(string $dir): void
-{
+function composerStateRemoveDir(
+    string $dir,
+): void {
     if (!is_dir($dir)) {
         return;
     }
@@ -69,8 +70,9 @@ function composerStateVendorPackage(
     return $path;
 }
 
-function composerStateCache(string $root): IndexCache
-{
+function composerStateCache(
+    string $root,
+): IndexCache {
     $paths = new ProjectPaths($root);
 
     return new IndexCache(
@@ -84,8 +86,9 @@ function composerStateCache(string $root): IndexCache
 }
 
 /** @return list<string> */
-function composerStateKeys(IndexCache $cache): array
-{
+function composerStateKeys(
+    IndexCache $cache,
+): array {
     return array_map(fn (ConfigKeyEntry $e): string => $e->key, $cache->getConfigKeys());
 }
 

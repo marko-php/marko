@@ -44,7 +44,10 @@ class RetryDeadlinePlugin
     private function captureDeadline(
         JobInterface $job,
     ): void {
-        if ($job instanceof RetryUntilInterface && $job->retryDeadline === null) {
+        if (
+            $job instanceof RetryUntilInterface
+            && $job->retryDeadline === null
+        ) {
             $job->setRetryDeadline($job->retryUntil());
         }
     }

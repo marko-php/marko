@@ -8,8 +8,9 @@ use Marko\Core\Exceptions\MarkoException;
 
 class ViteManifestException extends MarkoException
 {
-    public static function notFound(string $manifestPath): self
-    {
+    public static function notFound(
+        string $manifestPath,
+    ): self {
         return new self(
             sprintf('Vite manifest not found at "%s".', $manifestPath),
             'The production manifest is required when vite.useDevServer is false.',
@@ -17,8 +18,9 @@ class ViteManifestException extends MarkoException
         );
     }
 
-    public static function unreadable(string $manifestPath): self
-    {
+    public static function unreadable(
+        string $manifestPath,
+    ): self {
         return new self(
             sprintf('Vite manifest at "%s" could not be read.', $manifestPath),
             'file_get_contents() returned false for the manifest path.',
@@ -26,8 +28,9 @@ class ViteManifestException extends MarkoException
         );
     }
 
-    public static function invalid(string $manifestPath): self
-    {
+    public static function invalid(
+        string $manifestPath,
+    ): self {
         return new self(
             sprintf('Vite manifest at "%s" is not valid JSON.', $manifestPath),
             'json_decode() failed or returned a non-object structure.',

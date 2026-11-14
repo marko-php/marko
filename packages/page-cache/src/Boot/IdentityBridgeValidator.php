@@ -29,8 +29,9 @@ readonly class IdentityBridgeValidator
      * @param array<ModuleManifest> $modules
      * @throws PageCacheException|ReflectionException When an app class implements IdentityInterface and the bridge is missing
      */
-    public function validate(array $modules): void
-    {
+    public function validate(
+        array $modules,
+    ): void {
         foreach ($modules as $manifest) {
             if (str_starts_with($manifest->name, 'marko/')) {
                 continue;

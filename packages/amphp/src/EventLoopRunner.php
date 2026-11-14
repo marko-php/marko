@@ -31,8 +31,9 @@ class EventLoopRunner
         return $this->running;
     }
 
-    public function queue(callable $callback): void
-    {
+    public function queue(
+        callable $callback,
+    ): void {
         EventLoop::queue($callback);
     }
 

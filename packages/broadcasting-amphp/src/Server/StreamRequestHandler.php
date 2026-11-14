@@ -58,16 +58,23 @@ class StreamRequestHandler implements RequestHandler
     /**
      * @throws JsonException
      */
-    public function handleRequest(Request $request): Response
-    {
+    public function handleRequest(
+        Request $request,
+    ): Response {
         $path = $request->getUri()->getPath();
         $origin = $request->getHeader('origin');
 
-        if ($origin !== null && !$this->originAllowed($origin)) {
+        if (
+            $origin !== null
+            && !$this->originAllowed($origin)
+        ) {
             return $this->reject(HttpStatus::FORBIDDEN, 'Origin not allowed.');
         }
 
-        if ($path !== $this->amphpBroadcastingConfig->path && $path !== $this->amphpBroadcastingConfig->healthPath) {
+        if (
+            $path !== $this->amphpBroadcastingConfig->path
+            && $path !== $this->amphpBroadcastingConfig->healthPath
+        ) {
             return $this->reject(HttpStatus::NOT_FOUND, 'Not found.', $origin);
         }
 
@@ -115,15 +122,20 @@ class StreamRequestHandler implements RequestHandler
         ], json_encode($body, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
     }
 
-    private function healthDetailAllowed(Request $request): bool
-    {
-        if (!$this->amphpBroadcastingConfig->healthDetail || $this->amphpBroadcastingConfig->healthSecret === '') {
+    private function healthDetailAllowed(
+        Request $request,
+    ): bool {
+        if (
+            !$this->amphpBroadcastingConfig->healthDetail
+            || $this->amphpBroadcastingConfig->healthSecret === ''
+        ) {
             return false;
         }
 
         $secret = $request->getHeader(self::HEALTH_SECRET_HEADER);
 
-        return $secret !== null && hash_equals($this->amphpBroadcastingConfig->healthSecret, $secret);
+        return $secret !== null
+            && hash_equals($this->amphpBroadcastingConfig->healthSecret, $secret);
     }
 
     private function stream(
@@ -165,9 +177,11 @@ class StreamRequestHandler implements RequestHandler
 
         $ip = $this->clientIp($request);
 
-        if ($this->openConnections >= $this->maxConnections
+        if (
+            $this->openConnections >= $this->maxConnections
             || ($this->amphpBroadcastingConfig->maxConnectionsPerIp > 0
                 && ($this->connectionsPerIp[$ip] ?? 0) >= $this->amphpBroadcastingConfig->maxConnectionsPerIp)
+
         ) {
             return $this->reject(HttpStatus::SERVICE_UNAVAILABLE, 'Too many connections; retry later.', $origin, [
                 'retry-after' => (string) self::RETRY_AFTER_SECONDS,
@@ -211,8 +225,9 @@ class StreamRequestHandler implements RequestHandler
     /**
      * @return list<string>
      */
-    private function requestedChannels(Request $request): array
-    {
+    private function requestedChannels(
+        Request $request,
+    ): array {
         $raw = $request->getQueryParameter('channels') ?? '';
 
         return array_values(array_unique(array_filter(
@@ -240,27 +255,34 @@ class StreamRequestHandler implements RequestHandler
         $token = $request->getQueryParameter('token') ?? $this->bearerToken($request);
         $claims = $token === null ? null : $this->amphpSignature->verify($token);
 
-        return $claims !== null && array_all($private, $claims->allows(...));
+        return $claims !== null
+            && array_all($private, $claims->allows(...));
     }
 
-    private function bearerToken(Request $request): ?string
-    {
+    private function bearerToken(
+        Request $request,
+    ): ?string {
         $header = $request->getHeader('authorization');
 
-        if ($header === null || !str_starts_with(strtolower($header), 'bearer ')) {
+        if (
+            $header === null
+            || !str_starts_with(strtolower($header), 'bearer ')
+        ) {
             return null;
         }
 
         return trim(substr($header, 7));
     }
 
-    private function lastEventId(Request $request): ?string
-    {
+    private function lastEventId(
+        Request $request,
+    ): ?string {
         return $request->getHeader('last-event-id') ?? $request->getQueryParameter('lastEventId');
     }
 
-    private function clientIp(Request $request): string
-    {
+    private function clientIp(
+        Request $request,
+    ): string {
         if ($request->hasAttribute(Forwarded::class)) {
             $forwarded = $request->getAttribute(Forwarded::class);
 
@@ -274,8 +296,9 @@ class StreamRequestHandler implements RequestHandler
         return $address instanceof InternetAddress ? $address->getAddress() : $address->toString();
     }
 
-    private function reserve(SseConnection $connection): void
-    {
+    private function reserve(
+        SseConnection $connection,
+    ): void {
         $this->openConnections++;
         $this->connectionsPerIp[$connection->ip] = ($this->connectionsPerIp[$connection->ip] ?? 0) + 1;
 
@@ -289,18 +312,21 @@ class StreamRequestHandler implements RequestHandler
         });
     }
 
-    private function originAllowed(string $origin): bool
-    {
+    private function originAllowed(
+        string $origin,
+    ): bool {
         $allowed = $this->amphpBroadcastingConfig->allowedOrigins;
 
-        return in_array('*', $allowed, true) || in_array($origin, $allowed, true);
+        return in_array('*', $allowed, true)
+            || in_array($origin, $allowed, true);
     }
 
     /**
      * @return array<non-empty-string, string>
      */
-    private function corsHeaders(?string $origin): array
-    {
+    private function corsHeaders(
+        ?string $origin,
+    ): array {
         if ($origin === null) {
             return [];
         }

@@ -34,8 +34,9 @@ class AppointmentRepository extends Repository
     protected const string ENTITY_CLASS = Appointment::class;
 }
 
-function timezoneConfigDir(?string $timezone): string
-{
+function timezoneConfigDir(
+    ?string $timezone,
+): string {
     $dir = sys_get_temp_dir() . '/marko-tz-' . bin2hex(random_bytes(4));
     mkdir($dir . '/config', 0777, true);
     $config = $timezone === null ? "<?php return ['driver' => 'mysql'];" : "<?php return ['timezone' => '$timezone'];";

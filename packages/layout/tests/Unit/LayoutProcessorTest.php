@@ -46,15 +46,19 @@ class LpFixtureInvalidSlotComponent {}
 #[Component(template: 'components/param.html', slot: 'content', handle: 'default', sortOrder: 10)]
 class LpFixtureParamComponent
 {
-    public function data(string $id): array
-    {
+    public function data(
+        string $id,
+    ): array {
         return ['id' => $id];
     }
 }
 
 // Helper to build a ComponentCollection from fixture classes matching a handle
-function buildCollection(array $classNames, string $handle, HandleResolver $handleResolver): ComponentCollection
-{
+function buildCollection(
+    array $classNames,
+    string $handle,
+    HandleResolver $handleResolver,
+): ComponentCollection {
     $collection = new ComponentCollection();
 
     foreach ($classNames as $className) {
@@ -87,8 +91,9 @@ function buildCollection(array $classNames, string $handle, HandleResolver $hand
 }
 
 // Stub ComponentCollector that returns a pre-built collection
-function stubCollector(ComponentCollection $collection): ComponentCollectorInterface
-{
+function stubCollector(
+    ComponentCollection $collection,
+): ComponentCollectorInterface {
     return new class ($collection) implements ComponentCollectorInterface
     {
         public function __construct(private readonly ComponentCollection $stub) {}
@@ -100,16 +105,18 @@ function stubCollector(ComponentCollection $collection): ComponentCollectorInter
             return $this->stub;
         }
 
-        public function discoverFromClass(string $className): ?ComponentDefinition
-        {
+        public function discoverFromClass(
+            string $className,
+        ): ?ComponentDefinition {
             return null;
         }
     };
 }
 
 // Stub ViewInterface with a callable for renderToString
-function stubView(callable $renderFn): ViewInterface
-{
+function stubView(
+    callable $renderFn,
+): ViewInterface {
     return new class ($renderFn) implements ViewInterface
     {
         public function __construct(private readonly mixed $renderFn) {}
@@ -147,8 +154,10 @@ function defaultCollection(): ComponentCollection
     );
 }
 
-function buildProcessor(ComponentCollection $collection, ViewInterface $view): LayoutProcessor
-{
+function buildProcessor(
+    ComponentCollection $collection,
+    ViewInterface $view,
+): LayoutProcessor {
     return new LayoutProcessor(
         container: Helpers::stubContainer(),
         layoutResolver: new LayoutResolver(),

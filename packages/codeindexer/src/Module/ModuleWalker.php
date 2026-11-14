@@ -103,8 +103,9 @@ class ModuleWalker
     }
 
     /** @return list<string> */
-    private function findRecursive(string $dir): array
-    {
+    private function findRecursive(
+        string $dir,
+    ): array {
         $found = [];
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
@@ -129,11 +130,18 @@ class ModuleWalker
         }
 
         $data = json_decode($contents, true);
-        if (!is_array($data) || !isset($data['name']) || !is_string($data['name'])) {
+        if (
+            !is_array($data)
+            || !isset($data['name'])
+            || !is_string($data['name'])
+        ) {
             return null;
         }
 
-        if ($requireModuleFlag && !ModuleDiscovery::declaresMarkoModule($data)) {
+        if (
+            $requireModuleFlag
+            && !ModuleDiscovery::declaresMarkoModule($data)
+        ) {
             return null;
         }
 
@@ -146,10 +154,14 @@ class ModuleWalker
     }
 
     /** @param array<string, mixed> $composerData */
-    private function extractNamespace(array $composerData): string
-    {
+    private function extractNamespace(
+        array $composerData,
+    ): string {
         $psr4 = $composerData['autoload']['psr-4'] ?? [];
-        if (is_array($psr4) && count($psr4) > 0) {
+        if (
+            is_array($psr4)
+            && count($psr4) > 0
+        ) {
             return (string) array_key_first($psr4);
         }
 
@@ -157,8 +169,9 @@ class ModuleWalker
     }
 
     /** @return array<string, mixed> */
-    private function loadManifest(string $path): array
-    {
+    private function loadManifest(
+        string $path,
+    ): array {
         $manifestFile = $path . '/module.php';
         if (!file_exists($manifestFile)) {
             return [];
@@ -175,8 +188,9 @@ class ModuleWalker
      * @param array<int|string, mixed> $value
      * @return array<int|string, mixed>
      */
-    private static function stripClosures(array $value): array
-    {
+    private static function stripClosures(
+        array $value,
+    ): array {
         foreach ($value as $k => $v) {
             if ($v instanceof Closure) {
                 $value[$k] = '<closure>';

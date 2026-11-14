@@ -78,14 +78,20 @@ function lattePrecompileProject(
 function removeLattePrecompileProject(
     string $path,
 ): void {
-    if (is_file($path) || is_link($path)) {
+    if (
+        is_file($path)
+        || is_link($path)
+    ) {
         unlink($path);
 
         return;
     }
 
     foreach (scandir($path) ?: [] as $item) {
-        if ($item !== '.' && $item !== '..') {
+        if (
+            $item !== '.'
+            && $item !== '..'
+        ) {
             removeLattePrecompileProject("$path/$item");
         }
     }

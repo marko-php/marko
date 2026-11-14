@@ -54,8 +54,9 @@ it('handles each tool\'s failure mode with a loud error content block', function
     // ReadLogEntriesTool — reader throws
     $throwingReader = new class () implements LogReaderInterface
     {
-        public function readLast(int $count): array
-        {
+        public function readLast(
+            int $count,
+        ): array {
             throw new RuntimeException('Log file not accessible');
         }
     };

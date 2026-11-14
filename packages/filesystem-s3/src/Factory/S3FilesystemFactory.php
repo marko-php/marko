@@ -50,7 +50,10 @@ class S3FilesystemFactory implements FilesystemDriverFactoryInterface
         array $config,
     ): void {
         foreach (self::REQUIRED_KEYS as $key) {
-            if (!isset($config[$key]) || $config[$key] === '') {
+            if (
+                !isset($config[$key])
+                || $config[$key] === ''
+            ) {
                 $redactedConfig = $config;
 
                 if (isset($redactedConfig['secret'])) {

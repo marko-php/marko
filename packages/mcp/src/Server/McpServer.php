@@ -44,8 +44,9 @@ class McpServer
         $this->registerHandlers();
     }
 
-    public function registerTool(ToolDefinition $tool): void
-    {
+    public function registerTool(
+        ToolDefinition $tool,
+    ): void {
         $this->tools[$tool->name] = $tool;
     }
 
@@ -66,8 +67,9 @@ class McpServer
     }
 
     /** @param array<string, mixed> $params */
-    private function initialize(array $params): array
-    {
+    private function initialize(
+        array $params,
+    ): array {
         return [
             'protocolVersion' => self::PROTOCOL_VERSION,
             'capabilities' => [
@@ -110,9 +112,13 @@ class McpServer
      * @param array<string, mixed> $schema
      * @return array<string, mixed>
      */
-    private function normalizeInputSchema(array $schema): array
-    {
-        if (isset($schema['properties']) && $schema['properties'] === []) {
+    private function normalizeInputSchema(
+        array $schema,
+    ): array {
+        if (
+            isset($schema['properties'])
+            && $schema['properties'] === []
+        ) {
             $schema['properties'] = (object) [];
         }
 
@@ -123,10 +129,14 @@ class McpServer
      * @param array<string, mixed> $params
      * @throws McpException
      */
-    private function toolsCall(array $params): array
-    {
+    private function toolsCall(
+        array $params,
+    ): array {
         $name = $params['name'] ?? null;
-        if (!is_string($name) || !isset($this->tools[$name])) {
+        if (
+            !is_string($name)
+            || !isset($this->tools[$name])
+        ) {
             throw McpException::methodNotFound("Tool not found: $name");
         }
         $args = $params['arguments'] ?? [];

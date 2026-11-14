@@ -146,7 +146,9 @@ class SqliteExceptionTranslator
     ): string {
         $message = $exception->errorInfo[2] ?? null;
 
-        return is_string($message) && $message !== '' ? $message : $exception->getMessage();
+        return (is_string($message) && $message !== '')
+            ? $message
+            : $exception->getMessage();
     }
 
     private function constraintCodeFromMessage(

@@ -24,7 +24,8 @@ function templateListingModule(
 
     foreach ($files as $file) {
         $absolute = $path . '/resources/views/' . $file;
-        is_dir(dirname($absolute)) || mkdir(dirname($absolute), 0755, true);
+        is_dir(dirname($absolute))
+            || mkdir(dirname($absolute), 0755, true);
         file_put_contents($absolute, 'x');
     }
 

@@ -54,7 +54,8 @@ class ScriptedPdo extends PDO
 
     public function inTransaction(): bool
     {
-        return !$this->serverEndedTransaction && parent::inTransaction();
+        return !$this->serverEndedTransaction
+            && parent::inTransaction();
     }
 
     public function exec(

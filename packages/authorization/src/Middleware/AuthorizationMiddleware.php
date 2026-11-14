@@ -114,7 +114,10 @@ class AuthorizationMiddleware implements MiddlewareInterface
         $controller = $request->controller();
         $action = $request->action();
 
-        if ($controller === null || $action === null) {
+        if (
+            $controller === null
+            || $action === null
+        ) {
             return null;
         }
 

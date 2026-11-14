@@ -75,13 +75,23 @@ readonly class WebhookUrlPolicy implements WebhookUrlPolicyInterface
         // different host than the HTTP client. Such URLs are rejected rather than interpreted.
         $parts = preg_match('/[\\\\\s]/', $url) === 1 ? false : parse_url($url);
 
-        if ($parts === false || !isset($parts['scheme'], $parts['host']) || $parts['host'] === '') {
+        if (
+            $parts === false
+            || !isset($parts['scheme'], $parts['host'])
+            || $parts['host'] === ''
+        ) {
             throw UnsafeWebhookUrlException::malformed($url);
         }
 
         $scheme = strtolower($parts['scheme']);
 
-        if ($scheme !== 'https' && !($scheme === 'http' && $this->allowHttp)) {
+        if (
+            $scheme !== 'https'
+            && !(
+                $scheme === 'http'
+                && $this->allowHttp
+            )
+        ) {
             throw UnsafeWebhookUrlException::disallowedScheme($url, $scheme, $this->allowHttp);
         }
 

@@ -178,8 +178,11 @@ readonly class RetryCommand implements CommandInterface
         string $jobId,
         mixed $payload,
     ): string {
-        if (is_array($payload) && is_string($payload['class'] ?? null)
-            && is_string($payload['serialization_error'] ?? null)) {
+        if (
+            is_array($payload)
+            && is_string($payload['class'] ?? null)
+            && is_string($payload['serialization_error'] ?? null)
+        ) {
             return "Job $jobId cannot be retried: its payload could not be serialized when it failed "
                 . "({$payload['class']}: {$payload['serialization_error']}). "
                 . 'Remove closures, resources and live services from the job, then dispatch it again.';

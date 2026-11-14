@@ -22,8 +22,9 @@ it('boots the LSP server and attaches LspProtocol to stdio', function () {
     $served = false;
     $server = new class ($served) extends LspServer
     {
-        public function __construct(private bool &$servedRef)
-        {
+        public function __construct(
+            private bool &$servedRef,
+        ) {
             // skip parent constructor
         }
 

@@ -92,7 +92,10 @@ it('keeps packages/core free of Marko\Queue references', function (): void {
     foreach ($files as $file) {
         $source = (string) file_get_contents($file->getPathname());
 
-        if ($file->getExtension() === 'php' && str_contains($source, 'Marko\\Queue')) {
+        if (
+            $file->getExtension() === 'php'
+            && str_contains($source, 'Marko\\Queue')
+        ) {
             $offenders[] = substr($file->getPathname(), strlen($sourceDirectory) + 1);
         }
     }

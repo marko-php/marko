@@ -29,8 +29,9 @@ class ClockedContainer
      *
      * @param array<string, mixed> $module
      */
-    public static function withModule(array $module): Container
-    {
+    public static function withModule(
+        array $module,
+    ): Container {
         $container = self::create();
 
         new BindingRegistry($container)->registerModule(new ModuleManifest(

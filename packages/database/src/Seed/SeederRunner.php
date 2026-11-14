@@ -103,7 +103,11 @@ readonly class SeederRunner
             throw SeederException::blockedInProduction();
         }
 
-        if ($this->appEnvironment->isDevelopment() || $this->appEnvironment->isTesting() || $force) {
+        if (
+            $this->appEnvironment->isDevelopment()
+            || $this->appEnvironment->isTesting()
+            || $force
+        ) {
             return;
         }
 

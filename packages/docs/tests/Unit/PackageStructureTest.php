@@ -98,7 +98,8 @@ it('has no runtime classes beyond value objects and interfaces', function (): vo
 
     $items = array_filter(
         scandir($srcDir) ?: [],
-        fn (string $entry): bool => $entry !== '.' && $entry !== '..',
+        fn (string $entry): bool => $entry !== '.'
+            && $entry !== '..',
     );
 
     foreach ($items as $item) {

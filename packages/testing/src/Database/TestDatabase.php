@@ -116,7 +116,10 @@ class TestDatabase
 
         $container = $application->container;
 
-        if (!$container->has(ConnectionInterface::class) || !$container->has(TransactionInterface::class)) {
+        if (
+            !$container->has(ConnectionInterface::class)
+            || !$container->has(TransactionInterface::class)
+        ) {
             throw DatabaseTestException::noDriver($key);
         }
 

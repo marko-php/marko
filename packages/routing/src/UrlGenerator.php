@@ -57,7 +57,10 @@ readonly class UrlGenerator implements UrlGeneratorInterface
         string $parameter,
         mixed $value,
     ): string {
-        if ($value !== null && !is_scalar($value)) {
+        if (
+            $value !== null
+            && !is_scalar($value)
+        ) {
             throw UrlGenerationException::invalidParameterType($name, $parameter, get_debug_type($value));
         }
 

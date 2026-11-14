@@ -12,7 +12,8 @@ it('does not reference PluginProxy anywhere in the codebase after removal', func
     // Exclude this test file itself from results
     $lines = array_filter(
         explode("\n", trim($output)),
-        fn (string $line) => $line !== '' && !str_contains($line, 'PluginProxyRemovalTest.php'),
+        fn (string $line) => $line !== ''
+            && !str_contains($line, 'PluginProxyRemovalTest.php'),
     );
     expect($lines)->toBeEmpty();
 });

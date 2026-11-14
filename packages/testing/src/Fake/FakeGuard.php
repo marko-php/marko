@@ -88,13 +88,15 @@ class FakeGuard implements GuardInterface
         return $this->name;
     }
 
-    public function setUser(?AuthenticatableInterface $user): void
-    {
+    public function setUser(
+        ?AuthenticatableInterface $user,
+    ): void {
         $this->currentUser = $user;
     }
 
-    public function setAttemptResult(bool $result): void
-    {
+    public function setAttemptResult(
+        bool $result,
+    ): void {
         $this->attemptResult = $result;
     }
 
@@ -123,8 +125,9 @@ class FakeGuard implements GuardInterface
      *
      * @throws AssertionFailedException
      */
-    public function assertAttempted(?callable $callback = null): void
-    {
+    public function assertAttempted(
+        ?callable $callback = null,
+    ): void {
         if ($this->attempts === []) {
             throw AssertionFailedException::unexpectedEmpty('authentication attempts');
         }

@@ -54,7 +54,10 @@ function filesystemContractLocal(
 function filesystemContractRemove(
     string $path,
 ): void {
-    if (is_link($path) || is_file($path)) {
+    if (
+        is_link($path)
+        || is_file($path)
+    ) {
         unlink($path);
 
         return;

@@ -33,7 +33,8 @@ function argumentsTestProject(
     }
 
     foreach (['vendor', 'modules', 'app'] as $source) {
-        is_dir("$base/$source") || mkdir("$base/$source", 0755, true);
+        is_dir("$base/$source")
+            || mkdir("$base/$source", 0755, true);
     }
 
     return $base;

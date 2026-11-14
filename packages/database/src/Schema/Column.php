@@ -94,7 +94,9 @@ readonly class Column
     ): self {
         return clone($this, [
             'length' => $this->length ?? $previous->length,
-            'nullable' => $this->primaryKey && $this->autoIncrement ? $previous->nullable : $this->nullable,
+            'nullable' => ($this->primaryKey && $this->autoIncrement)
+                ? $previous->nullable
+                : $this->nullable,
             'default' => $this->default ?? $previous->default,
             'nativeType' => $this->nativeType ?? $previous->nativeType,
             'collation' => $this->collation ?? $previous->collation,
@@ -152,7 +154,10 @@ readonly class Column
             return ['expression' => Expression::normalize($default->sql)];
         }
 
-        if (is_string($default) && Expression::isShortcut($default)) {
+        if (
+            is_string($default)
+            && Expression::isShortcut($default)
+        ) {
             return ['expression' => Expression::normalize($default)];
         }
 
@@ -202,7 +207,10 @@ readonly class Column
 
         // If entity doesn't specify length (null), accept database's default
         // This handles VARCHAR defaulting to 255, etc.
-        if ($this->length === null && $other->length !== null) {
+        if (
+            $this->length === null
+            && $other->length !== null
+        ) {
             return true;
         }
 
@@ -226,7 +234,10 @@ readonly class Column
 
         // Primary keys with auto-increment are never nullable in DB
         // even if entity declares them as nullable PHP type
-        if ($this->primaryKey && $this->autoIncrement) {
+        if (
+            $this->primaryKey
+            && $this->autoIncrement
+        ) {
             return true;
         }
 
@@ -252,7 +263,10 @@ readonly class Column
 
         // If entity doesn't specify default (null), accept database's default
         // This handles migration defaults for NOT NULL columns
-        if ($this->default === null && $other->default !== null) {
+        if (
+            $this->default === null
+            && $other->default !== null
+        ) {
             return true;
         }
 

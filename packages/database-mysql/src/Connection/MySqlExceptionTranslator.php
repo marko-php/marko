@@ -105,7 +105,10 @@ class MySqlExceptionTranslator
         $key = $this->match("/for key '([^']+)'\\s*$/", $serverMessage);
         $table = null;
 
-        if ($key !== null && str_contains($key, '.')) {
+        if (
+            $key !== null
+            && str_contains($key, '.')
+        ) {
             [$table, $key] = explode('.', $key, 2);
         }
 
@@ -141,7 +144,9 @@ class MySqlExceptionTranslator
     ): string {
         $serverMessage = $exception->errorInfo[2] ?? null;
 
-        return is_string($serverMessage) && $serverMessage !== '' ? $serverMessage : $exception->getMessage();
+        return (is_string($serverMessage) && $serverMessage !== '')
+            ? $serverMessage
+            : $exception->getMessage();
     }
 
     /**

@@ -49,8 +49,10 @@ function mercureHub(): FakeHttpClient
 /**
  * @return array<string, string>
  */
-function mercureFormFields(FakeHttpClient $httpClient, int $index = 0): array
-{
+function mercureFormFields(
+    FakeHttpClient $httpClient,
+    int $index = 0,
+): array {
     parse_str($httpClient->requests[$index]->body(), $fields);
 
     return $fields;

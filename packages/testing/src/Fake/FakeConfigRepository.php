@@ -29,11 +29,17 @@ class FakeConfigRepository implements ConfigRepositoryInterface
             throw new ConfigNotFoundException($key);
         }
 
-        if ($effectiveScope !== null && array_key_exists("scopes.$effectiveScope.$key", $this->config)) {
+        if (
+            $effectiveScope !== null
+            && array_key_exists("scopes.$effectiveScope.$key", $this->config)
+        ) {
             return $this->config["scopes.$effectiveScope.$key"];
         }
 
-        if ($effectiveScope !== null && array_key_exists("default.$key", $this->config)) {
+        if (
+            $effectiveScope !== null
+            && array_key_exists("default.$key", $this->config)
+        ) {
             return $this->config["default.$key"];
         }
 

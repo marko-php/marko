@@ -11,8 +11,10 @@ use Marko\Mcp\Protocol\JsonRpcProtocol;
 use Marko\Mcp\Server\McpServer;
 use Marko\Mcp\Tools\SearchDocsTool;
 
-function makeFakeSearch(array $results = [], ?DocsException $throwException = null): DocsSearchInterface
-{
+function makeFakeSearch(
+    array $results = [],
+    ?DocsException $throwException = null,
+): DocsSearchInterface {
     return new class ($results, $throwException) implements DocsSearchInterface
     {
         public function __construct(
@@ -20,8 +22,9 @@ function makeFakeSearch(array $results = [], ?DocsException $throwException = nu
             private ?DocsException $e,
         ) {}
 
-        public function search(DocsQuery $q): array
-        {
+        public function search(
+            DocsQuery $q,
+        ): array {
             if ($this->e) {
                 throw $this->e;
             }
@@ -29,8 +32,9 @@ function makeFakeSearch(array $results = [], ?DocsException $throwException = nu
             return $this->r;
         }
 
-        public function getPage(string $id): DocsPage
-        {
+        public function getPage(
+            string $id,
+        ): DocsPage {
             return new DocsPage(id: $id, title: '', content: '', path: '');
         }
 
@@ -91,15 +95,17 @@ it('delegates to DocsSearchInterface::search', function (): void {
 
         public function __construct(mixed &$ref) {}
 
-        public function search(DocsQuery $q): array
-        {
+        public function search(
+            DocsQuery $q,
+        ): array {
             $this->captured = $q;
 
             return [];
         }
 
-        public function getPage(string $id): DocsPage
-        {
+        public function getPage(
+            string $id,
+        ): DocsPage {
             return new DocsPage(id: $id, title: '', content: '', path: '');
         }
 

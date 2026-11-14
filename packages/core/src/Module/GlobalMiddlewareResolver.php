@@ -32,8 +32,9 @@ class GlobalMiddlewareResolver
      * @return array<class-string<MiddlewareInterface>>
      * @throws ModuleException When a declared entry is not a class-string, the class does not exist, or it does not implement MiddlewareInterface.
      */
-    public function resolve(array $modules): array
-    {
+    public function resolve(
+        array $modules,
+    ): array {
         /** @var array<string, int> $sourceByClass */
         $sourceByClass = [];
 

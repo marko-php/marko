@@ -15,8 +15,9 @@ use Marko\Broadcasting\PrivateChannel;
 use Marko\Testing\Fake\FakeAuthenticatable;
 use Marko\Testing\Fake\FakeClock;
 
-function amphpBroadcastingTestConfig(string $appKey = 'app-secret'): AmphpBroadcastingConfig
-{
+function amphpBroadcastingTestConfig(
+    string $appKey = 'app-secret',
+): AmphpBroadcastingConfig {
     return new AmphpBroadcastingConfig(
         publicUrl: 'https://realtime.example.com/',
         appKey: $appKey,

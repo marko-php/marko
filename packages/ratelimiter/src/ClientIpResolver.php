@@ -26,11 +26,15 @@ readonly class ClientIpResolver
      *
      * @throws ClientIpException|ConfigNotFoundException
      */
-    public function resolve(Request $request): string
-    {
+    public function resolve(
+        Request $request,
+    ): string {
         $remoteAddr = $request->ip();
 
-        if ($remoteAddr === null || $remoteAddr === '') {
+        if (
+            $remoteAddr === null
+            || $remoteAddr === ''
+        ) {
             throw ClientIpException::missingRemoteAddr();
         }
 
@@ -41,7 +45,10 @@ readonly class ClientIpResolver
         if ($this->isTrustedProxy($remoteAddr, $trustedProxies)) {
             $xff = $request->header('X-Forwarded-For');
 
-            if ($xff !== null && $xff !== '') {
+            if (
+                $xff !== null
+                && $xff !== ''
+            ) {
                 $resolved = $this->resolveFromXff($xff, $trustedProxies);
 
                 if ($resolved !== null) {
@@ -96,13 +103,20 @@ readonly class ClientIpResolver
 
             // An IPv4-mapped network (::ffff:10.0.0.0/104) packs as IPv4, so its
             // prefix length shifts down by the 96 bits of the mapping prefix.
-            if ($prefixLength !== null && $maxPrefixLength === 32 && str_contains($address, ':')) {
+            if (
+                $prefixLength !== null
+                && $maxPrefixLength === 32
+                && str_contains($address, ':')
+            ) {
                 $prefixLength -= 96;
             }
 
             $prefixLength ??= $maxPrefixLength;
 
-            if ($prefixLength < 0 || $prefixLength > $maxPrefixLength) {
+            if (
+                $prefixLength < 0
+                || $prefixLength > $maxPrefixLength
+            ) {
                 throw ClientIpException::invalidTrustedProxy($entry);
             }
 

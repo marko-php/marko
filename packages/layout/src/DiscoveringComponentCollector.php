@@ -43,8 +43,9 @@ readonly class DiscoveringComponentCollector implements ComponentCollectorInterf
      * @param class-string|string $className
      * @throws Error|ReflectionException
      */
-    public function discoverFromClass(string $className): ?ComponentDefinition
-    {
+    public function discoverFromClass(
+        string $className,
+    ): ?ComponentDefinition {
         return $this->componentCollector->discoverFromClass($className);
     }
 

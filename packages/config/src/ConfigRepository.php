@@ -64,7 +64,10 @@ readonly class ConfigRepository implements ConfigRepositoryInterface
         $value = $this->config;
 
         foreach ($segments as $segment) {
-            if (!is_array($value) || !array_key_exists($segment, $value)) {
+            if (
+                !is_array($value)
+                || !array_key_exists($segment, $value)
+            ) {
                 return [false, null];
             }
             $value = $value[$segment];

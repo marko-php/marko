@@ -27,13 +27,15 @@ function viewCacheResolver(
             private array $templates,
         ) {}
 
-        public function resolve(string $template): string
-        {
+        public function resolve(
+            string $template,
+        ): string {
             return "/app/resources/views/$template.latte";
         }
 
-        public function getSearchedPaths(string $template): array
-        {
+        public function getSearchedPaths(
+            string $template,
+        ): array {
             return [];
         }
 
@@ -64,8 +66,9 @@ function fakeTemplatePrecompiler(
             private readonly array $broken,
         ) {}
 
-        public function precompile(string $template): void
-        {
+        public function precompile(
+            string $template,
+        ): void {
             if (in_array($template, $this->broken, true)) {
                 throw TemplatePrecompileException::forTemplate(
                     template: $template,

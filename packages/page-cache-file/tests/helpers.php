@@ -57,13 +57,17 @@ function createPageCacheFileDriver(
     );
 }
 
-function createPageCacheFileDriverWithPaths(string $path, int $defaultTtl, ProjectPaths $paths): FilePageCacheDriver
-{
+function createPageCacheFileDriverWithPaths(
+    string $path,
+    int $defaultTtl,
+    ProjectPaths $paths,
+): FilePageCacheDriver {
     return new FilePageCacheDriver(createPageCacheConfig($path, $defaultTtl), $paths, new FakeClock());
 }
 
-function cleanupPageCacheDir(string $dir): void
-{
+function cleanupPageCacheDir(
+    string $dir,
+): void {
     if (!is_dir($dir)) {
         return;
     }
@@ -84,8 +88,11 @@ function cleanupPageCacheDir(string $dir): void
     rmdir($dir);
 }
 
-function writeExpiredPageCacheEntry(string $tmpDir, string $hash, int $now): void
-{
+function writeExpiredPageCacheEntry(
+    string $tmpDir,
+    string $hash,
+    int $now,
+): void {
     writePageCachePayload($tmpDir, $hash, [
         'status_code' => 200,
         'body' => 'expired body',
@@ -99,8 +106,11 @@ function writeExpiredPageCacheEntry(string $tmpDir, string $hash, int $now): voi
 /**
  * @param array<string, mixed> $data
  */
-function writePageCachePayload(string $tmpDir, string $hash, array $data): void
-{
+function writePageCachePayload(
+    string $tmpDir,
+    string $hash,
+    array $data,
+): void {
     $pagesDir = $tmpDir . '/pages';
     if (!is_dir($pagesDir)) {
         mkdir($pagesDir, 0755, true);

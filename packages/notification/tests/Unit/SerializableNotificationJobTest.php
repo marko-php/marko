@@ -30,8 +30,9 @@ use Marko\Testing\Fake\FakeLogger;
 
 class TestNotifiable implements NotifiableInterface
 {
-    public function routeNotificationFor(string $channel): mixed
-    {
+    public function routeNotificationFor(
+        string $channel,
+    ): mixed {
         return 'test@example.com';
     }
 
@@ -51,19 +52,22 @@ class TestNotification implements NotificationInterface
     public array $sentTo = [];
 
     /** @return array<string> */
-    public function channels(NotifiableInterface $notifiable): array
-    {
+    public function channels(
+        NotifiableInterface $notifiable,
+    ): array {
         return ['mail'];
     }
 
-    public function toMail(NotifiableInterface $notifiable): Message
-    {
+    public function toMail(
+        NotifiableInterface $notifiable,
+    ): Message {
         return new Message();
     }
 
     /** @return array<string, mixed> */
-    public function toDatabase(NotifiableInterface $notifiable): array
-    {
+    public function toDatabase(
+        NotifiableInterface $notifiable,
+    ): array {
         return [];
     }
 }
@@ -93,8 +97,9 @@ function createNotificationTestFailedJobRepository(): FailedJobRepositoryInterfa
         /** @var array<string, FailedJob> */
         public array $storedJobs = [];
 
-        public function store(FailedJob $failedJob): void
-        {
+        public function store(
+            FailedJob $failedJob,
+        ): void {
             $this->storedJobs[$failedJob->id] = $failedJob;
         }
 
@@ -104,13 +109,15 @@ function createNotificationTestFailedJobRepository(): FailedJobRepositoryInterfa
             return array_values($this->storedJobs);
         }
 
-        public function find(string $id): ?FailedJob
-        {
+        public function find(
+            string $id,
+        ): ?FailedJob {
             return $this->storedJobs[$id] ?? null;
         }
 
-        public function delete(string $id): bool
-        {
+        public function delete(
+            string $id,
+        ): bool {
             if (isset($this->storedJobs[$id])) {
                 unset($this->storedJobs[$id]);
 
@@ -187,16 +194,18 @@ describe('SendNotificationJob serialization', function (): void {
                     private NotificationSender $sender,
                 ) {}
 
-                public function get(string $id): object
-                {
+                public function get(
+                    string $id,
+                ): object {
                     return match ($id) {
                         NotificationSender::class => $this->sender,
                         default => throw new RuntimeException("No binding for: $id"),
                     };
                 }
 
-                public function has(string $id): bool
-                {
+                public function has(
+                    string $id,
+                ): bool {
                     return true;
                 }
 
@@ -207,13 +216,15 @@ describe('SendNotificationJob serialization', function (): void {
                     object $instance,
                 ): void {}
 
-                public function call(Closure $callable): mixed
-                {
+                public function call(
+                    Closure $callable,
+                ): mixed {
                     return null;
                 }
 
-                public function resolvedInstances(?string $interface = null): array
-                {
+                public function resolvedInstances(
+                    ?string $interface = null,
+                ): array {
                     return [];
                 }
             };
@@ -304,18 +315,21 @@ describe('SendNotificationJob serialization', function (): void {
                     return $this->job;
                 }
 
-                public function size(?string $queue = null): int
-                {
+                public function size(
+                    ?string $queue = null,
+                ): int {
                     return 0;
                 }
 
-                public function clear(?string $queue = null): int
-                {
+                public function clear(
+                    ?string $queue = null,
+                ): int {
                     return 0;
                 }
 
-                public function delete(string $jobId): bool
-                {
+                public function delete(
+                    string $jobId,
+                ): bool {
                     return true;
                 }
 
@@ -333,16 +347,18 @@ describe('SendNotificationJob serialization', function (): void {
                     private NotificationSender $sender,
                 ) {}
 
-                public function get(string $id): object
-                {
+                public function get(
+                    string $id,
+                ): object {
                     return match ($id) {
                         NotificationSender::class => $this->sender,
                         default => throw new RuntimeException("No binding for: $id"),
                     };
                 }
 
-                public function has(string $id): bool
-                {
+                public function has(
+                    string $id,
+                ): bool {
                     return true;
                 }
 
@@ -353,13 +369,15 @@ describe('SendNotificationJob serialization', function (): void {
                     object $instance,
                 ): void {}
 
-                public function call(Closure $callable): mixed
-                {
+                public function call(
+                    Closure $callable,
+                ): mixed {
                     return null;
                 }
 
-                public function resolvedInstances(?string $interface = null): array
-                {
+                public function resolvedInstances(
+                    ?string $interface = null,
+                ): array {
                     return [];
                 }
             };
@@ -431,18 +449,21 @@ class NotificationFinalFailureQueue implements QueueInterface
         return array_shift($this->jobs);
     }
 
-    public function size(?string $queue = null): int
-    {
+    public function size(
+        ?string $queue = null,
+    ): int {
         return count($this->jobs);
     }
 
-    public function clear(?string $queue = null): int
-    {
+    public function clear(
+        ?string $queue = null,
+    ): int {
         return 0;
     }
 
-    public function delete(string $jobId): bool
-    {
+    public function delete(
+        string $jobId,
+    ): bool {
         $this->deleted[] = $jobId;
 
         return true;
@@ -476,13 +497,15 @@ function createUnserializableNotificationContainer(): ContainerInterface
 {
     return new class () implements ContainerInterface
     {
-        public function get(string $id): never
-        {
+        public function get(
+            string $id,
+        ): never {
             throw new RuntimeException("Notification sender unavailable: $id");
         }
 
-        public function has(string $id): bool
-        {
+        public function has(
+            string $id,
+        ): bool {
             return false;
         }
 
@@ -493,13 +516,15 @@ function createUnserializableNotificationContainer(): ContainerInterface
             object $instance,
         ): void {}
 
-        public function call(Closure $callable): mixed
-        {
+        public function call(
+            Closure $callable,
+        ): mixed {
             return null;
         }
 
-        public function resolvedInstances(?string $interface = null): array
-        {
+        public function resolvedInstances(
+            ?string $interface = null,
+        ): array {
             return [];
         }
     };

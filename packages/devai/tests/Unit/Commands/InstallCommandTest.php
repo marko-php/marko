@@ -48,7 +48,10 @@ function makeInstallCmdRunner(
         ): array {
             $this->calls[] = [$command, $args];
 
-            if ($command === 'composer' && ($args[0] ?? '') === 'require') {
+            if (
+                $command === 'composer'
+                && ($args[0] ?? '') === 'require'
+            ) {
                 return ['exitCode' => $this->requireExitCode, 'stdout' => '', 'stderr' => 'install failed'];
             }
 

@@ -10,8 +10,9 @@ readonly class ResolvePreferenceTool implements ToolHandlerInterface
 {
     public function __construct(private IndexCache $index) {}
 
-    public static function definition(IndexCache $index): ToolDefinition
-    {
+    public static function definition(
+        IndexCache $index,
+    ): ToolDefinition {
         return new ToolDefinition(
             name: 'resolve_preference',
             description: 'Find which class is bound as a Preference for a given interface or class',
@@ -24,8 +25,9 @@ readonly class ResolvePreferenceTool implements ToolHandlerInterface
         );
     }
 
-    public function handle(array $arguments): array
-    {
+    public function handle(
+        array $arguments,
+    ): array {
         $target = (string) $arguments['class'];
         $match = null;
 

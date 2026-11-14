@@ -10,8 +10,11 @@ use Marko\Database\Entity\Entity;
 use Marko\Database\Entity\EntityCollection;
 
 // Fixture entity for tests
-function makeEntity(int $id, string $name, ?string $role = null): Entity
-{
+function makeEntity(
+    int $id,
+    string $name,
+    ?string $role = null,
+): Entity {
     $entity = new class () extends Entity
     {
         public int $id;

@@ -183,7 +183,10 @@ abstract class EntityFactory
 
         $repository = static::REPOSITORY;
 
-        if ($repository === '' || !is_a($repository, RepositoryInterface::class, true)) {
+        if (
+            $repository === ''
+            || !is_a($repository, RepositoryInterface::class, true)
+        ) {
             throw EntityFactoryException::invalidRepository(static::class, $repository);
         }
 

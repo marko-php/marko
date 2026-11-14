@@ -16,13 +16,15 @@ use RuntimeException;
  */
 class NullContainer implements ContainerInterface
 {
-    public function get(string $id): never
-    {
+    public function get(
+        string $id,
+    ): never {
         throw new RuntimeException("Unexpected container access for '$id' in test.");
     }
 
-    public function has(string $id): bool
-    {
+    public function has(
+        string $id,
+    ): bool {
         return false;
     }
 
@@ -33,8 +35,9 @@ class NullContainer implements ContainerInterface
         object $instance,
     ): void {}
 
-    public function call(Closure $callable): never
-    {
+    public function call(
+        Closure $callable,
+    ): never {
         throw new RuntimeException('Unexpected container call() in test.');
     }
 
@@ -46,8 +49,9 @@ class NullContainer implements ContainerInterface
      *
      * @return array<string, object>
      */
-    public function resolvedInstances(?string $interface = null): array
-    {
+    public function resolvedInstances(
+        ?string $interface = null,
+    ): array {
         return [];
     }
 }

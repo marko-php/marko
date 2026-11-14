@@ -48,7 +48,10 @@ readonly class InertiaMiddleware implements MiddlewareInterface
         if ($this->isRedirectResponse($response)) {
             $statusCode = $response->statusCode();
 
-            if ($statusCode === 302 && in_array($request->method(), ['PUT', 'PATCH', 'DELETE'], true)) {
+            if (
+                $statusCode === 302
+                && in_array($request->method(), ['PUT', 'PATCH', 'DELETE'], true)
+            ) {
                 $statusCode = 303;
             }
 
@@ -63,8 +66,9 @@ readonly class InertiaMiddleware implements MiddlewareInterface
     /**
      * @throws InertiaConfigurationException
      */
-    private function isVersionMismatch(Request $request): bool
-    {
+    private function isVersionMismatch(
+        Request $request,
+    ): bool {
         if (! $this->isInertiaRequest($request)) {
             return false;
         }
@@ -81,18 +85,21 @@ readonly class InertiaMiddleware implements MiddlewareInterface
             && $requestVersion !== $configuredVersion;
     }
 
-    private function isInertiaRequest(Request $request): bool
-    {
+    private function isInertiaRequest(
+        Request $request,
+    ): bool {
         return $request->header('X-Inertia') === 'true';
     }
 
-    private function isRedirectResponse(Response $response): bool
-    {
+    private function isRedirectResponse(
+        Response $response,
+    ): bool {
         return in_array($response->statusCode(), [301, 302, 303, 307, 308], true);
     }
 
-    private function mergeVaryHeader(?string $vary): string
-    {
+    private function mergeVaryHeader(
+        ?string $vary,
+    ): string {
         $values = array_map('trim', explode(',', (string) $vary));
         $values = array_filter($values, static fn (string $value): bool => $value !== '');
 
@@ -106,8 +113,9 @@ readonly class InertiaMiddleware implements MiddlewareInterface
     /**
      * @throws InertiaConfigurationException
      */
-    private function nullableScalarConfig(string $key): ?string
-    {
+    private function nullableScalarConfig(
+        string $key,
+    ): ?string {
         try {
             $value = $this->config->get($key);
         } catch (ConfigException $exception) {
@@ -118,7 +126,11 @@ readonly class InertiaMiddleware implements MiddlewareInterface
             return null;
         }
 
-        if (is_string($value) || is_int($value) || is_float($value)) {
+        if (
+            is_string($value)
+            || is_int($value)
+            || is_float($value)
+        ) {
             return (string) $value;
         }
 

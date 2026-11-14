@@ -27,8 +27,9 @@ readonly class AppInfoTool implements ToolHandlerInterface
         );
     }
 
-    public function handle(array $arguments): array
-    {
+    public function handle(
+        array $arguments,
+    ): array {
         $lines = [];
         $lines[] = 'PHP version: ' . PHP_VERSION;
 
@@ -59,7 +60,10 @@ readonly class AppInfoTool implements ToolHandlerInterface
     {
         $path = $this->composerJsonPath !== '' ? $this->composerJsonPath : $this->findComposerJson();
 
-        if ($path === null || ! file_exists($path)) {
+        if (
+            $path === null
+            || ! file_exists($path)
+        ) {
             return 'unknown';
         }
 
@@ -103,7 +107,10 @@ readonly class AppInfoTool implements ToolHandlerInterface
             ? $this->installedJsonPath
             : $this->findInstalledJson();
 
-        if ($path === null || ! file_exists($path)) {
+        if (
+            $path === null
+            || ! file_exists($path)
+        ) {
             return [];
         }
 

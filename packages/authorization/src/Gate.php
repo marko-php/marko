@@ -59,8 +59,11 @@ class Gate implements GateInterface
         $user = $this->resolveUser();
 
         // A scoped credential (an API token) can only narrow the user's authority
-        if ($user !== null && $this->guard instanceof AbilityScopedGuardInterface
-            && !$this->guard->hasAbility($ability)) {
+        if (
+            $user !== null
+            && $this->guard instanceof AbilityScopedGuardInterface
+            && !$this->guard->hasAbility($ability)
+        ) {
             return $this->decide($user, $ability, $arguments, false, AbilityDecisionSource::TokenScope);
         }
 
@@ -156,7 +159,10 @@ class Gate implements GateInterface
             return $this->policyRegistry->resolve($subject::class);
         }
 
-        if (is_string($subject) && class_exists($subject)) {
+        if (
+            is_string($subject)
+            && class_exists($subject)
+        ) {
             return $this->policyRegistry->resolve($subject);
         }
 
@@ -235,11 +241,17 @@ class Gate implements GateInterface
     private function resolveResourceName(
         array $arguments,
     ): string {
-        if ($arguments !== [] && is_object($arguments[0])) {
+        if (
+            $arguments !== []
+            && is_object($arguments[0])
+        ) {
             return $arguments[0]::class;
         }
 
-        if ($arguments !== [] && is_string($arguments[0])) {
+        if (
+            $arguments !== []
+            && is_string($arguments[0])
+        ) {
             return $arguments[0];
         }
 

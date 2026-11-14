@@ -54,15 +54,21 @@ class ConfigValue
             return $value;
         }
 
-        $token = is_string($value) || $value === 0 || $value === 1
+        $token = (is_string($value) || $value === 0 || $value === 1)
             ? strtolower(trim((string) $value))
             : null;
 
-        if ($token !== null && in_array($token, Env::TRUE_VALUES, true)) {
+        if (
+            $token !== null
+            && in_array($token, Env::TRUE_VALUES, true)
+        ) {
             return true;
         }
 
-        if ($token !== null && in_array($token, Env::FALSE_VALUES, true)) {
+        if (
+            $token !== null
+            && in_array($token, Env::FALSE_VALUES, true)
+        ) {
             return false;
         }
 

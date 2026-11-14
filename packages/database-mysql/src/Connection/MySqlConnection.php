@@ -290,7 +290,8 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface, Pend
     {
         $version = $this->server()->version();
 
-        return $version->isMariaDb && $version->isAtLeast(self::MARIADB_RETURNING_VERSION);
+        return $version->isMariaDb
+            && $version->isAtLeast(self::MARIADB_RETURNING_VERSION);
     }
 
     /**
@@ -437,7 +438,10 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface, Pend
             } catch (Throwable $e) {
                 $this->rollbackAfterFailure($e);
 
-                if ($e instanceof TransactionConflictException && $attempt < $maxAttempts) {
+                if (
+                    $e instanceof TransactionConflictException
+                    && $attempt < $maxAttempts
+                ) {
                     $this->transactionBackoff->wait($attempt, $backoff, $e);
 
                     continue;
@@ -556,7 +560,10 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface, Pend
     {
         $this->transactionState->clear();
 
-        if ($this->pdo !== null && $this->pdo->inTransaction()) {
+        if (
+            $this->pdo !== null
+            && $this->pdo->inTransaction()
+        ) {
             $this->pdo->rollBack();
         }
     }

@@ -51,8 +51,9 @@ readonly class GeminiCliAgent implements AgentInterface
         GuidelinesWriter::write($projectRoot . '/AGENTS.md', $content->body);
     }
 
-    private function registerMcpServer(McpRegistration $registration): void
-    {
+    private function registerMcpServer(
+        McpRegistration $registration,
+    ): void {
         $args = ['mcp', 'add', '-s', 'project', '-t', $registration->transport, $registration->serverName, $registration->command, ...$registration->args];
         $this->commandRunner->run('gemini', $args);
     }

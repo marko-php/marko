@@ -108,8 +108,9 @@ readonly class QueryDatabaseTool implements ToolHandlerInterface
         );
     }
 
-    public function handle(array $arguments): array
-    {
+    public function handle(
+        array $arguments,
+    ): array {
         $sql = trim((string) ($arguments['sql'] ?? ''));
         $allowWrite = (bool) ($arguments['allowWrite'] ?? false);
         $confirm = (bool) ($arguments['confirm'] ?? false);
@@ -193,8 +194,10 @@ readonly class QueryDatabaseTool implements ToolHandlerInterface
     ): ?string {
         $code = trim($code);
 
-        if (preg_match('/^[A-Za-z]+/', $code, $match) !== 1
-            || ! in_array(strtoupper($match[0]), self::ALLOWED_PREFIXES, strict: true)) {
+        if (
+            preg_match('/^[A-Za-z]+/', $code, $match) !== 1
+            || ! in_array(strtoupper($match[0]), self::ALLOWED_PREFIXES, strict: true)
+        ) {
             return 'only a single SELECT, WITH, SHOW, EXPLAIN or DESCRIBE statement is allowed';
         }
 
@@ -233,10 +236,16 @@ readonly class QueryDatabaseTool implements ToolHandlerInterface
             $char = $sql[$i];
             $next = $sql[$i + 1] ?? '';
 
-            if ($char === '/' && $next === '*') {
+            if (
+                $char === '/'
+                && $next === '*'
+            ) {
                 $end = strpos($sql, '*/', $i + 2);
 
-                if ($end === false || ($sql[$i + 2] ?? '') === '!') {
+                if (
+                    $end === false
+                    || ($sql[$i + 2] ?? '') === '!'
+                ) {
                     return null;
                 }
 
@@ -248,10 +257,21 @@ readonly class QueryDatabaseTool implements ToolHandlerInterface
 
             // MySQL only starts a -- comment when whitespace or a control character follows: --1 is minus minus 1.
             $afterDashes = $sql[$i + 2] ?? "\n";
-            $isDashComment = $char === '-' && $next === '-'
-                && (! $dialect['dashCommentNeedsSpace'] || ctype_space($afterDashes) || ctype_cntrl($afterDashes));
+            $isDashComment = $char === '-'
+                && $next === '-'
+                && (
+                    ! $dialect['dashCommentNeedsSpace']
+                    || ctype_space($afterDashes)
+                    || ctype_cntrl($afterDashes)
+                );
 
-            if ($isDashComment || ($char === '#' && $dialect['hashComments'])) {
+            if (
+                $isDashComment
+                || (
+                    $char === '#'
+                    && $dialect['hashComments']
+                )
+            ) {
                 $end = strpos($sql, "\n", $i);
                 $code .= ' ';
                 $i = $end === false ? $length : $end + 1;
@@ -259,7 +279,13 @@ readonly class QueryDatabaseTool implements ToolHandlerInterface
                 continue;
             }
 
-            if ($char === "'" || ($char === '"' && ! in_array('"', $dialect['identifierQuotes'], true))) {
+            if (
+                $char === "'"
+                || (
+                    $char === '"'
+                    && ! in_array('"', $dialect['identifierQuotes'], true)
+                )
+            ) {
                 $end = $this->closingQuote($sql, $i, $char, $dialect['backslashEscapes']);
 
                 if ($end === null) {
@@ -286,9 +312,15 @@ readonly class QueryDatabaseTool implements ToolHandlerInterface
                 continue;
             }
 
-            if ($char === '$' && $dialect['dollarQuotes']
-                && ($i === 0 || preg_match('/[A-Za-z0-9_$]/', $sql[$i - 1]) !== 1)
-                && preg_match('/\G\$([A-Za-z_][A-Za-z0-9_]*)?\$/', $sql, $match, 0, $i) === 1) {
+            if (
+                $char === '$'
+                && $dialect['dollarQuotes']
+                && (
+                    $i === 0
+                    || preg_match('/[A-Za-z0-9_$]/', $sql[$i - 1]) !== 1
+                )
+                && preg_match('/\G\$([A-Za-z_][A-Za-z0-9_]*)?\$/', $sql, $match, 0, $i) === 1
+            ) {
                 $end = strpos($sql, $match[0], $i + strlen($match[0]));
 
                 if ($end === false) {
@@ -321,7 +353,10 @@ readonly class QueryDatabaseTool implements ToolHandlerInterface
         $length = strlen($sql);
 
         for ($i = $start + 1; $i < $length; $i++) {
-            if ($backslashEscapes && $sql[$i] === '\\') {
+            if (
+                $backslashEscapes
+                && $sql[$i] === '\\'
+            ) {
                 $i++;
 
                 continue;
@@ -351,8 +386,9 @@ readonly class QueryDatabaseTool implements ToolHandlerInterface
     }
 
     /** @param list<array<string, mixed>> $rows */
-    private function formatRows(array $rows): string
-    {
+    private function formatRows(
+        array $rows,
+    ): string {
         if ($rows === []) {
             return '(no rows returned)';
         }

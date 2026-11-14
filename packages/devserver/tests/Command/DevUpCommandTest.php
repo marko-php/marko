@@ -81,7 +81,7 @@ class FakeProcessManager extends ProcessManager
     ): bool {
         $this->portChecks[] = [$host, $port];
 
-        return count($this->portChecks) > 1 && $this->portAvailableAfterExit !== null
+        return (count($this->portChecks) > 1 && $this->portAvailableAfterExit !== null)
             ? $this->portAvailableAfterExit
             : $this->portAvailable;
     }
@@ -103,13 +103,15 @@ class FakeProcessManager extends ProcessManager
         return $this->survivors;
     }
 
-    public function getExitCode(string $name): ?int
-    {
+    public function getExitCode(
+        string $name,
+    ): ?int {
         return $this->exitCode;
     }
 
-    public function collectOutput(string $name): string
-    {
+    public function collectOutput(
+        string $name,
+    ): string {
         return $this->output;
     }
 
@@ -212,8 +214,9 @@ function createMemoryOutput(): array
  *
  * @param resource $stream
  */
-function readStream(mixed $stream): string
-{
+function readStream(
+    mixed $stream,
+): string {
     rewind($stream);
 
     return stream_get_contents($stream);

@@ -46,8 +46,9 @@ class FakeDispatcher implements EventDispatcherInterface
     /** @var array<Event> */
     public array $dispatched = [];
 
-    public function dispatch(Event $event): void
-    {
+    public function dispatch(
+        Event $event,
+    ): void {
         $this->dispatched[] = $event;
     }
 }
@@ -79,8 +80,9 @@ function makeInsertConnection(): ConnectionInterface
             return 1;
         }
 
-        public function prepare(string $sql): StatementInterface
-        {
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
             throw new RuntimeException('Not implemented');
         }
 
@@ -144,8 +146,9 @@ function makeUpdateConnection(): ConnectionInterface
             return 1;
         }
 
-        public function prepare(string $sql): StatementInterface
-        {
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
             throw new RuntimeException('Not implemented');
         }
 
@@ -209,8 +212,9 @@ function makeDeleteConnection(): ConnectionInterface
             return 1;
         }
 
-        public function prepare(string $sql): StatementInterface
-        {
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
             throw new RuntimeException('Not implemented');
         }
 

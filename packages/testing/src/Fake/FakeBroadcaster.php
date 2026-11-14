@@ -56,10 +56,13 @@ class FakeBroadcaster implements BroadcasterInterface
             $this->broadcasts,
             fn (array $entry): bool => $entry['event'] === $event
                 && $entry['channel']->name === ($channel instanceof Channel ? $channel->name : $channel)
-                && (!$channel instanceof Channel || (
-                    $entry['channel']->isPrivate() === $channel->isPrivate()
+                && (
+                    !$channel instanceof Channel
+                    || (
+                        $entry['channel']->isPrivate() === $channel->isPrivate()
                     && $entry['channel']->isPresence() === $channel->isPresence()
-                )),
+                    )
+                ),
         ));
     }
 

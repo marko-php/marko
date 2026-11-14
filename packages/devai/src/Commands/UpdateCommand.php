@@ -37,7 +37,10 @@ class UpdateCommand implements CommandInterface
 
         $config = json_decode((string) file_get_contents($marker), true);
 
-        if (!is_array($config) || !isset($config['agents'])) {
+        if (
+            !is_array($config)
+            || !isset($config['agents'])
+        ) {
             $output->writeLine('Invalid .marko/devai.json — missing agents');
             $output->writeLine('Suggestion: Re-run `marko devai:install --force` to recreate');
 

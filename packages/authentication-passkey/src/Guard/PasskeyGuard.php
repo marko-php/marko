@@ -59,7 +59,10 @@ readonly class PasskeyGuard
             ? $guardConfig['provider']
             : $this->authConfig->defaultProviderOrNull();
 
-        if (!is_string($provider) || $provider === '') {
+        if (
+            !is_string($provider)
+            || $provider === ''
+        ) {
             throw PasskeyConfigurationException::missingProvider($guardName);
         }
 

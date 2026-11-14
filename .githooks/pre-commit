@@ -31,6 +31,14 @@ echo "$STAGED_FILES" | xargs git add
 # Re-stage fixed files
 echo "$STAGED_FILES" | xargs git add
 
+# Run php-cs-fixer again: splitting a compound condition can put a line break after a
+# call's "(" without making its arguments fully multiline, which php-cs-fixer (and the
+# CI dry-run) would then change
+./vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php --quiet $STAGED_FILES
+
+# Re-stage fixed files
+echo "$STAGED_FILES" | xargs git add
+
 # Run phpcs for final validation
 ./vendor/bin/phpcs --standard=phpcs.xml $STAGED_FILES
 PHPCS_EXIT=$?

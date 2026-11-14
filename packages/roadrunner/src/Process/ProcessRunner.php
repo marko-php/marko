@@ -10,8 +10,9 @@ namespace Marko\Roadrunner\Process;
  */
 readonly class ProcessRunner implements ProcessRunnerInterface
 {
-    public function run(string $command): int
-    {
+    public function run(
+        string $command,
+    ): int {
         $descriptors = [
             0 => STDIN,
             1 => STDOUT,

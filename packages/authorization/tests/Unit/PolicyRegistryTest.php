@@ -32,7 +32,8 @@ class TestPostPolicy
         ?AuthorizableInterface $user,
         TestPost $post,
     ): bool {
-        return $user !== null && $user->getAuthIdentifier() === $post->authorId;
+        return $user !== null
+            && $user->getAuthIdentifier() === $post->authorId;
     }
 
     public function delete(

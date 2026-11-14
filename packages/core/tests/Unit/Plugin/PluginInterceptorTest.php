@@ -26,8 +26,9 @@ class PIT_ConcreteGreeter implements PIT_GreeterInterface
 {
     public static array $callLog = [];
 
-    public function greet(string $name): string
-    {
+    public function greet(
+        string $name,
+    ): string {
         self::$callLog[] = "PIT_ConcreteGreeter::greet($name)";
 
         return "Hello, $name!";
@@ -38,8 +39,9 @@ class PIT_GreeterBeforePlugin
 {
     public static array $callLog = [];
 
-    public function greet(string $name): ?string
-    {
+    public function greet(
+        string $name,
+    ): ?string {
         self::$callLog[] = "PIT_GreeterBeforePlugin::greet($name)";
 
         return null;
@@ -104,8 +106,9 @@ class PIT_SimpleAfterPlugin
 {
     public static array $callLog = [];
 
-    public function doAction(mixed $result): mixed
-    {
+    public function doAction(
+        mixed $result,
+    ): mixed {
         self::$callLog[] = 'PIT_SimpleAfterPlugin::doAction';
 
         return $result;
@@ -116,8 +119,9 @@ class PIT_SimpleSecondAfterPlugin
 {
     public static array $callLog = [];
 
-    public function doAction(mixed $result): mixed
-    {
+    public function doAction(
+        mixed $result,
+    ): mixed {
         self::$callLog[] = 'PIT_SimpleSecondAfterPlugin::doAction';
 
         return $result;
@@ -190,8 +194,9 @@ class PIT_ShortCircuitService
 {
     public static bool $called = false;
 
-    public function fetch(string $key): string
-    {
+    public function fetch(
+        string $key,
+    ): string {
         self::$called = true;
 
         return "fetched: $key";
@@ -200,16 +205,18 @@ class PIT_ShortCircuitService
 
 class PIT_ShortCircuitBeforePlugin
 {
-    public function fetch(string $key): string
-    {
+    public function fetch(
+        string $key,
+    ): string {
         return 'short-circuited';
     }
 }
 
 class PIT_PassThroughBeforePlugin
 {
-    public function fetch(string $key): ?string
-    {
+    public function fetch(
+        string $key,
+    ): ?string {
         return null;
     }
 }
@@ -230,8 +237,9 @@ class PIT_DoublerAfterPlugin
 {
     public static ?int $received = null;
 
-    public function getValue(mixed $result): int
-    {
+    public function getValue(
+        mixed $result,
+    ): int {
         self::$received = $result;
 
         return $result * 2;
@@ -242,8 +250,9 @@ class PIT_AdderAfterPlugin
 {
     public static ?int $received = null;
 
-    public function getValue(mixed $result): int
-    {
+    public function getValue(
+        mixed $result,
+    ): int {
         self::$received = $result;
 
         return $result + 5;
@@ -316,8 +325,9 @@ class PIT_CompleteFlowService
 {
     public static array $callLog = [];
 
-    public function process(string $input): string
-    {
+    public function process(
+        string $input,
+    ): string {
         self::$callLog[] = "PIT_CompleteFlowService::process($input)";
 
         return "processed: $input";
@@ -326,8 +336,9 @@ class PIT_CompleteFlowService
 
 class PIT_CompleteFlowBeforePlugin
 {
-    public function process(string $input): ?string
-    {
+    public function process(
+        string $input,
+    ): ?string {
         PIT_CompleteFlowService::$callLog[] = "PIT_CompleteFlowBeforePlugin::process($input)";
 
         return null;
@@ -361,8 +372,9 @@ class PIT_NoPluginsService
         return 'result';
     }
 
-    public function anotherMethod(int $value): int
-    {
+    public function anotherMethod(
+        int $value,
+    ): int {
         self::$callLog[] = "PIT_NoPluginsService::anotherMethod($value)";
 
         return $value * 2;
@@ -377,8 +389,9 @@ class PIT_LoggerDep
 {
     public static array $messages = [];
 
-    public function log(string $message): void
-    {
+    public function log(
+        string $message,
+    ): void {
         self::$messages[] = $message;
     }
 }
@@ -387,8 +400,9 @@ class PIT_DISaveService
 {
     public static array $callLog = [];
 
-    public function save(string $data): string
-    {
+    public function save(
+        string $data,
+    ): string {
         self::$callLog[] = "PIT_DISaveService::save($data)";
 
         return "saved: $data";
@@ -401,8 +415,9 @@ readonly class PIT_DIPlugin
         private PIT_LoggerDep $logger,
     ) {}
 
-    public function save(string $data): ?string
-    {
+    public function save(
+        string $data,
+    ): ?string {
         $this->logger->log("About to save: $data");
         PIT_DISaveService::$callLog[] = 'PIT_DIPlugin::save';
 
@@ -418,8 +433,9 @@ class PIT_MethodNameService
 {
     public static array $callLog = [];
 
-    public function save(string $data): string
-    {
+    public function save(
+        string $data,
+    ): string {
         self::$callLog[] = "PIT_MethodNameService::save($data)";
 
         return "saved: $data";
@@ -430,8 +446,9 @@ class PIT_ExplicitMethodPlugin
 {
     public static array $callLog = [];
 
-    public function validateInput(string $data): ?string
-    {
+    public function validateInput(
+        string $data,
+    ): ?string {
         self::$callLog[] = "PIT_ExplicitMethodPlugin::validateInput($data)";
 
         return null;
@@ -451,8 +468,9 @@ class PIT_BcryptHasher implements PIT_HasherInterface
 {
     public static array $callLog = [];
 
-    public function hash(string $value): string
-    {
+    public function hash(
+        string $value,
+    ): string {
         self::$callLog[] = "PIT_BcryptHasher::hash($value)";
 
         return "bcrypt:$value";
@@ -463,8 +481,9 @@ class PIT_HasherPlugin
 {
     public static array $callLog = [];
 
-    public function hash(string $value): ?string
-    {
+    public function hash(
+        string $value,
+    ): ?string {
         self::$callLog[] = "PIT_HasherPlugin::hash($value)";
 
         return null;
@@ -495,8 +514,10 @@ class PIT_ReadonlyServicePlugin
 // Helper
 // ---------------------------------------------------------------------------
 
-function makePluginInterceptor(Container $container, PluginRegistry $registry): PluginInterceptor
-{
+function makePluginInterceptor(
+    Container $container,
+    PluginRegistry $registry,
+): PluginInterceptor {
     return new PluginInterceptor($container, $registry, new InterceptorClassGenerator());
 }
 

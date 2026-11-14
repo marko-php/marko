@@ -14,8 +14,9 @@ use Marko\DocsMarkdown\MarkdownRepository;
  *
  * @param array<string, string> $pages map of pageId => markdown content
  */
-function makeFakeRepository(array $pages): MarkdownRepository
-{
+function makeFakeRepository(
+    array $pages,
+): MarkdownRepository {
     return new class ($pages) extends MarkdownRepository
     {
         /** @param array<string, string> $pages */
@@ -28,8 +29,9 @@ function makeFakeRepository(array $pages): MarkdownRepository
             return array_keys($this->pages);
         }
 
-        public function getRawMarkdown(string $id): string
-        {
+        public function getRawMarkdown(
+            string $id,
+        ): string {
             return $this->pages[$id] ?? '';
         }
 

@@ -73,7 +73,10 @@ class EntityRecordLookup implements RecordLookupInterface
         $target = $this->property($metadata, $property);
         $column = $this->connection->quoteIdentifier($target->columnName);
 
-        if ($caseInsensitive && $target->type !== 'string') {
+        if (
+            $caseInsensitive
+            && $target->type !== 'string'
+        ) {
             throw RecordLookupException::caseInsensitiveNeedsText($entityClass, $property, $target->type);
         }
 
@@ -168,7 +171,11 @@ class EntityRecordLookup implements RecordLookupInterface
 
         $value = $this->entityHydrator->toDatabaseValue($value, $property);
 
-        if ($property->type === 'int' && is_string($value) && preg_match('/^-?[0-9]+$/D', $value) === 1) {
+        if (
+            $property->type === 'int'
+            && is_string($value)
+            && preg_match('/^-?[0-9]+$/D', $value) === 1
+        ) {
             return (int) $value;
         }
 
@@ -184,7 +191,12 @@ class EntityRecordLookup implements RecordLookupInterface
     ): bool {
         return match ($property->type) {
             'int' => is_int($value),
-            'float' => is_int($value) || is_float($value) || (is_string($value) && is_numeric($value)),
+            'float' => is_int($value)
+                || is_float($value)
+                || (
+                    is_string($value)
+                    && is_numeric($value)
+                ),
             default => true,
         };
     }

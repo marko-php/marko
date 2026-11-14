@@ -32,7 +32,8 @@ it('generates unique hex selectors with no cookie separator in them', function (
     $manager = new RememberTokenManager(new FakeClock());
 
     $selectors = array_map(fn (): string => $manager->generateSelector(), range(1, 100));
-    $isHex = fn (string $selector): bool => strlen($selector) === 32 && ctype_xdigit($selector);
+    $isHex = fn (string $selector): bool => strlen($selector) === 32
+        && ctype_xdigit($selector);
 
     expect(count(array_unique($selectors)))->toBe(100)
         ->and(array_all($selectors, $isHex))->toBeTrue();

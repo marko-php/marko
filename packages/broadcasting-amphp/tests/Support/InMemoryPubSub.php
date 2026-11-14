@@ -47,8 +47,9 @@ class InMemoryPubSub implements PublisherInterface, SubscriberInterface
         }
     }
 
-    public function subscribe(string ...$channels): Subscription
-    {
+    public function subscribe(
+        string ...$channels,
+    ): Subscription {
         if (count($channels) !== 1) {
             throw new RuntimeException('InMemoryPubSub subscriptions take exactly one channel');
         }
@@ -95,16 +96,18 @@ class InMemoryPubSub implements PublisherInterface, SubscriberInterface
         };
     }
 
-    public function psubscribe(string ...$patterns): Subscription
-    {
+    public function psubscribe(
+        string ...$patterns,
+    ): Subscription {
         throw new RuntimeException('InMemoryPubSub does not support pattern subscriptions');
     }
 
     /**
      * Simulate the backend dropping every subscription on a channel (e.g. a lost connection).
      */
-    public function endSubscriptions(string $channel): void
-    {
+    public function endSubscriptions(
+        string $channel,
+    ): void {
         foreach ($this->queues[$channel] ?? [] as $queue) {
             $queue->complete();
         }
@@ -112,8 +115,9 @@ class InMemoryPubSub implements PublisherInterface, SubscriberInterface
         unset($this->queues[$channel]);
     }
 
-    public function activeSubscriptions(string $channel): int
-    {
+    public function activeSubscriptions(
+        string $channel,
+    ): int {
         return count($this->queues[$channel] ?? []);
     }
 }

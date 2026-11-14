@@ -38,7 +38,10 @@ readonly class SmtpMailerFactory
         $username = $this->smtpConfig->username();
         $password = $this->smtpConfig->password();
 
-        if ($username !== null && $password !== null) {
+        if (
+            $username !== null
+            && $password !== null
+        ) {
             $transport->authenticate($username, $password, $this->smtpConfig->authMode());
         }
 

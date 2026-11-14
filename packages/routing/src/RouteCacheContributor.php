@@ -99,7 +99,10 @@ readonly class RouteCacheContributor implements DiscoveryCacheContributorInterfa
         int|string $index,
         string $field,
     ): string {
-        if (!isset($record[$field]) || !is_string($record[$field])) {
+        if (
+            !isset($record[$field])
+            || !is_string($record[$field])
+        ) {
             throw DiscoveryCacheException::malformedSection(self::KEY, "route $index.$field must be a string");
         }
 
@@ -116,7 +119,13 @@ readonly class RouteCacheContributor implements DiscoveryCacheContributorInterfa
         int|string $index,
         string $field,
     ): ?string {
-        if (!array_key_exists($field, $record) || ($record[$field] !== null && !is_string($record[$field]))) {
+        if (
+            !array_key_exists($field, $record)
+            || (
+                $record[$field] !== null
+                && !is_string($record[$field])
+            )
+        ) {
             throw DiscoveryCacheException::malformedSection(self::KEY, "route $index.$field must be a string or null");
         }
 

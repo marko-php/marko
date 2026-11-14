@@ -31,8 +31,9 @@ readonly class GuidelinesAggregator
      * third-party: they are labelled as such in the rendered output and are subject
      * to the devai.guidelines.allow_packages allowlist.
      */
-    public static function isFirstParty(string $packageName): bool
-    {
+    public static function isFirstParty(
+        string $packageName,
+    ): bool {
         return str_starts_with($packageName, self::FIRST_PARTY_PREFIX);
     }
 
@@ -102,7 +103,11 @@ readonly class GuidelinesAggregator
             return null;
         }
 
-        if (!is_array($value) || !array_is_list($value) || array_filter($value, 'is_string') !== $value) {
+        if (
+            !is_array($value)
+            || !array_is_list($value)
+            || array_filter($value, 'is_string') !== $value
+        ) {
             throw DevAiInstallException::invalidConfig(
                 self::ALLOW_PACKAGES_KEY,
                 'a list of package names (e.g. [\'acme/blog\'])',

@@ -37,21 +37,24 @@ function createWorkerTestEnvelope(
     return new JobEnvelope(new EncryptionConfig(new FakeConfigRepository(['encryption.key' => $key])));
 }
 
-function createWorkerStubContainer(object $observer): ContainerInterface
-{
+function createWorkerStubContainer(
+    object $observer,
+): ContainerInterface {
     return new readonly class ($observer) implements ContainerInterface
     {
         public function __construct(
             private object $observer,
         ) {}
 
-        public function get(string $id): object
-        {
+        public function get(
+            string $id,
+        ): object {
             return $this->observer;
         }
 
-        public function has(string $id): bool
-        {
+        public function has(
+            string $id,
+        ): bool {
             return true;
         }
 
@@ -62,13 +65,15 @@ function createWorkerStubContainer(object $observer): ContainerInterface
             object $instance,
         ): void {}
 
-        public function call(Closure $callable): mixed
-        {
+        public function call(
+            Closure $callable,
+        ): mixed {
             return null;
         }
 
-        public function resolvedInstances(?string $interface = null): array
-        {
+        public function resolvedInstances(
+            ?string $interface = null,
+        ): array {
             return [];
         }
     };
@@ -78,13 +83,15 @@ function createNullWorkerContainer(): ContainerInterface
 {
     return new class () implements ContainerInterface
     {
-        public function get(string $id): never
-        {
+        public function get(
+            string $id,
+        ): never {
             throw new RuntimeException("No container binding for: $id");
         }
 
-        public function has(string $id): bool
-        {
+        public function has(
+            string $id,
+        ): bool {
             return false;
         }
 
@@ -95,13 +102,15 @@ function createNullWorkerContainer(): ContainerInterface
             object $instance,
         ): void {}
 
-        public function call(Closure $callable): mixed
-        {
+        public function call(
+            Closure $callable,
+        ): mixed {
             return null;
         }
 
-        public function resolvedInstances(?string $interface = null): array
-        {
+        public function resolvedInstances(
+            ?string $interface = null,
+        ): array {
             return [];
         }
     };
@@ -933,8 +942,9 @@ describe('Worker', function (): void {
                 ) {}
 
                 /** @noinspection PhpUnused - Invoked via container resolution */
-                public function handle(object $event): void
-                {
+                public function handle(
+                    object $event,
+                ): void {
                     $this->capture->called = true;
                     $this->capture->event = $event;
                 }
@@ -987,18 +997,21 @@ describe('Worker', function (): void {
                     return $this->job;
                 }
 
-                public function size(?string $queue = null): int
-                {
+                public function size(
+                    ?string $queue = null,
+                ): int {
                     return 0;
                 }
 
-                public function clear(?string $queue = null): int
-                {
+                public function clear(
+                    ?string $queue = null,
+                ): int {
                     return 0;
                 }
 
-                public function delete(string $jobId): bool
-                {
+                public function delete(
+                    string $jobId,
+                ): bool {
                     return true;
                 }
 
@@ -1716,13 +1729,15 @@ class RecordingContainerAwareJob extends Job implements ContainerAwareJobInterfa
         public readonly bool $fails = false,
     ) {}
 
-    public function setContainer(ContainerInterface $container): void
-    {
+    public function setContainer(
+        ContainerInterface $container,
+    ): void {
         $this->container = $container;
     }
 
-    public function setJobEnvelope(JobEnvelope $jobEnvelope): void
-    {
+    public function setJobEnvelope(
+        JobEnvelope $jobEnvelope,
+    ): void {
         $this->jobEnvelope = $jobEnvelope;
     }
 
@@ -1735,7 +1750,8 @@ class RecordingContainerAwareJob extends Job implements ContainerAwareJobInterfa
 
     public function handle(): void
     {
-        $this->hadContainerWhenHandled = $this->container !== null && $this->jobEnvelope !== null;
+        $this->hadContainerWhenHandled = $this->container !== null
+            && $this->jobEnvelope !== null;
 
         if ($this->fails) {
             throw new RuntimeException('Container-aware job always fails');
@@ -2280,8 +2296,9 @@ class FailableFailingJob extends Job implements FailableJobInterface
         throw new RuntimeException('failable job failed');
     }
 
-    public function failed(Throwable $exception): void
-    {
+    public function failed(
+        Throwable $exception,
+    ): void {
         $this->failedWith[] = $exception;
 
         if ($this->failedThrows) {

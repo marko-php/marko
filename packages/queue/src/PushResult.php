@@ -19,11 +19,23 @@ readonly class PushResult
         public bool $pushed,
         public ?string $skipReason,
     ) {
-        if ($pushed && ($id === null || $skipReason !== null)) {
+        if (
+            $pushed
+            && (
+                $id === null
+                || $skipReason !== null
+            )
+        ) {
             throw QueueException::invalidPushResult('a pushed result needs an id and no skip reason');
         }
 
-        if (!$pushed && ($skipReason === null || $id !== null)) {
+        if (
+            !$pushed
+            && (
+                $skipReason === null
+                || $id !== null
+            )
+        ) {
             throw QueueException::invalidPushResult('a skipped result needs a skip reason and no id');
         }
     }

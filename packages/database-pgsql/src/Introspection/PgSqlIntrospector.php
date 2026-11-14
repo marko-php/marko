@@ -159,10 +159,12 @@ readonly class PgSqlIntrospector implements IntrospectorInterface, ExpressionDef
             $nullable = $row['is_nullable'] === 'YES';
             $isIdentity = $row['is_identity'] === 'YES';
             $isSerial = $this->isSequenceDefault($row['column_default']);
-            $autoIncrement = $isIdentity || $isSerial;
+            $autoIncrement = $isIdentity
+                || $isSerial;
             $default = $autoIncrement ? null : $this->parseDefault($row['column_default'], $type);
             $isPrimaryKey = isset($primaryKeyColumns[$columnName]);
-            $isUnique = isset($uniqueColumns[$columnName]) && !$isPrimaryKey;
+            $isUnique = isset($uniqueColumns[$columnName])
+                && !$isPrimaryKey;
 
             $columns[] = new Column(
                 name: $columnName,
@@ -197,7 +199,10 @@ readonly class PgSqlIntrospector implements IntrospectorInterface, ExpressionDef
         $relation = $this->quoteIdentifier($this->schema) . '.' . $this->quoteIdentifier($table);
         $stored = $this->rawColumnDefault($relation, $column);
 
-        if ($stored === null || $stored['column_default'] === null) {
+        if (
+            $stored === null
+            || $stored['column_default'] === null
+        ) {
             return false;
         }
 
@@ -217,7 +222,8 @@ readonly class PgSqlIntrospector implements IntrospectorInterface, ExpressionDef
             }
         }
 
-        return $probe !== null && $probe['column_default'] === $stored['column_default'];
+        return $probe !== null
+            && $probe['column_default'] === $stored['column_default'];
     }
 
     /**
@@ -499,7 +505,8 @@ readonly class PgSqlIntrospector implements IntrospectorInterface, ExpressionDef
             return false;
         }
 
-        return str_contains($default, 'nextval(') && str_contains($default, '_seq');
+        return str_contains($default, 'nextval(')
+            && str_contains($default, '_seq');
     }
 
     /**
@@ -513,7 +520,10 @@ readonly class PgSqlIntrospector implements IntrospectorInterface, ExpressionDef
         ?string $default,
         string $type,
     ): mixed {
-        if ($default === null || trim($default) === '') {
+        if (
+            $default === null
+            || trim($default) === ''
+        ) {
             return null;
         }
 

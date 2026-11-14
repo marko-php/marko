@@ -83,7 +83,10 @@ readonly class FailedCommand implements CommandInterface
 
         $data = @unserialize($inner);
 
-        if (is_array($data) && isset($data['class'])) {
+        if (
+            is_array($data)
+            && isset($data['class'])
+        ) {
             return $data['class'];
         }
 

@@ -55,7 +55,10 @@ readonly class AdminUserProvider implements UserProviderInterface
         // Credentials come straight from request input: `email[]=x` is a failed login, not a TypeError
         $user = is_string($email) ? $this->userRepository->findByEmail($email) : null;
 
-        if ($user === null || $user->isActive !== '1') {
+        if (
+            $user === null
+            || $user->isActive !== '1'
+        ) {
             // Pay for a password check anyway, so response timing does not reveal which accounts exist
             $this->passwordVerifier->verify(null, $this->passwordFrom($credentials) ?? '');
 
@@ -132,7 +135,10 @@ readonly class AdminUserProvider implements UserProviderInterface
 
         $storedToken = $user->getRememberToken();
 
-        if ($storedToken === null || !hash_equals($storedToken, $token)) {
+        if (
+            $storedToken === null
+            || !hash_equals($storedToken, $token)
+        ) {
             return null;
         }
 

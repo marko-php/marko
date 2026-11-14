@@ -30,7 +30,10 @@ class ServeCommand implements CommandInterface
         Input $input,
         Output $output,
     ): int {
-        if ($this->environment->isProduction() && ! $this->config->getBool('mcp.allow_production')) {
+        if (
+            $this->environment->isProduction()
+            && ! $this->config->getBool('mcp.allow_production')
+        ) {
             throw McpException::productionServeRefused($this->environment->name());
         }
 

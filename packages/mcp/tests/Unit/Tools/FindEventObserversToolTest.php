@@ -8,17 +8,20 @@ use Marko\Mcp\Protocol\JsonRpcProtocol;
 use Marko\Mcp\Server\McpServer;
 use Marko\Mcp\Tools\FindEventObserversTool;
 
-function makeFakeIndexCacheForObservers(array $observers = []): IndexCache
-{
+function makeFakeIndexCacheForObservers(
+    array $observers = [],
+): IndexCache {
     return new class ($observers) extends IndexCache
     {
-        public function __construct(private array $obs)
-        {
+        public function __construct(
+            private array $obs,
+        ) {
             // Skip parent constructor
         }
 
-        public function findObserversForEvent(string $eventClass): array
-        {
+        public function findObserversForEvent(
+            string $eventClass,
+        ): array {
             return array_values(
                 array_filter($this->obs, fn (ObserverEntry $o) => $o->event === $eventClass),
             );

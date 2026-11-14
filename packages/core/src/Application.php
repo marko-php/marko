@@ -169,7 +169,10 @@ class Application
         // The gate reads DiscoveryEnvironment ($_ENV with getenv() fallback) — no marko/config dependency.
         $env = new DiscoveryEnvironment($appEnvironment);
         $cache = new DiscoveryCache($projectPaths, $env);
-        $useCache = $useDiscoveryCache && $env->enabled() && !$appEnvironment->isDevelopment() && $cache->exists();
+        $useCache = $useDiscoveryCache
+            && $env->enabled()
+            && !$appEnvironment->isDevelopment()
+            && $cache->exists();
 
         // Load the cache payload once. A corrupt, version-mismatched or stale cache throws
         // DiscoveryCacheException loudly — no silent fallback, no silent rebuild.

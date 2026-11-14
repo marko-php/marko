@@ -236,7 +236,8 @@ describe('RabbitmqConnection', function (): void {
 
         // Verify SSL context was created
         expect($capturedContext)->not->toBeNull()
-            ->and(is_resource($capturedContext) || is_object($capturedContext))->toBeTrue();
+            ->and(is_resource($capturedContext)
+            || is_object($capturedContext))->toBeTrue();
 
         // Verify stream context options contain SSL settings
         $options = stream_context_get_options($capturedContext);

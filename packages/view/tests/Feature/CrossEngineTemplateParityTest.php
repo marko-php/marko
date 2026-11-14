@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
-function extractEngineSuffix(string $packageName, string $parentName): ?string
-{
+function extractEngineSuffix(
+    string $packageName,
+    string $parentName,
+): ?string {
     $packageBase = basename($packageName);
     $parentBase = basename($parentName);
     $prefix = $parentBase . '-';
@@ -23,7 +25,10 @@ test('it asserts every template provider has a sibling for every registered engi
         $this->markTestSkipped('known-engines.php not found — marko/view not installed standalone?');
     }
 
-    if (!is_dir($packagesDir) || basename($packagesDir) !== 'packages') {
+    if (
+        !is_dir($packagesDir)
+        || basename($packagesDir) !== 'packages'
+    ) {
         $this->markTestSkipped(
             'Not running inside the monorepo packages directory — skipping cross-engine parity check.',
         );
@@ -48,7 +53,10 @@ test('it asserts every template provider has a sibling for every registered engi
         }
 
         $engineSuffix = extractEngineSuffix($packageName, $templatesFor);
-        if ($engineSuffix === null || !isset($engines[$engineSuffix])) {
+        if (
+            $engineSuffix === null
+            || !isset($engines[$engineSuffix])
+        ) {
             continue;
         }
 
@@ -144,7 +152,10 @@ test('it skips gracefully when no template provider packages are found', functio
             continue;
         }
         $engineSuffix = extractEngineSuffix($packageName, $templatesFor);
-        if ($engineSuffix === null || !isset($engines[$engineSuffix])) {
+        if (
+            $engineSuffix === null
+            || !isset($engines[$engineSuffix])
+        ) {
             continue;
         }
         $providers[$templatesFor][$engineSuffix] = $packageName;

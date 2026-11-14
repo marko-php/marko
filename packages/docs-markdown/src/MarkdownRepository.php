@@ -41,8 +41,9 @@ class MarkdownRepository
     }
 
     /** @throws DocsMarkdownException */
-    public function getRawMarkdown(string $id): string
-    {
+    public function getRawMarkdown(
+        string $id,
+    ): string {
         $filePath = $this->docsPath . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $id) . '.md';
 
         $resolvedCandidate = realpath($filePath);
@@ -50,7 +51,10 @@ class MarkdownRepository
         if ($resolvedCandidate !== false) {
             $resolvedRoot = realpath($this->docsPath);
 
-            if ($resolvedRoot === false || !str_starts_with($resolvedCandidate, $resolvedRoot . DIRECTORY_SEPARATOR)) {
+            if (
+                $resolvedRoot === false
+                || !str_starts_with($resolvedCandidate, $resolvedRoot . DIRECTORY_SEPARATOR)
+            ) {
                 throw DocsMarkdownException::pathTraversal($id, $this->docsPath);
             }
         }

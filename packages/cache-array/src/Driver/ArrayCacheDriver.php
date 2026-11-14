@@ -200,7 +200,10 @@ class ArrayCacheDriver implements CacheInterface
     ): int {
         $this->validateKey($key);
 
-        if (!isset($this->storage[$key]) || $this->isExpired($this->storage[$key])) {
+        if (
+            !isset($this->storage[$key])
+            || $this->isExpired($this->storage[$key])
+        ) {
             $now = $this->clock->now()->getTimestamp();
             $this->storage[$key] = [
                 'value' => 1,

@@ -8,17 +8,20 @@ use Marko\Mcp\Protocol\JsonRpcProtocol;
 use Marko\Mcp\Server\McpServer;
 use Marko\Mcp\Tools\FindPluginsTargetingTool;
 
-function makeFakeIndexCacheForPlugins(array $plugins = []): IndexCache
-{
+function makeFakeIndexCacheForPlugins(
+    array $plugins = [],
+): IndexCache {
     return new class ($plugins) extends IndexCache
     {
-        public function __construct(private array $plugs)
-        {
+        public function __construct(
+            private array $plugs,
+        ) {
             // Skip parent constructor
         }
 
-        public function findPluginsForTarget(string $targetClass): array
-        {
+        public function findPluginsForTarget(
+            string $targetClass,
+        ): array {
             return array_values(
                 array_filter($this->plugs, fn (PluginEntry $p) => $p->target === $targetClass),
             );

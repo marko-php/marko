@@ -54,8 +54,9 @@ class ReplayBuffer
     /**
      * Mark a channel as subscribed from now on: later events are complete for it.
      */
-    public function openChannel(string $channel): void
-    {
+    public function openChannel(
+        string $channel,
+    ): void {
         $this->openedAt[$channel] = $this->sequence;
         $this->events[$channel] = [];
         unset($this->evictedUpTo[$channel]);
@@ -64,8 +65,9 @@ class ReplayBuffer
     /**
      * Forget a channel whose subscription ended; its history can no longer be trusted.
      */
-    public function dropChannel(string $channel): void
-    {
+    public function dropChannel(
+        string $channel,
+    ): void {
         foreach ($this->events[$channel] ?? [] as $event) {
             $this->forgetId($event);
         }
@@ -81,7 +83,10 @@ class ReplayBuffer
     ): SseEvent {
         $sseEvent = new SseEvent(++$this->sequence, $channel, $id, $event, $data, $this->now());
 
-        if ($this->size > 0 && isset($this->openedAt[$channel])) {
+        if (
+            $this->size > 0
+            && isset($this->openedAt[$channel])
+        ) {
             $this->events[$channel][] = $sseEvent;
             $this->sequenceById[$id] = $sseEvent->sequence;
 
@@ -93,8 +98,9 @@ class ReplayBuffer
         return $sseEvent;
     }
 
-    public function sequenceOf(string $id): ?int
-    {
+    public function sequenceOf(
+        string $id,
+    ): ?int {
         $this->evictExpired();
 
         return $this->sequenceById[$id] ?? null;
@@ -130,7 +136,10 @@ class ReplayBuffer
     ): ?array {
         $after = $this->sequenceOf($lastEventId);
 
-        if ($after === null || !$this->canReplay($channels, $after)) {
+        if (
+            $after === null
+            || !$this->canReplay($channels, $after)
+        ) {
             return null;
         }
 
@@ -149,8 +158,9 @@ class ReplayBuffer
         return $events;
     }
 
-    public function count(string $channel): int
-    {
+    public function count(
+        string $channel,
+    ): int {
         $this->evictExpired();
 
         return count($this->events[$channel] ?? []);
@@ -169,15 +179,19 @@ class ReplayBuffer
         $cutoff = $this->now() - $this->ttl;
 
         foreach ($this->events as $channel => $events) {
-            while ($events !== [] && $events[0]->receivedAt <= $cutoff) {
+            while (
+                $events !== []
+                && $events[0]->receivedAt <= $cutoff
+            ) {
                 $this->evict($channel);
                 $events = $this->events[$channel];
             }
         }
     }
 
-    private function evict(string $channel): void
-    {
+    private function evict(
+        string $channel,
+    ): void {
         $event = array_shift($this->events[$channel]);
 
         if ($event === null) {
@@ -188,8 +202,9 @@ class ReplayBuffer
         $this->forgetId($event);
     }
 
-    private function forgetId(SseEvent $event): void
-    {
+    private function forgetId(
+        SseEvent $event,
+    ): void {
         if (($this->sequenceById[$event->id] ?? null) === $event->sequence) {
             unset($this->sequenceById[$event->id]);
         }

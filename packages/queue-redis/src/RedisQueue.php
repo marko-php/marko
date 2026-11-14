@@ -90,7 +90,10 @@ class RedisQueue implements QueueInterface
         while (true) {
             $job = $this->reserveNext($queueName);
 
-            if ($job === null && $blockFor > 0) {
+            if (
+                $job === null
+                && $blockFor > 0
+            ) {
                 $this->client()->blpop([$this->queueKey($queueName, 'notify')], $blockFor);
                 // Wait once per pop() call, so a worker still checks its stop conditions between waits
                 $blockFor = 0;

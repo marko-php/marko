@@ -6,12 +6,14 @@ use Marko\CodeIndexer\Cache\IndexCache;
 use Marko\CodeIndexer\ValueObject\TemplateEntry;
 use Marko\Lsp\Features\TemplateFeature;
 
-function makeTemplateIndex(array $entries): IndexCache
-{
+function makeTemplateIndex(
+    array $entries,
+): IndexCache {
     return new class ($entries) extends IndexCache
     {
-        public function __construct(private array $entries)
-        {
+        public function __construct(
+            private array $entries,
+        ) {
             // Skip parent constructor
         }
 
@@ -22,8 +24,12 @@ function makeTemplateIndex(array $entries): IndexCache
     };
 }
 
-function makeTemplateEntry(string $moduleName, string $templateName, string $absolutePath = '', string $extension = 'php'): TemplateEntry
-{
+function makeTemplateEntry(
+    string $moduleName,
+    string $templateName,
+    string $absolutePath = '',
+    string $extension = 'php',
+): TemplateEntry {
     $absolutePath = $absolutePath ?: "/modules/$moduleName/resources/views/$templateName.$extension";
 
     return new TemplateEntry($moduleName, $templateName, $absolutePath, $extension);

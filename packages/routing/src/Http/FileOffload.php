@@ -34,7 +34,10 @@ readonly class FileOffload
             throw FileResponseException::invalidOffloadHeader($header);
         }
 
-        if ($header === 'X-Accel-Redirect' && $prefixMap === []) {
+        if (
+            $header === 'X-Accel-Redirect'
+            && $prefixMap === []
+        ) {
             throw FileResponseException::missingOffloadPrefixMap();
         }
     }
@@ -58,7 +61,8 @@ readonly class FileOffload
 
         $prefixes = array_filter(
             array_keys($this->prefixMap),
-            fn (string $prefix): bool => $prefix !== '' && str_starts_with($path, $prefix),
+            fn (string $prefix): bool => $prefix !== ''
+                && str_starts_with($path, $prefix),
         );
 
         if ($prefixes === []) {

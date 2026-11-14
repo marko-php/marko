@@ -24,8 +24,9 @@ class PluginDiscovery
      * @return array<PluginDefinition>
      * @throws PluginException|ReflectionException
      */
-    public function discoverInModule(ModuleManifest $manifest): array
-    {
+    public function discoverInModule(
+        ModuleManifest $manifest,
+    ): array {
         $srcDir = $manifest->path . '/src';
 
         if (!is_dir($srcDir)) {
@@ -41,7 +42,10 @@ class PluginDiscovery
             // Cheap pre-filter: skip files that obviously don't declare a plugin
             // before paying for class extraction, autoload, and reflection.
             $contents = file_get_contents($filepath);
-            if ($contents === false || !str_contains($contents, '#[Plugin')) {
+            if (
+                $contents === false
+                || !str_contains($contents, '#[Plugin')
+            ) {
                 continue;
             }
 
@@ -159,7 +163,10 @@ class PluginDiscovery
             $hasBeforeAttribute = !empty($method->getAttributes(Before::class));
             $hasAfterAttribute = !empty($method->getAttributes(After::class));
 
-            if ($hasBeforeAttribute || $hasAfterAttribute) {
+            if (
+                $hasBeforeAttribute
+                || $hasAfterAttribute
+            ) {
                 $orphanedMethods[] = $method->getName();
             }
         }

@@ -61,8 +61,9 @@ readonly class LayoutResolver
         ];
     }
 
-    private function getMethodLayout(ReflectionMethod $method): ?Layout
-    {
+    private function getMethodLayout(
+        ReflectionMethod $method,
+    ): ?Layout {
         $attributes = $method->getAttributes(Layout::class);
 
         if ($attributes === []) {
@@ -72,8 +73,9 @@ readonly class LayoutResolver
         return $attributes[0]->newInstance();
     }
 
-    private function getClassLayout(ReflectionClass $class): ?Layout
-    {
+    private function getClassLayout(
+        ReflectionClass $class,
+    ): ?Layout {
         $attributes = $class->getAttributes(Layout::class);
 
         if ($attributes === []) {

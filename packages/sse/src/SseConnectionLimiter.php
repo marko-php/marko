@@ -72,8 +72,9 @@ readonly class SseConnectionLimiter
      * @return int|null The slot number, or null when every slot is taken (or the guard is disabled)
      * @throws InvalidKeyException|RandomException
      */
-    public function acquire(int $ttl): ?int
-    {
+    public function acquire(
+        int $ttl,
+    ): ?int {
         if ($this->maxConnections === null) {
             return null;
         }
@@ -95,13 +96,15 @@ readonly class SseConnectionLimiter
     /**
      * @throws InvalidKeyException
      */
-    public function release(int $slot): void
-    {
+    public function release(
+        int $slot,
+    ): void {
         $this->cache->delete($this->slotKey($slot));
     }
 
-    private function slotKey(int $slot): string
-    {
+    private function slotKey(
+        int $slot,
+    ): string {
         return self::SLOT_KEY_PREFIX . $slot;
     }
 }

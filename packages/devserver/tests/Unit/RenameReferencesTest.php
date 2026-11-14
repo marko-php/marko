@@ -40,7 +40,10 @@ it('runs the full test suite clean after the rename propagates', function (): vo
             continue;
         }
         $content = file_get_contents($file->getPathname());
-        if (str_contains($content, 'marko/dev-server') || str_contains($content, 'packages/dev-server')) {
+        if (
+            str_contains($content, 'marko/dev-server')
+            || str_contains($content, 'packages/dev-server')
+        ) {
             $testFiles[] = $file->getPathname();
         }
     }

@@ -31,8 +31,9 @@ class ConfigScanner
     }
 
     /** @return list<ConfigKeyEntry> */
-    public function scan(ModuleInfo $module): array
-    {
+    public function scan(
+        ModuleInfo $module,
+    ): array {
         return $this->scanDirectory($module->path . '/config', $module->name);
     }
 

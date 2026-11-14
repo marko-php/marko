@@ -29,7 +29,11 @@ class FakeEncryptor implements EncryptorInterface
     ): string {
         $parts = explode(':', substr($encrypted, strlen(self::PREFIX)), 2);
 
-        if (!str_starts_with($encrypted, self::PREFIX) || count($parts) !== 2 || $parts[0] !== base64_encode($aad)) {
+        if (
+            !str_starts_with($encrypted, self::PREFIX)
+            || count($parts) !== 2
+            || $parts[0] !== base64_encode($aad)
+        ) {
             throw DecryptionException::invalidPayload();
         }
 

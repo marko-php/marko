@@ -25,7 +25,10 @@ readonly class AuthorizationConfig
     {
         $guard = $this->config->get('authorization.default_guard');
 
-        if ($guard === null || $guard === '') {
+        if (
+            $guard === null
+            || $guard === ''
+        ) {
             return null;
         }
 

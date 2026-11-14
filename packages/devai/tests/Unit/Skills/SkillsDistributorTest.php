@@ -6,8 +6,9 @@ use Marko\CodeIndexer\Module\ModuleWalker;
 use Marko\CodeIndexer\ValueObject\ModuleInfo;
 use Marko\DevAi\Skills\SkillsDistributor;
 
-function removeDirRecursive(string $dir): void
-{
+function removeDirRecursive(
+    string $dir,
+): void {
     if (!is_dir($dir)) {
         return;
     }
@@ -30,8 +31,9 @@ afterEach(function (): void {
     removeDirRecursive($this->tempRoot);
 });
 
-function makeWalker(array $modules): ModuleWalker
-{
+function makeWalker(
+    array $modules,
+): ModuleWalker {
     return new class ($modules) extends ModuleWalker
     {
         public function __construct(private array $modules) {}
@@ -43,13 +45,18 @@ function makeWalker(array $modules): ModuleWalker
     };
 }
 
-function skillFrontmatter(string $skillName, string $description = 'Test skill description'): string
-{
+function skillFrontmatter(
+    string $skillName,
+    string $description = 'Test skill description',
+): string {
     return "---\nname: $skillName\ndescription: $description\n---\n\n# " . $skillName . "\n";
 }
 
-function makeSkillDir(string $base, string $skillName, array $files = []): void
-{
+function makeSkillDir(
+    string $base,
+    string $skillName,
+    array $files = [],
+): void {
     $skillsBase = $base . '/resources/ai/skills/' . $skillName;
     mkdir($skillsBase, 0755, true);
     if ($files === []) {
@@ -396,7 +403,10 @@ it(
             new RecursiveDirectoryIterator($srcDir, RecursiveDirectoryIterator::SKIP_DOTS),
         );
         foreach ($iter as $file) {
-            if (!$file->isFile() || $file->getExtension() !== 'php') {
+            if (
+                !$file->isFile()
+                || $file->getExtension() !== 'php'
+            ) {
                 continue;
             }
             $content = (string) file_get_contents($file->getPathname());
@@ -408,7 +418,10 @@ it(
             }
             // SkillsDistributor is allowed exactly one occurrence (the MODULE_SKILLS_REL_PATH constant)
             $basename = basename($file->getPathname());
-            if ($basename === 'SkillsDistributor.php' && $occurrences === 1) {
+            if (
+                $basename === 'SkillsDistributor.php'
+                && $occurrences === 1
+            ) {
                 continue;
             }
             $found[] = $file->getPathname();

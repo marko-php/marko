@@ -87,8 +87,9 @@ function createSqliteConnection(): ConnectionInterface
             return $statement->rowCount();
         }
 
-        public function prepare(string $sql): StatementInterface
-        {
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
             throw new RuntimeException('Not implemented for this test stub');
         }
 

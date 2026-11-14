@@ -20,8 +20,9 @@ readonly class Vite
     /**
      * Generate Vite script/link tags for the HTML head.
      */
-    public function headTags(?string $entry = null): string
-    {
+    public function headTags(
+        ?string $entry = null,
+    ): string {
         $entry = $this->normalizeEntry($entry ?? $this->configuredEntry());
 
         if ($this->useDevServer()) {
@@ -42,8 +43,9 @@ readonly class Vite
     /**
      * Tags for Vite dev server (hot module replacement).
      */
-    private function devServerTags(string $entry): string
-    {
+    private function devServerTags(
+        string $entry,
+    ): string {
         $url = $this->devServerUrl();
 
         $tags = '';
@@ -69,8 +71,9 @@ HTML;
      * React Fast Refresh expects this preamble when Vite is not serving the
      * application HTML itself.
      */
-    private function reactRefreshPreamble(string $url): string
-    {
+    private function reactRefreshPreamble(
+        string $url,
+    ): string {
         return <<<HTML
 <script type="module">
 import { injectIntoGlobalHook } from "$url/@react-refresh";
@@ -81,9 +84,11 @@ window.\$RefreshSig\$ = () => (type) => type;
 HTML;
     }
 
-    private function isReactEntry(string $entry): bool
-    {
-        return str_ends_with($entry, '.jsx') || str_ends_with($entry, '.tsx');
+    private function isReactEntry(
+        string $entry,
+    ): bool {
+        return str_ends_with($entry, '.jsx')
+            || str_ends_with($entry, '.tsx');
     }
 
     /**
@@ -97,15 +102,17 @@ HTML;
 
         return array_values(array_filter(
             $stylesheets,
-            static fn (mixed $stylesheet): bool => is_string($stylesheet) && $stylesheet !== '',
+            static fn (mixed $stylesheet): bool => is_string($stylesheet)
+                && $stylesheet !== '',
         ));
     }
 
     /**
      * Tags from production build manifest.
      */
-    private function manifestTags(string $entry): string
-    {
+    private function manifestTags(
+        string $entry,
+    ): string {
         $manifestPath = $this->manifestPath();
 
         if (! is_file($manifestPath)) {
@@ -131,7 +138,10 @@ HTML;
         }
 
         $entryFile = $entryData['file'] ?? null;
-        if (! is_string($entryFile) || $entryFile === '') {
+        if (
+            ! is_string($entryFile)
+            || $entryFile === ''
+        ) {
             throw ViteManifestException::entryFileInvalid($entry, $manifestPath);
         }
 
@@ -139,12 +149,18 @@ HTML;
         $stylesheets = [];
 
         foreach (array_merge([$entryData], $importedChunks) as $chunk) {
-            if (! isset($chunk['css']) || ! is_array($chunk['css'])) {
+            if (
+                ! isset($chunk['css'])
+                || ! is_array($chunk['css'])
+            ) {
                 continue;
             }
 
             foreach ($chunk['css'] as $css) {
-                if (! is_string($css) || $css === '') {
+                if (
+                    ! is_string($css)
+                    || $css === ''
+                ) {
                     continue;
                 }
 
@@ -158,7 +174,11 @@ HTML;
         foreach ($importedChunks as $chunk) {
             $chunkFile = $chunk['file'] ?? null;
 
-            if (! is_string($chunkFile) || $chunkFile === '' || str_ends_with($chunkFile, '.css')) {
+            if (
+                ! is_string($chunkFile)
+                || $chunkFile === ''
+                || str_ends_with($chunkFile, '.css')
+            ) {
                 continue;
             }
 
@@ -184,8 +204,9 @@ HTML;
         return $this->configString('vite.entry');
     }
 
-    private function normalizeEntry(string $entry): string
-    {
+    private function normalizeEntry(
+        string $entry,
+    ): string {
         $entry = trim($entry);
 
         if ($entry === '') {
@@ -212,8 +233,9 @@ HTML;
         return rtrim($url, '/');
     }
 
-    private function configString(string $key): string
-    {
+    private function configString(
+        string $key,
+    ): string {
         try {
             return $this->config->getString($key);
         } catch (ConfigException $exception) {
@@ -221,8 +243,9 @@ HTML;
         }
     }
 
-    private function configBool(string $key): bool
-    {
+    private function configBool(
+        string $key,
+    ): bool {
         try {
             return $this->config->getBool($key);
         } catch (ConfigException $exception) {
@@ -233,8 +256,9 @@ HTML;
     /**
      * @return array<array-key, mixed>
      */
-    private function configArray(string $key): array
-    {
+    private function configArray(
+        string $key,
+    ): array {
         try {
             return $this->config->getArray($key);
         } catch (ConfigException $exception) {
@@ -245,8 +269,9 @@ HTML;
     /**
      * @return array<string, array<string, mixed>>|null
      */
-    private function decodeManifest(string $manifestContents): ?array
-    {
+    private function decodeManifest(
+        string $manifestContents,
+    ): ?array {
         $manifest = json_decode($manifestContents, true);
 
         if (! is_array($manifest)) {
@@ -305,7 +330,10 @@ HTML;
         }
 
         foreach ($imports as $import) {
-            if (! is_string($import) || isset($seen[$import])) {
+            if (
+                ! is_string($import)
+                || isset($seen[$import])
+            ) {
                 continue;
             }
 
@@ -329,8 +357,9 @@ HTML;
     /**
      * @return array<string, mixed>|null
      */
-    private function normalizeChunk(mixed $chunk): ?array
-    {
+    private function normalizeChunk(
+        mixed $chunk,
+    ): ?array {
         if (! is_array($chunk)) {
             return null;
         }

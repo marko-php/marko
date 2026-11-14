@@ -95,8 +95,9 @@ abstract class Repository implements RepositoryInterface
      *
      * @throws RepositoryException When RelationshipLoader is not configured or relationship name is unknown
      */
-    public function with(string ...$relationships): static
-    {
+    public function with(
+        string ...$relationships,
+    ): static {
         if ($this->relationshipLoader === null) {
             throw RepositoryException::relationshipLoaderNotConfigured(static::class);
         }
@@ -325,8 +326,9 @@ abstract class Repository implements RepositoryInterface
      * @param array<Entity> $entities
      * @throws BatchInsertException|RepositoryException|Throwable
      */
-    public function insertBatch(array $entities): void
-    {
+    public function insertBatch(
+        array $entities,
+    ): void {
         $this->assertUniformBatch($entities);
 
         // Fire Creating events for each entity before insert
@@ -369,8 +371,12 @@ abstract class Repository implements RepositoryInterface
             $pkProperty = $this->metadata->getPrimaryKeyProperty();
             $isAutoIncrement = $pkProperty?->isAutoIncrement === true;
 
-            if ($pkProperty !== null
-                && ($isAutoIncrement || $readsGeneratedKeys)
+            if (
+                $pkProperty !== null
+                && (
+                    $isAutoIncrement
+                    || $readsGeneratedKeys
+                )
                 && $this->connection->supportsReturning()
             ) {
                 // INSERT ... RETURNING <pk> returns exact keys in insert order. On
@@ -392,7 +398,10 @@ abstract class Repository implements RepositoryInterface
                 // SQLite leaves RETURNING row order unspecified. Its generated keys are always AUTOINCREMENT
                 // rowids, which one statement assigns in strictly increasing VALUES order, so ascending key
                 // order is insert order whatever order the rows come back in.
-                if ($isAutoIncrement && $this->connection->driverName() === 'sqlite') {
+                if (
+                    $isAutoIncrement
+                    && $this->connection->driverName() === 'sqlite'
+                ) {
                     sort($keys);
                 }
 
@@ -548,8 +557,9 @@ abstract class Repository implements RepositoryInterface
      * @param array<Entity> $entities
      * @throws BatchInsertException|RepositoryException
      */
-    private function assertUniformBatch(array $entities): void
-    {
+    private function assertUniformBatch(
+        array $entities,
+    ): void {
         if (count($entities) === 0) {
             throw BatchInsertException::emptyBatch();
         }
@@ -597,7 +607,10 @@ abstract class Repository implements RepositoryInterface
         $firstOmitsGeneratedKey = $this->omitsGeneratedKey($rows[0]);
 
         foreach ($rows as $index => $row) {
-            if ($pkProperty !== null && $this->omitsGeneratedKey($row) !== $firstOmitsGeneratedKey) {
+            if (
+                $pkProperty !== null
+                && $this->omitsGeneratedKey($row) !== $firstOmitsGeneratedKey
+            ) {
                 throw BatchInsertException::mixedGeneratedKeys($entities[0]::class, $pkProperty->name, $index);
             }
 
@@ -626,11 +639,17 @@ abstract class Repository implements RepositoryInterface
     ): array {
         $pkProperty = $this->metadata->getPrimaryKeyProperty();
 
-        if ($pkProperty === null || ($row[$pkProperty->columnName] ?? null) !== null) {
+        if (
+            $pkProperty === null
+            || ($row[$pkProperty->columnName] ?? null) !== null
+        ) {
             return $row;
         }
 
-        if ($pkProperty->isAutoIncrement || $pkProperty->isGenerated) {
+        if (
+            $pkProperty->isAutoIncrement
+            || $pkProperty->isGenerated
+        ) {
             unset($row[$pkProperty->columnName]);
 
             return $row;
@@ -653,7 +672,8 @@ abstract class Repository implements RepositoryInterface
     ): bool {
         $pkProperty = $this->metadata->getPrimaryKeyProperty();
 
-        return $pkProperty?->isGenerated === true && !array_key_exists($pkProperty->columnName, $row);
+        return $pkProperty?->isGenerated === true
+            && !array_key_exists($pkProperty->columnName, $row);
     }
 
     /**
@@ -672,9 +692,16 @@ abstract class Repository implements RepositoryInterface
         $rows = $this->connection->query('SELECT @@auto_increment_increment AS auto_increment_increment');
         $value = $rows[0]['auto_increment_increment'] ?? null;
 
-        $isInteger = is_int($value) || (is_string($value) && ctype_digit($value));
+        $isInteger = is_int($value)
+            || (
+                is_string($value)
+                && ctype_digit($value)
+            );
 
-        if (!$isInteger || (int) $value < 1) {
+        if (
+            !$isInteger
+            || (int) $value < 1
+        ) {
             throw BatchInsertException::unreadableAutoIncrementStep($value);
         }
 
@@ -780,8 +807,9 @@ abstract class Repository implements RepositoryInterface
      *
      * @throws RepositoryException If no query builder factory was provided
      */
-    public function matching(QuerySpecification ...$specifications): EntityCollection
-    {
+    public function matching(
+        QuerySpecification ...$specifications,
+    ): EntityCollection {
         if ($this->queryBuilderFactory === null) {
             throw RepositoryException::queryBuilderNotConfigured(static::class);
         }
@@ -975,7 +1003,10 @@ abstract class Repository implements RepositoryInterface
 
             $property = $reflection->getProperty($name);
 
-            if (!$property->isInitialized($entity) || $property->getValue($entity) === null) {
+            if (
+                !$property->isInitialized($entity)
+                || $property->getValue($entity) === null
+            ) {
                 $property->setValue($entity, $now ??= $this->now());
             }
         }
@@ -1014,7 +1045,10 @@ abstract class Repository implements RepositoryInterface
             implode(', ', $placeholders),
         );
 
-        if ($readsGeneratedKey && $pkProperty !== null) {
+        if (
+            $readsGeneratedKey
+            && $pkProperty !== null
+        ) {
             // The database generated the key: read it back in the same statement.
             $pkColumn = $pkProperty->columnName;
             $rows = $this->connection->query("$sql RETURNING " . $this->quote($pkColumn), array_values($data));
@@ -1121,7 +1155,10 @@ abstract class Repository implements RepositoryInterface
 
         $updatedAt = $this->metadata->updatedAtProperty;
 
-        if ($updatedAt !== null && !in_array($updatedAt, $dirtyProperties, true)) {
+        if (
+            $updatedAt !== null
+            && !in_array($updatedAt, $dirtyProperties, true)
+        ) {
             $now = $this->now();
             $reflection->getProperty($updatedAt)->setValue($entity, $now);
             $updatedAtMetadata = $this->metadata->properties[$updatedAt];
@@ -1165,9 +1202,14 @@ abstract class Repository implements RepositoryInterface
      *
      * @param Entity[] $entities
      */
-    private function eagerLoadRelationships(array $entities): void
-    {
-        if ($this->pendingRelationships === [] || $this->relationshipLoader === null || $entities === []) {
+    private function eagerLoadRelationships(
+        array $entities,
+    ): void {
+        if (
+            $this->pendingRelationships === []
+            || $this->relationshipLoader === null
+            || $entities === []
+        ) {
             return;
         }
 

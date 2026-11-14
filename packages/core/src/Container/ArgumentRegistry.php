@@ -35,7 +35,10 @@ class ArgumentRegistry
             foreach ($arguments as $parameter => $value) {
                 $existing = $this->merged[$class][$parameter] ?? null;
 
-                if ($existing !== null && $priority === $existing['priority']) {
+                if (
+                    $existing !== null
+                    && $priority === $existing['priority']
+                ) {
                     throw ArgumentConflictException::multipleModules(
                         $class,
                         $parameter,
@@ -43,7 +46,10 @@ class ArgumentRegistry
                     );
                 }
 
-                if ($existing === null || $priority > $existing['priority']) {
+                if (
+                    $existing === null
+                    || $priority > $existing['priority']
+                ) {
                     $this->merged[$class][$parameter] = [
                         'value' => $value,
                         'priority' => $priority,

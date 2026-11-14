@@ -28,7 +28,10 @@ it('keeps the flashed form state storage keys inside marko/forms', function (): 
         $source = (string) file_get_contents($path);
 
         foreach ($keys as $key) {
-            if (str_contains($source, "'$key'") || str_contains($source, "\"$key\"")) {
+            if (
+                str_contains($source, "'$key'")
+                || str_contains($source, "\"$key\"")
+            ) {
                 $offenders[] = substr($path, strlen($packagesDir) + 1) . " ($key)";
             }
         }

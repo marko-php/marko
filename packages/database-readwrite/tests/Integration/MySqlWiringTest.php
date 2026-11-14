@@ -222,7 +222,9 @@ function makeMySqlSpyFactory(
             // First call is for write connection, subsequent calls are replicas
             $isWrite = $this->callCount === 1;
             $isFirstReplica = $this->callCount === 2;
-            $shouldFail = !$isWrite && $isFirstReplica && $this->failFirstReplica;
+            $shouldFail = !$isWrite
+                && $isFirstReplica
+                && $this->failFirstReplica;
 
             $conn = makeMySqlTestConnection(failOnQuery: $shouldFail);
             $this->createdConnections[] = $conn;

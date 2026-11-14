@@ -17,6 +17,9 @@ class EmptyValue
     ): bool {
         return $value === null
             || $value === []
-            || (is_string($value) && trim($value) === '');
+            || (
+                is_string($value)
+                && trim($value) === ''
+            );
     }
 }

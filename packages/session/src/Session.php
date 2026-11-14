@@ -103,13 +103,17 @@ class Session implements SessionInterface, ResettableInterface
 
     public function isAvailable(): bool
     {
-        return $this->started || $this->armed;
+        return $this->started
+            || $this->armed;
     }
 
     public function isModified(): bool
     {
         return $this->started
-            && ($this->data !== $this->loadedData || $this->id !== $this->loadedId);
+            && (
+                $this->data !== $this->loadedData
+                || $this->id !== $this->loadedId
+            );
     }
 
     /**
@@ -205,7 +209,10 @@ class Session implements SessionInterface, ResettableInterface
      */
     public function destroy(): void
     {
-        if (!$this->started && $this->armed) {
+        if (
+            !$this->started
+            && $this->armed
+        ) {
             // Nothing was started, so there is nothing stored to destroy.
             $this->armed = false;
 

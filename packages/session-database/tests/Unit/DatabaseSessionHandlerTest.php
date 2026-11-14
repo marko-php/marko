@@ -44,17 +44,26 @@ class MockConnection implements ConnectionInterface
     ): array {
         $this->queriedStatements[] = $sql;
 
-        if (str_contains($sql, 'SELECT 1') && str_contains($sql, 'last_activity >= ?')) {
+        if (
+            str_contains($sql, 'SELECT 1')
+            && str_contains($sql, 'last_activity >= ?')
+        ) {
             [$id, $activeSince] = $bindings;
 
-            if (isset($this->sessions[$id]) && $this->sessions[$id]['last_activity'] >= $activeSince) {
+            if (
+                isset($this->sessions[$id])
+                && $this->sessions[$id]['last_activity'] >= $activeSince
+            ) {
                 return [['1' => 1]];
             }
 
             return [];
         }
 
-        if (str_contains($sql, 'SELECT') && str_contains($sql, 'WHERE id')) {
+        if (
+            str_contains($sql, 'SELECT')
+            && str_contains($sql, 'WHERE id')
+        ) {
             $id = $bindings[0];
 
             if (isset($this->sessions[$id])) {
@@ -73,7 +82,10 @@ class MockConnection implements ConnectionInterface
     ): int {
         $this->executedStatements[] = ['sql' => $sql, 'bindings' => $bindings];
 
-        if (str_contains($sql, 'INSERT') || str_contains($sql, 'insert')) {
+        if (
+            str_contains($sql, 'INSERT')
+            || str_contains($sql, 'insert')
+        ) {
             $id = $bindings[0];
             $payload = $bindings[1];
             $lastActivity = $bindings[2];
@@ -105,7 +117,10 @@ class MockConnection implements ConnectionInterface
             return 1;
         }
 
-        if (str_contains($sql, 'DELETE') && str_contains($sql, 'WHERE id')) {
+        if (
+            str_contains($sql, 'DELETE')
+            && str_contains($sql, 'WHERE id')
+        ) {
             $id = $bindings[0];
 
             if (isset($this->sessions[$id])) {
@@ -117,7 +132,10 @@ class MockConnection implements ConnectionInterface
             return 0;
         }
 
-        if (str_contains($sql, 'DELETE') && str_contains($sql, 'last_activity')) {
+        if (
+            str_contains($sql, 'DELETE')
+            && str_contains($sql, 'last_activity')
+        ) {
             $expireTime = $bindings[0];
             $count = 0;
 

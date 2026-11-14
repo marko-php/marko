@@ -91,3 +91,7 @@ grep -rh 'uses: actions/' .github/workflows/ | sort -u
 ## Code Standards
 
 See [`.claude/code-standards.md`](.claude/code-standards.md) for PHP-specific conventions (strict types, constructor promotion, type declarations, etc.).
+
+### Git Hooks
+
+`composer install` (and `composer update`) points `core.hooksPath` at `.githooks` automatically, so no manual hook setup is needed. The pre-commit hook auto-fixes formatting (Rector, PHP-CS-Fixer, PHPCBF) and then runs PHPCS. If you already have a custom `core.hooksPath`, the installer leaves it alone and prints a warning.

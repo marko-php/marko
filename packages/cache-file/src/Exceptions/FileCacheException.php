@@ -67,6 +67,8 @@ class FileCacheException extends CacheException
         string $context,
         ?string $reason,
     ): string {
-        return $reason === null || $reason === '' ? $context : "$context: $reason";
+        return ($reason === null || $reason === '')
+            ? $context
+            : "$context: $reason";
     }
 }

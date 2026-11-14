@@ -38,49 +38,57 @@ function makeDiagnosticsNullIndexCache(): IndexCache
     };
     $emptyAttributeParser = new class () extends AttributeParser
     {
-        public function observers(ModuleInfo $m): array
-        {
+        public function observers(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function plugins(ModuleInfo $m): array
-        {
+        public function plugins(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function preferences(ModuleInfo $m): array
-        {
+        public function preferences(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function commands(ModuleInfo $m): array
-        {
+        public function commands(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function routes(ModuleInfo $m): array
-        {
+        public function routes(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $emptyConfigScanner = new class () extends ConfigScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $emptyTemplateScanner = new class () extends TemplateScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $emptyTranslationScanner = new class () extends TranslationScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
@@ -95,8 +103,9 @@ function makeDiagnosticsNullIndexCache(): IndexCache
     );
 }
 
-function makeIndexCacheWithConfigKey(string $key): IndexCache
-{
+function makeIndexCacheWithConfigKey(
+    string $key,
+): IndexCache {
     $stubModule = new ModuleInfo(name: 'test', path: '/test', namespace: 'Test');
     $walker = new class ($stubModule) extends ModuleWalker
     {
@@ -109,28 +118,33 @@ function makeIndexCacheWithConfigKey(string $key): IndexCache
     };
     $emptyAttributeParser = new class () extends AttributeParser
     {
-        public function observers(ModuleInfo $m): array
-        {
+        public function observers(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function plugins(ModuleInfo $m): array
-        {
+        public function plugins(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function preferences(ModuleInfo $m): array
-        {
+        public function preferences(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function commands(ModuleInfo $m): array
-        {
+        public function commands(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function routes(ModuleInfo $m): array
-        {
+        public function routes(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
@@ -138,8 +152,9 @@ function makeIndexCacheWithConfigKey(string $key): IndexCache
     {
         public function __construct(private string $configKey) {}
 
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [new ConfigKeyEntry(
                 key: $this->configKey,
                 type: 'string',
@@ -152,15 +167,17 @@ function makeIndexCacheWithConfigKey(string $key): IndexCache
     };
     $emptyTemplateScanner = new class () extends TemplateScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $emptyTranslationScanner = new class () extends TranslationScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
@@ -183,8 +200,9 @@ function makeIndexCacheWithConfigKey(string $key): IndexCache
 }
 
 /** @return array<int, array<string, mixed>> All publishDiagnostics notifications captured from the output stream */
-function capturePublishedDiagnostics(mixed $out): array
-{
+function capturePublishedDiagnostics(
+    mixed $out,
+): array {
     rewind($out);
     $raw = (string) stream_get_contents($out);
     $notifications = [];
@@ -201,7 +219,10 @@ function capturePublishedDiagnostics(mixed $out): array
         $bodyStart = $headerEnd + 4;
         $body = substr($raw, $bodyStart, $length);
         $decoded = json_decode($body, true);
-        if (is_array($decoded) && ($decoded['method'] ?? '') === 'textDocument/publishDiagnostics') {
+        if (
+            is_array($decoded)
+            && ($decoded['method'] ?? '') === 'textDocument/publishDiagnostics'
+        ) {
             $notifications[] = $decoded;
         }
         $offset = $bodyStart + $length;
@@ -210,8 +231,9 @@ function capturePublishedDiagnostics(mixed $out): array
     return $notifications;
 }
 
-function makeServerWithNotifier(IndexCache $index): array
-{
+function makeServerWithNotifier(
+    IndexCache $index,
+): array {
     $in = fopen('php://memory', 'w+');
     $out = fopen('php://memory', 'w+');
     $protocol = new LspProtocol($in, $out);

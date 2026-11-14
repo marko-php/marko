@@ -78,7 +78,10 @@ readonly class ViewProviderDiscovery
 
         return $content !== false
             && str_contains($content, '#[')
-            && (stripos($content, 'TemplateFunctions') !== false || stripos($content, 'ViewData') !== false);
+            && (
+                stripos($content, 'TemplateFunctions') !== false
+                || stripos($content, 'ViewData') !== false
+            );
     }
 
     /**

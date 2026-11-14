@@ -29,8 +29,9 @@ readonly class CacheableRouteValidator
     /**
      * @throws ConfigNotFoundException|PageCacheException When a cacheable route carries auth middleware
      */
-    public function validate(RouteCollection $routes): void
-    {
+    public function validate(
+        RouteCollection $routes,
+    ): void {
         $patterns = $this->config->authMiddlewarePatterns();
 
         if ($patterns === []) {
@@ -70,8 +71,9 @@ readonly class CacheableRouteValidator
         }
     }
 
-    private function isCacheable(RouteDefinition $route): bool
-    {
+    private function isCacheable(
+        RouteDefinition $route,
+    ): bool {
         try {
             $method = new ReflectionMethod($route->controller, $route->action);
         } catch (ReflectionException) {

@@ -78,7 +78,10 @@ class StreamSocket implements SocketInterface
             $response .= $line;
 
             // SMTP multi-line: "250-..." continues, "250 ..." terminates
-            if (strlen($line) >= 4 && $line[3] === ' ') {
+            if (
+                strlen($line) >= 4
+                && $line[3] === ' '
+            ) {
                 break;
             }
 
@@ -91,8 +94,9 @@ class StreamSocket implements SocketInterface
         return rtrim($response, "\r\n");
     }
 
-    public function write(string $data): void
-    {
+    public function write(
+        string $data,
+    ): void {
         if ($this->stream === null) {
             return;
         }

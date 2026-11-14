@@ -36,8 +36,9 @@ if (!function_exists('devserverWaitUntil')) {
     /**
      * Whether any process in the given process group is still alive.
      */
-    function devserverProcessGroupAlive(int $pgid): bool
-    {
+    function devserverProcessGroupAlive(
+        int $pgid,
+    ): bool {
         return @posix_kill(-$pgid, 0);
     }
 
@@ -52,8 +53,9 @@ if (!function_exists('devserverWaitUntil')) {
     /**
      * The PID a test process wrote to a marker file, or 0 while the file is missing or still empty.
      */
-    function devserverMarkerPid(string $marker): int
-    {
+    function devserverMarkerPid(
+        string $marker,
+    ): int {
         clearstatcache(true, $marker);
 
         if (!is_file($marker)) {
@@ -66,8 +68,9 @@ if (!function_exists('devserverWaitUntil')) {
     /**
      * Stop a detached process group and wait until it is gone, so no process outlives the test.
      */
-    function devserverStopDetached(int $pid): void
-    {
+    function devserverStopDetached(
+        int $pid,
+    ): void {
         @posix_kill(-$pid, SIGTERM);
 
         if (!devserverWaitUntil(fn (): bool => !devserverProcessGroupAlive($pid))) {
@@ -81,8 +84,9 @@ if (!function_exists('devserverWaitUntil')) {
      *
      * @return array{0: resource, 1: int}
      */
-    function devserverListen(string $address = '127.0.0.1'): array
-    {
+    function devserverListen(
+        string $address = '127.0.0.1',
+    ): array {
         $server = stream_socket_server("tcp://$address:0", $errno, $errstr);
 
         if ($server === false) {
@@ -99,8 +103,9 @@ if (!function_exists('devserverWaitUntil')) {
      *
      * @param string $address The address to probe, with IPv6 literals bracketed
      */
-    function devserverFreePort(string $address = '127.0.0.1'): int
-    {
+    function devserverFreePort(
+        string $address = '127.0.0.1',
+    ): int {
         [$server, $port] = devserverListen($address);
         fclose($server);
 
@@ -110,8 +115,9 @@ if (!function_exists('devserverWaitUntil')) {
     /**
      * The body of a GET request, or false while nothing answers (without a warning PHPUnit would report).
      */
-    function devserverHttpGet(string $url): string|false
-    {
+    function devserverHttpGet(
+        string $url,
+    ): string|false {
         set_error_handler(static fn (): bool => true);
 
         try {

@@ -92,7 +92,10 @@ class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInte
         if ($id !== null) {
             $user = $this->provider->retrieveById($id);
 
-            if ($user === null || !$this->hasStaleSessionVersion($user)) {
+            if (
+                $user === null
+                || !$this->hasStaleSessionVersion($user)
+            ) {
                 $this->cachedUser = $user;
 
                 return $this->cachedUser;
@@ -152,7 +155,10 @@ class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInte
      */
     private function authenticateViaRememberCookie(): ?AuthenticatableInterface
     {
-        if ($this->cookieJar === null || $this->tokenManager === null) {
+        if (
+            $this->cookieJar === null
+            || $this->tokenManager === null
+        ) {
             return null;
         }
 
@@ -200,14 +206,20 @@ class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInte
         // Validate the token
         $storedHash = $user->getRememberToken();
 
-        if ($storedHash === null || !$tokenManager->validate($token, $storedHash)) {
+        if (
+            $storedHash === null
+            || !$tokenManager->validate($token, $storedHash)
+        ) {
             return null;
         }
 
         // The expiry lives server-side: the cookie's own Expires is client-controlled
         $expiresAt = $user->getRememberTokenExpiresAt();
 
-        if ($expiresAt === null || $tokenManager->hasExpired($expiresAt)) {
+        if (
+            $expiresAt === null
+            || $tokenManager->hasExpired($expiresAt)
+        ) {
             $this->provider->updateRememberToken($user, null, null);
             $cookieJar->delete($this->getRememberCookieName());
 
@@ -244,7 +256,11 @@ class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInte
     ): ?AuthenticatableInterface {
         $parts = explode(':', $cookieValue, 2);
 
-        if (count($parts) !== 2 || $parts[0] === '' || $parts[1] === '') {
+        if (
+            count($parts) !== 2
+            || $parts[0] === ''
+            || $parts[1] === ''
+        ) {
             return null;
         }
 
@@ -410,7 +426,10 @@ class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInte
         $currentName = $this->pendingChallengeName();
         $user = $this->pendingChallengeUser();
 
-        if ($currentName === null || $user === null) {
+        if (
+            $currentName === null
+            || $user === null
+        ) {
             $this->cancelChallenge();
 
             throw AuthException::noPendingChallenge($this->name);
@@ -553,7 +572,10 @@ class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInte
         AuthenticatableInterface $user,
         ?DateTimeImmutable $expiresAt = null,
     ): void {
-        if ($this->cookieJar === null || $this->tokenManager === null) {
+        if (
+            $this->cookieJar === null
+            || $this->tokenManager === null
+        ) {
             throw AuthException::rememberMeUnavailable($this->name);
         }
 
@@ -628,7 +650,9 @@ class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInte
     {
         $userAgent = $this->currentRequest?->get()?->header('User-Agent');
 
-        return $userAgent === null || $userAgent === '' ? null : mb_substr($userAgent, 0, 255);
+        return ($userAgent === null || $userAgent === '')
+            ? null
+            : mb_substr($userAgent, 0, 255);
     }
 
     private function getSessionKey(): string
@@ -699,7 +723,11 @@ class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInte
     {
         $user = $this->user();
 
-        if ($user !== null && $this->cookieJar !== null && $this->tokenManager !== null) {
+        if (
+            $user !== null
+            && $this->cookieJar !== null
+            && $this->tokenManager !== null
+        ) {
             $this->forgetRememberToken($user, $this->cookieJar);
         }
 
@@ -757,14 +785,21 @@ class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInte
     ): ?string {
         $cookieValue = $cookieJar->get($this->getRememberCookieName());
 
-        if ($cookieValue === null || str_contains($cookieValue, '|') || !str_contains($cookieValue, ':')) {
+        if (
+            $cookieValue === null
+            || str_contains($cookieValue, '|')
+            || !str_contains($cookieValue, ':')
+        ) {
             return null;
         }
 
         $selector = explode(':', $cookieValue, 2)[0];
         $record = $rememberTokenStorage->findBySelector($this->name, $selector);
 
-        if ($record === null || (string) $record->userId !== (string) $user->getAuthIdentifier()) {
+        if (
+            $record === null
+            || (string) $record->userId !== (string) $user->getAuthIdentifier()
+        ) {
             return null;
         }
 
@@ -849,7 +884,10 @@ class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInte
     ): void {
         $expiresAt = $user->getRememberTokenExpiresAt();
 
-        if ($expiresAt !== null && $this->holdsUserToken($user)) {
+        if (
+            $expiresAt !== null
+            && $this->holdsUserToken($user)
+        ) {
             $this->createRememberToken($user, $expiresAt);
 
             return;
@@ -864,13 +902,19 @@ class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInte
     private function holdsUserToken(
         AuthenticatableInterface $user,
     ): bool {
-        if ($this->cookieJar === null || $this->tokenManager === null) {
+        if (
+            $this->cookieJar === null
+            || $this->tokenManager === null
+        ) {
             return false;
         }
 
         $cookieValue = $this->cookieJar->get($this->getRememberCookieName());
 
-        if ($cookieValue === null || !str_contains($cookieValue, '|')) {
+        if (
+            $cookieValue === null
+            || !str_contains($cookieValue, '|')
+        ) {
             return false;
         }
 

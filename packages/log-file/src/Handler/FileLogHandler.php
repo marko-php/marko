@@ -79,7 +79,10 @@ readonly class FileLogHandler implements LogHandlerInterface
             return;
         }
 
-        if (!mkdir($this->path, $this->dirMode, true) && !is_dir($this->path)) {
+        if (
+            !mkdir($this->path, $this->dirMode, true)
+            && !is_dir($this->path)
+        ) {
             throw LogWriteException::directoryNotWritable($this->path);
         }
 

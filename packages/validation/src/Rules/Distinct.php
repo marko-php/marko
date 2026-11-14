@@ -41,12 +41,19 @@ readonly class Distinct implements WildcardAwareRuleInterface
             );
         }
 
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return true;
         }
 
         foreach ($this->values(explode('.', $this->key), $data, '') as $path => $other) {
-            if ((string) $path !== $field && $other !== null && $this->same($value, $other)) {
+            if (
+                (string) $path !== $field
+                && $other !== null
+                && $this->same($value, $other)
+            ) {
                 return false;
             }
         }
@@ -126,11 +133,17 @@ readonly class Distinct implements WildcardAwareRuleInterface
             return $value === $other;
         }
 
-        if (is_numeric($value) && is_numeric($other)) {
+        if (
+            is_numeric($value)
+            && is_numeric($other)
+        ) {
             return (float) $value === (float) $other;
         }
 
-        if (is_scalar($value) && is_scalar($other)) {
+        if (
+            is_scalar($value)
+            && is_scalar($other)
+        ) {
             return (string) $value === (string) $other;
         }
 

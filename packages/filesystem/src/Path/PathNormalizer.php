@@ -46,7 +46,10 @@ readonly class PathNormalizer
         $segments = [];
 
         foreach (explode('/', $path) as $segment) {
-            if ($segment === '' || $segment === '.') {
+            if (
+                $segment === ''
+                || $segment === '.'
+            ) {
                 continue;
             }
 

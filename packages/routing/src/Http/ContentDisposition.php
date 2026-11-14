@@ -27,7 +27,13 @@ readonly class ContentDisposition
         private DispositionType $type,
         private ?string $filename,
     ) {
-        if ($filename !== null && ($filename === '' || preg_match('#[\r\n\0/\\\\]#', $filename) === 1)) {
+        if (
+            $filename !== null
+            && (
+                $filename === ''
+                || preg_match('#[\r\n\0/\\\\]#', $filename) === 1
+            )
+        ) {
             throw ContentDispositionException::invalidFilename($filename);
         }
     }

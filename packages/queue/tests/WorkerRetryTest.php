@@ -109,7 +109,10 @@ class WorkerRetryPersistingQueue implements QueueInterface
         ?string $queue = null,
         bool $block = false,
     ): ?JobInterface {
-        if ($this->stored === null || $this->reserved) {
+        if (
+            $this->stored === null
+            || $this->reserved
+        ) {
             return null;
         }
 

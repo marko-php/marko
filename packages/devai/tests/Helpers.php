@@ -25,8 +25,9 @@ if (!function_exists('devaiTempDir')) {
     }
 
     /** Recursively remove a temp directory created by devaiTempDir(). */
-    function devaiRemoveDir(string $dir): void
-    {
+    function devaiRemoveDir(
+        string $dir,
+    ): void {
         if (!is_dir($dir)) {
             return;
         }
@@ -44,8 +45,10 @@ if (!function_exists('devaiTempDir')) {
      * A flexible CommandRunner double. Records every call; reports binaries
      * on/off PATH; returns a configurable stdout for `<cmd> mcp list`.
      */
-    function devaiRunner(bool $onPath = false, string $listOutput = ''): CommandRunnerInterface
-    {
+    function devaiRunner(
+        bool $onPath = false,
+        string $listOutput = '',
+    ): CommandRunnerInterface {
         return new class ($onPath, $listOutput) implements CommandRunnerInterface
         {
             /** @var list<array{command: string, args: list<string>}> */
@@ -61,15 +64,19 @@ if (!function_exists('devaiTempDir')) {
                 array $args = [],
             ): array {
                 $this->calls[] = ['command' => $command, 'args' => $args];
-                if (($args[0] ?? '') === 'mcp' && ($args[1] ?? '') === 'list') {
+                if (
+                    ($args[0] ?? '') === 'mcp'
+                    && ($args[1] ?? '') === 'list'
+                ) {
                     return ['exitCode' => 0, 'stdout' => $this->listOutput, 'stderr' => ''];
                 }
 
                 return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
             }
 
-            public function isOnPath(string $binary): bool
-            {
+            public function isOnPath(
+                string $binary,
+            ): bool {
                 return $this->onPath;
             }
         };
@@ -109,8 +116,9 @@ if (!function_exists('devaiTempDir')) {
      *
      * @param list<ModuleInfo> $modules
      */
-    function devaiWalker(array $modules = []): ModuleWalker
-    {
+    function devaiWalker(
+        array $modules = [],
+    ): ModuleWalker {
         return new class ($modules) extends ModuleWalker
         {
             /** @param list<ModuleInfo> $modules */

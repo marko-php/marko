@@ -19,13 +19,15 @@ class AsyncObserverJob extends Job implements ContainerAwareJobInterface
         public readonly string $eventData,
     ) {}
 
-    public function setContainer(ContainerInterface $container): void
-    {
+    public function setContainer(
+        ContainerInterface $container,
+    ): void {
         $this->container = $container;
     }
 
-    public function setJobEnvelope(JobEnvelope $jobEnvelope): void
-    {
+    public function setJobEnvelope(
+        JobEnvelope $jobEnvelope,
+    ): void {
         $this->jobEnvelope = $jobEnvelope;
     }
 

@@ -19,8 +19,9 @@ class BroadcastException extends MarkoException
         );
     }
 
-    public static function unsafeChannelName(string $channel): self
-    {
+    public static function unsafeChannelName(
+        string $channel,
+    ): self {
         $printable = addcslashes($channel, "\0..\37\177");
 
         return new self(

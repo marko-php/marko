@@ -77,7 +77,11 @@ class MigrationGenerator
 
             // An alteration the generator renders as nothing means the diff and the generator disagree; an empty
             // migration would hide that, and the diff would report the same change on every run
-            if ($action === 'alter' && $upStatements === [] && $downStatements === []) {
+            if (
+                $action === 'alter'
+                && $upStatements === []
+                && $downStatements === []
+            ) {
                 throw MigrationException::emptyAlterMigration(
                     $tableName,
                     array_map(trim(...), $migrationDiff->tablesToAlter[$tableName]->getSummaryLines()),

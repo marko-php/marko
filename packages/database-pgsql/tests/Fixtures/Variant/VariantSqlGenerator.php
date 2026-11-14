@@ -13,23 +13,27 @@ use Marko\Database\Schema\Table;
 
 class VariantSqlGenerator implements SqlGeneratorInterface
 {
-    public function generateUp(SchemaDiff $diff): array
-    {
+    public function generateUp(
+        SchemaDiff $diff,
+    ): array {
         return [];
     }
 
-    public function generateDown(SchemaDiff $diff): array
-    {
+    public function generateDown(
+        SchemaDiff $diff,
+    ): array {
         return [];
     }
 
-    public function generateCreateTable(Table $table): string
-    {
+    public function generateCreateTable(
+        Table $table,
+    ): string {
         return '';
     }
 
-    public function generateDropTable(string $tableName): string
-    {
+    public function generateDropTable(
+        string $tableName,
+    ): string {
         return '';
     }
 

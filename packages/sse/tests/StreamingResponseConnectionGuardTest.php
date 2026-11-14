@@ -36,8 +36,9 @@ function guardedStreamingResponse(
         ->withOutputStreamer($outputStreamer);
 }
 
-function captureSend(StreamingResponse $response): string
-{
+function captureSend(
+    StreamingResponse $response,
+): string {
     ob_start();
 
     try {
@@ -49,8 +50,9 @@ function captureSend(StreamingResponse $response): string
     return $output;
 }
 
-function singleEventStream(?Closure $onPoll = null): SseStream
-{
+function singleEventStream(
+    ?Closure $onPoll = null,
+): SseStream {
     return new SseStream(
         dataProvider: function () use ($onPoll): array {
             if ($onPoll !== null) {

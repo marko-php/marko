@@ -79,7 +79,10 @@ class ChannelHub
             $state->joining--;
         }
 
-        if ($lastEventId !== null && $lastEventId !== '') {
+        if (
+            $lastEventId !== null
+            && $lastEventId !== ''
+        ) {
             $events = $this->replayBuffer->replay($connection->channels, $lastEventId);
 
             if ($events === null) {
@@ -102,8 +105,9 @@ class ChannelHub
     /**
      * Remove a closed connection; the last one to leave a channel cancels its subscription.
      */
-    public function leave(SseConnection $connection): void
-    {
+    public function leave(
+        SseConnection $connection,
+    ): void {
         unset($this->connections[$connection->id]);
 
         foreach (array_unique($connection->channels) as $channel) {
@@ -133,8 +137,9 @@ class ChannelHub
     /**
      * Close every stream (after an optional final frame) and cancel every subscription.
      */
-    public function closeAll(?string $finalFrame = null): void
-    {
+    public function closeAll(
+        ?string $finalFrame = null,
+    ): void {
         foreach ($this->connections as $connection) {
             $connection->close($finalFrame);
         }
@@ -160,13 +165,15 @@ class ChannelHub
         return array_map(fn (ChannelState $state): int => count($state->connections), $this->channels);
     }
 
-    public function hasChannel(string $channel): bool
-    {
+    public function hasChannel(
+        string $channel,
+    ): bool {
         return isset($this->channels[$channel]);
     }
 
-    private function open(string $channel): ChannelState
-    {
+    private function open(
+        string $channel,
+    ): ChannelState {
         $state = new ChannelState($channel);
         $this->channels[$channel] = $state;
 
@@ -240,13 +247,15 @@ class ChannelHub
     ): void {
         $decoded = json_decode($message->payload, false);
 
-        if (!$decoded instanceof stdClass
+        if (
+            !$decoded instanceof stdClass
             || !is_string($decoded->event ?? null)
             || !is_string($decoded->id ?? null)
             || !property_exists($decoded, 'data')
             || strpbrk($decoded->event . $decoded->id, "\r\n") !== false
             || $decoded->event === ''
             || $decoded->id === ''
+
         ) {
             $this->logger->error("Skipped malformed broadcast message on channel '$state->name'", [
                 'payload' => substr($message->payload, 0, 200),
@@ -273,23 +282,29 @@ class ChannelHub
     /**
      * @param list<ChannelState> $states
      */
-    private function abandon(array $states): void
-    {
+    private function abandon(
+        array $states,
+    ): void {
         foreach ($states as $state) {
             $state->joining--;
             $this->closeIfUnused($state);
         }
     }
 
-    private function closeIfUnused(ChannelState $state): void
-    {
-        if ($state->connections === [] && $state->joining === 0) {
+    private function closeIfUnused(
+        ChannelState $state,
+    ): void {
+        if (
+            $state->connections === []
+            && $state->joining === 0
+        ) {
             $this->cancel($state);
         }
     }
 
-    private function cancel(ChannelState $state): void
-    {
+    private function cancel(
+        ChannelState $state,
+    ): void {
         if ($state->cancelled) {
             return;
         }

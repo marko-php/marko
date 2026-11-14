@@ -39,7 +39,10 @@ readonly class RateLimiterConfig
     {
         $prefix = $this->configRepository->getInt('ratelimiter.ipv6_prefix');
 
-        if ($prefix < 1 || $prefix > 128) {
+        if (
+            $prefix < 1
+            || $prefix > 128
+        ) {
             throw ClientIpException::invalidIpv6Prefix($prefix);
         }
 

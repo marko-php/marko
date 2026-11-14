@@ -28,20 +28,29 @@ class SafePath
             throw UnsafePathException::emptyBase();
         }
 
-        if (str_contains($base, "\0") || str_contains($relative, "\0")) {
+        if (
+            str_contains($base, "\0")
+            || str_contains($relative, "\0")
+        ) {
             throw UnsafePathException::nulByte($base);
         }
 
         $separators = DIRECTORY_SEPARATOR === '/' ? '/' : '/' . DIRECTORY_SEPARATOR;
 
-        if ($relative !== '' && str_contains($separators, $relative[0])) {
+        if (
+            $relative !== ''
+            && str_contains($separators, $relative[0])
+        ) {
             throw UnsafePathException::absolutePath($base, $relative);
         }
 
         $segments = [];
 
         foreach (preg_split('#[' . preg_quote($separators, '#') . ']#', $relative) ?: [] as $segment) {
-            if ($segment === '' || $segment === '.') {
+            if (
+                $segment === ''
+                || $segment === '.'
+            ) {
                 continue;
             }
 

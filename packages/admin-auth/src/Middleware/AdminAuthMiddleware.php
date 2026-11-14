@@ -60,7 +60,10 @@ readonly class AdminAuthMiddleware implements MiddlewareInterface
         $guard = $this->adminGuard->guard();
 
         if (!$guard->check()) {
-            if (!$guard instanceof StatelessGuardInterface && !$request->wantsJson()) {
+            if (
+                !$guard instanceof StatelessGuardInterface
+                && !$request->wantsJson()
+            ) {
                 return Response::redirect($this->adminConfig->getRoutePrefix() . '/login');
             }
 
@@ -77,7 +80,10 @@ readonly class AdminAuthMiddleware implements MiddlewareInterface
 
         $requiredPermission = $this->getRequiredPermission($request);
 
-        if ($requiredPermission !== null && !$this->userHasPermission($user, $requiredPermission)) {
+        if (
+            $requiredPermission !== null
+            && !$this->userHasPermission($user, $requiredPermission)
+        ) {
             throw $this->forbidden("Admin user lacks the required permission '$requiredPermission'.");
         }
 
@@ -122,12 +128,16 @@ readonly class AdminAuthMiddleware implements MiddlewareInterface
      *
      * @throws ReflectionException
      */
-    private function getRequiredPermission(Request $request): ?string
-    {
+    private function getRequiredPermission(
+        Request $request,
+    ): ?string {
         $controller = $request->controller();
         $action = $request->action();
 
-        if ($controller === null || $action === null) {
+        if (
+            $controller === null
+            || $action === null
+        ) {
             return null;
         }
 

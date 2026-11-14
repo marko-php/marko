@@ -122,7 +122,8 @@ it('throws LogWriteException when the log directory is not writable', function (
         chmod($dir, 0700);
         cleanupLogDir($dir);
     }
-})->skip(fn () => function_exists('posix_geteuid') && posix_geteuid() === 0, 'root can write to any directory');
+})->skip(fn () => function_exists('posix_geteuid')
+    && posix_geteuid() === 0, 'root can write to any directory');
 
 it('writes debug log message', function () {
     $dir = createTempLogDir();

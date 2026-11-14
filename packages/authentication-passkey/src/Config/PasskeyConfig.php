@@ -28,7 +28,10 @@ readonly class PasskeyConfig
     {
         $id = $this->config->get('authentication-passkey.relying_party.id');
 
-        if (!is_string($id) || trim($id) === '') {
+        if (
+            !is_string($id)
+            || trim($id) === ''
+        ) {
             throw PasskeyConfigurationException::invalidSetting(
                 'relying_party.id',
                 'must be set to your site\'s domain',
@@ -39,7 +42,10 @@ readonly class PasskeyConfig
 
         $id = strtolower(trim($id));
 
-        if (preg_match(self::DOMAIN_PATTERN, $id) !== 1 || filter_var($id, FILTER_VALIDATE_IP) !== false) {
+        if (
+            preg_match(self::DOMAIN_PATTERN, $id) !== 1
+            || filter_var($id, FILTER_VALIDATE_IP) !== false
+        ) {
             throw PasskeyConfigurationException::invalidSetting(
                 'relying_party.id',
                 'must be a domain name without scheme, port or path',
@@ -60,7 +66,10 @@ readonly class PasskeyConfig
     {
         $name = $this->config->get('authentication-passkey.relying_party.name');
 
-        if (!is_string($name) || trim($name) === '') {
+        if (
+            !is_string($name)
+            || trim($name) === ''
+        ) {
             throw PasskeyConfigurationException::invalidSetting(
                 'relying_party.name',
                 'must be set to your site\'s name',
@@ -83,7 +92,11 @@ readonly class PasskeyConfig
     {
         $origins = $this->config->get('authentication-passkey.allowed_origins');
 
-        if (!is_array($origins) || $origins === [] || !array_is_list($origins)) {
+        if (
+            !is_array($origins)
+            || $origins === []
+            || !array_is_list($origins)
+        ) {
             throw PasskeyConfigurationException::invalidSetting(
                 'allowed_origins',
                 'must be a non-empty list of origins',
@@ -109,7 +122,10 @@ readonly class PasskeyConfig
     {
         $guard = $this->config->get('authentication-passkey.guard');
 
-        if (!is_string($guard) || $guard === '') {
+        if (
+            !is_string($guard)
+            || $guard === ''
+        ) {
             throw PasskeyConfigurationException::invalidSetting(
                 'guard',
                 'must name a guard from authentication.guards',
@@ -154,7 +170,10 @@ readonly class PasskeyConfig
     ): int {
         $value = $this->config->get($key);
 
-        if (!is_int($value) || $value < 1) {
+        if (
+            !is_int($value)
+            || $value < 1
+        ) {
             throw PasskeyConfigurationException::invalidSetting(
                 substr($key, strlen('authentication-passkey.')),
                 'must be a positive integer',
@@ -190,9 +209,16 @@ readonly class PasskeyConfig
         }
 
         $host = $parts['host'];
-        $isLocalhost = $host === 'localhost' || str_ends_with($host, '.localhost');
+        $isLocalhost = $host === 'localhost'
+            || str_ends_with($host, '.localhost');
 
-        if ($parts['scheme'] !== 'https' && !($parts['scheme'] === 'http' && $isLocalhost)) {
+        if (
+            $parts['scheme'] !== 'https'
+            && !(
+                $parts['scheme'] === 'http'
+                && $isLocalhost
+            )
+        ) {
             throw PasskeyConfigurationException::invalidSetting(
                 'allowed_origins',
                 'must only contain https origins (http is accepted for localhost alone)',
@@ -201,7 +227,10 @@ readonly class PasskeyConfig
             );
         }
 
-        if ($host !== $relyingPartyId && !str_ends_with($host, '.' . $relyingPartyId)) {
+        if (
+            $host !== $relyingPartyId
+            && !str_ends_with($host, '.' . $relyingPartyId)
+        ) {
             throw PasskeyConfigurationException::invalidSetting(
                 'allowed_origins',
                 "must only contain origins on the relying party id '$relyingPartyId' or its subdomains",
@@ -212,7 +241,9 @@ readonly class PasskeyConfig
 
         // Browsers leave the scheme's default port out of an origin, so drop it here too.
         $defaultPort = $parts['scheme'] === 'https' ? 443 : 80;
-        $port = isset($parts['port']) && $parts['port'] !== $defaultPort ? ':' . $parts['port'] : '';
+        $port = (isset($parts['port']) && $parts['port'] !== $defaultPort)
+            ? ':' . $parts['port']
+            : '';
 
         return $parts['scheme'] . '://' . $host . $port;
     }

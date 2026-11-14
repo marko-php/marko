@@ -8,8 +8,9 @@ use Marko\Core\Exceptions\MarkoException;
 
 class EncryptionException extends MarkoException
 {
-    public static function nonAeadCipher(string $cipher): self
-    {
+    public static function nonAeadCipher(
+        string $cipher,
+    ): self {
         return new self(
             message: "Cipher '$cipher' is not an AEAD mode",
             context: 'Validating encryption cipher at construction',
@@ -49,8 +50,9 @@ class EncryptionException extends MarkoException
         );
     }
 
-    public static function invalidCipher(string $cipher): self
-    {
+    public static function invalidCipher(
+        string $cipher,
+    ): self {
         return new self(
             message: "Cipher '$cipher' is not recognized by OpenSSL",
             context: 'Validating encryption cipher at construction',

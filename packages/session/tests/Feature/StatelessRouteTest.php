@@ -47,8 +47,9 @@ class RecordingSessionHandler implements SessionHandlerInterface
         return true;
     }
 
-    public function read(string $id): string|false
-    {
+    public function read(
+        string $id,
+    ): string|false {
         $this->calls[] = 'read';
 
         return '';
@@ -63,22 +64,25 @@ class RecordingSessionHandler implements SessionHandlerInterface
         return true;
     }
 
-    public function destroy(string $id): bool
-    {
+    public function destroy(
+        string $id,
+    ): bool {
         $this->calls[] = 'destroy';
 
         return true;
     }
 
-    public function gc(int $max_lifetime): int|false
-    {
+    public function gc(
+        int $max_lifetime,
+    ): int|false {
         $this->calls[] = 'gc';
 
         return 0;
     }
 
-    public function validateId(string $id): bool
-    {
+    public function validateId(
+        string $id,
+    ): bool {
         $this->calls[] = 'validateId';
 
         return false;

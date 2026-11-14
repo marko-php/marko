@@ -17,8 +17,9 @@ use Marko\Core\Path\ProjectPaths;
  * Build a container wired with the config module's module.php and a project
  * whose root config directory holds a file that counts how often it is loaded.
  */
-function configModuleContainer(string $basePath): Container
-{
+function configModuleContainer(
+    string $basePath,
+): Container {
     $moduleConfig = require __DIR__ . '/../../module.php';
 
     $container = new Container();

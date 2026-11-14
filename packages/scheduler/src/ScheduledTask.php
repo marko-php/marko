@@ -161,7 +161,10 @@ class ScheduledTask
         int $dayOfWeek,
         string $time,
     ): self {
-        if ($dayOfWeek < 0 || $dayOfWeek > 7) {
+        if (
+            $dayOfWeek < 0
+            || $dayOfWeek > 7
+        ) {
             throw SchedulerException::invalidDayOfWeek('weeklyOn', $dayOfWeek);
         }
 
@@ -181,7 +184,10 @@ class ScheduledTask
         int $dayOfMonth,
         string $time,
     ): self {
-        if ($dayOfMonth < 1 || $dayOfMonth > 31) {
+        if (
+            $dayOfMonth < 1
+            || $dayOfMonth > 31
+        ) {
             throw SchedulerException::invalidDayOfMonth('monthlyOn', $dayOfMonth);
         }
 
@@ -285,7 +291,10 @@ class ScheduledTask
      */
     public function getDescription(): ?string
     {
-        if ($this->description === null && $this->action instanceof ScheduledCommand) {
+        if (
+            $this->description === null
+            && $this->action instanceof ScheduledCommand
+        ) {
             return $this->action->description();
         }
 
@@ -442,7 +451,10 @@ class ScheduledTask
         $hour = (int) $matches[1];
         $minute = (int) $matches[2];
 
-        if ($hour > 23 || $minute > 59) {
+        if (
+            $hour > 23
+            || $minute > 59
+        ) {
             throw SchedulerException::invalidTime($method, $time);
         }
 
@@ -456,7 +468,10 @@ class ScheduledTask
         string $method,
         int $hour,
     ): void {
-        if ($hour < 0 || $hour > 23) {
+        if (
+            $hour < 0
+            || $hour > 23
+        ) {
             throw SchedulerException::invalidHour($method, $hour);
         }
     }
@@ -468,7 +483,10 @@ class ScheduledTask
         string $method,
         int $minute,
     ): void {
-        if ($minute < 0 || $minute > 59) {
+        if (
+            $minute < 0
+            || $minute > 59
+        ) {
             throw SchedulerException::invalidMinute($method, $minute);
         }
     }

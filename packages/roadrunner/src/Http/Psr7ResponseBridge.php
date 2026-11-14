@@ -29,8 +29,9 @@ readonly class Psr7ResponseBridge
     /**
      * @throws StreamingResponseException When the response is a server-sent events stream (Content-Type: text/event-stream)
      */
-    public function bridge(Response $response): ResponseInterface
-    {
+    public function bridge(
+        Response $response,
+    ): ResponseInterface {
         $psr7Response = new Psr7Response(
             status: $response->statusCode(),
             body: $response instanceof StreamedResponseInterface
@@ -73,8 +74,10 @@ readonly class Psr7ResponseBridge
         Response $response,
     ): bool {
         foreach ($response->headers() as $name => $value) {
-            if (strcasecmp($name, 'Content-Type') === 0
-                && stripos(ltrim($value), self::EVENT_STREAM_CONTENT_TYPE) === 0) {
+            if (
+                strcasecmp($name, 'Content-Type') === 0
+                && stripos(ltrim($value), self::EVENT_STREAM_CONTENT_TYPE) === 0
+            ) {
                 return true;
             }
         }

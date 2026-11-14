@@ -16,8 +16,9 @@ readonly class MySqlConnectionFactory implements ConnectionFactoryInterface
         private TransactionBackoff $transactionBackoff = new TransactionBackoff(),
     ) {}
 
-    public function make(DatabaseConfig $config): ConnectionInterface
-    {
+    public function make(
+        DatabaseConfig $config,
+    ): ConnectionInterface {
         return new MySqlConnection(
             config: $config,
             charset: $this->charset,

@@ -42,8 +42,9 @@ afterEach(function () {
     rmdir($this->tempDir);
 });
 
-function makeGuidelinesWalker(array $modules): ModuleWalker
-{
+function makeGuidelinesWalker(
+    array $modules,
+): ModuleWalker {
     return new class ($modules) extends ModuleWalker
     {
         public function __construct(private array $m) {}
@@ -55,8 +56,10 @@ function makeGuidelinesWalker(array $modules): ModuleWalker
     };
 }
 
-function makeGuidelinesModule(string $name, string $path): ModuleInfo
-{
+function makeGuidelinesModule(
+    string $name,
+    string $path,
+): ModuleInfo {
     return new ModuleInfo(name: $name, path: $path, namespace: '');
 }
 

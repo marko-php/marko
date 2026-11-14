@@ -18,8 +18,9 @@ readonly class AmphpTokenClaims
         public int $expiresAt,
     ) {}
 
-    public function allows(string $channel): bool
-    {
+    public function allows(
+        string $channel,
+    ): bool {
         return in_array($channel, $this->channels, true);
     }
 }

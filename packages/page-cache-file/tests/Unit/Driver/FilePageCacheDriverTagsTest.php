@@ -18,7 +18,10 @@ beforeEach(function () use (&$tmpDir): void {
 });
 
 afterEach(function () use (&$tmpDir): void {
-    if ($tmpDir !== null && is_dir($tmpDir)) {
+    if (
+        $tmpDir !== null
+        && is_dir($tmpDir)
+    ) {
         cleanupPageCacheDir($tmpDir);
     }
     $tmpDir = null;

@@ -356,8 +356,9 @@ declare(strict_types=1);
 
 namespace App\Helpers;
 
-function formatDate(string $date): string
-{
+function formatDate(
+    string $date,
+): string {
     return date('Y-m-d', strtotime($date));
 }
 

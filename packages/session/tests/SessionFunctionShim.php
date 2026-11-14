@@ -26,8 +26,9 @@ namespace Marko\Session;
  *
  * @noinspection PhpUnused
  */
-function session_set_save_handler(mixed ...$arguments): bool
-{
+function session_set_save_handler(
+    mixed ...$arguments,
+): bool {
     $GLOBALS['sessionSetSaveHandlerCallCount'] = ($GLOBALS['sessionSetSaveHandlerCallCount'] ?? 0) + 1;
 
     return \session_set_save_handler(...$arguments);

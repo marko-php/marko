@@ -20,19 +20,31 @@ readonly class ReadWriteConnectionConfig
     /**
      * @throws ReadWriteConfigException
      */
-    public static function fromArray(array $config): self
-    {
-        if (!isset($config['connections']) || !is_array($config['connections'])) {
+    public static function fromArray(
+        array $config,
+    ): self {
+        if (
+            !isset($config['connections'])
+            || !is_array($config['connections'])
+        ) {
             throw ReadWriteConfigException::missingConnectionsKey();
         }
 
         $connections = $config['connections'];
 
-        if (!isset($connections['write']) || !is_array($connections['write']) || empty($connections['write'])) {
+        if (
+            !isset($connections['write'])
+            || !is_array($connections['write'])
+            || empty($connections['write'])
+        ) {
             throw ReadWriteConfigException::missingWriteConnection();
         }
 
-        if (!isset($connections['read']) || !is_array($connections['read']) || empty($connections['read'])) {
+        if (
+            !isset($connections['read'])
+            || !is_array($connections['read'])
+            || empty($connections['read'])
+        ) {
             throw ReadWriteConfigException::emptyReadConnections();
         }
 
@@ -47,7 +59,10 @@ readonly class ReadWriteConnectionConfig
                 if (isset($readConnection['weight'])) {
                     $weight = $readConnection['weight'];
 
-                    if (!is_int($weight) || $weight <= 0) {
+                    if (
+                        !is_int($weight)
+                        || $weight <= 0
+                    ) {
                         throw ReadWriteConfigException::invalidWeight($weight);
                     }
                 }

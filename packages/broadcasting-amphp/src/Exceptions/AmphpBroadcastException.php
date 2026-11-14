@@ -27,8 +27,9 @@ class AmphpBroadcastException extends BroadcastException
         );
     }
 
-    public static function reservedPrivatePrefix(string $channel): self
-    {
+    public static function reservedPrivatePrefix(
+        string $channel,
+    ): self {
         $name = substr($channel, strlen('private-'));
 
         return new self(
@@ -65,8 +66,9 @@ class AmphpBroadcastException extends BroadcastException
         );
     }
 
-    public static function invalidPort(string $value): self
-    {
+    public static function invalidPort(
+        string $value,
+    ): self {
         return new self(
             message: "Invalid --port value '$value'.",
             context: 'While starting broadcasting:serve',
@@ -74,8 +76,9 @@ class AmphpBroadcastException extends BroadcastException
         );
     }
 
-    public static function signalsUnsupported(?Throwable $previous = null): self
-    {
+    public static function signalsUnsupported(
+        ?Throwable $previous = null,
+    ): self {
         return new self(
             message: 'The event loop cannot listen for SIGINT/SIGTERM, so broadcasting:serve could not shut down gracefully.',
             context: 'Registering signal handlers for broadcasting:serve',

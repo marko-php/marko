@@ -131,7 +131,10 @@ readonly class DatabaseConfig
      */
     public function fixedTimezoneOffset(): ?string
     {
-        if ($this->timezone->getName() !== 'UTC' && $this->timezone->getLocation() !== false) {
+        if (
+            $this->timezone->getName() !== 'UTC'
+            && $this->timezone->getLocation() !== false
+        ) {
             return null;
         }
 
@@ -183,7 +186,11 @@ readonly class DatabaseConfig
         string $database,
         ?string $basePath,
     ): string {
-        if ($database === ':memory:' || str_starts_with($database, 'file:') || str_starts_with($database, '/')) {
+        if (
+            $database === ':memory:'
+            || str_starts_with($database, 'file:')
+            || str_starts_with($database, '/')
+        ) {
             return $database;
         }
 
@@ -201,8 +208,9 @@ readonly class DatabaseConfig
      *
      * @throws ConfigurationException
      */
-    private static function validateConfigArray(array $config): void
-    {
+    private static function validateConfigArray(
+        array $config,
+    ): void {
         if (!array_key_exists('driver', $config)) {
             throw ConfigurationException::missingRequiredKey('driver');
         }
@@ -225,11 +233,17 @@ readonly class DatabaseConfig
         $sslCert = $config['ssl_cert'] ?? null;
         $sslKey = $config['ssl_key'] ?? null;
 
-        if ($sslCert !== null && $sslKey === null) {
+        if (
+            $sslCert !== null
+            && $sslKey === null
+        ) {
             throw ConfigurationException::incompleteSslKeyPair('ssl_cert', 'ssl_key');
         }
 
-        if ($sslKey !== null && $sslCert === null) {
+        if (
+            $sslKey !== null
+            && $sslCert === null
+        ) {
             throw ConfigurationException::incompleteSslKeyPair('ssl_key', 'ssl_cert');
         }
 
@@ -239,7 +253,12 @@ readonly class DatabaseConfig
         $isMysql = $config['driver'] === 'mysql';
         $verifyExplicitlyDisabled = ($config['ssl_verify_server_cert'] ?? null) === false;
 
-        if ($isMysql && $sslCert !== null && ($config['ssl_ca'] ?? null) === null && !$verifyExplicitlyDisabled) {
+        if (
+            $isMysql
+            && $sslCert !== null
+            && ($config['ssl_ca'] ?? null) === null
+            && !$verifyExplicitlyDisabled
+        ) {
             throw ConfigurationException::unverifiedSslClientCertificate();
         }
 

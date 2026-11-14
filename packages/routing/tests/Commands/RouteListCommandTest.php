@@ -10,8 +10,9 @@ use Marko\Routing\Commands\RouteListCommand;
 use Marko\Routing\RouteCollection;
 use Marko\Routing\RouteDefinition;
 
-function makeCollection(array $routes): RouteCollection
-{
+function makeCollection(
+    array $routes,
+): RouteCollection {
     $collection = new RouteCollection();
 
     foreach ($routes as $route) {
@@ -24,8 +25,10 @@ function makeCollection(array $routes): RouteCollection
 /**
  * @param array<int, string> $options
  */
-function runCommand(RouteCollection $collection, array $options = []): string
-{
+function runCommand(
+    RouteCollection $collection,
+    array $options = [],
+): string {
     $command = new RouteListCommand($collection);
     $stream = fopen('php://memory', 'r+');
     $argv = array_merge(['marko', 'route:list'], $options);

@@ -49,7 +49,10 @@ class MarkoException extends Exception
     ): ?string {
         $parts = explode('\\', ltrim($className, '\\'));
 
-        if (count($parts) < 2 || $parts[0] !== 'Marko') {
+        if (
+            count($parts) < 2
+            || $parts[0] !== 'Marko'
+        ) {
             return null;
         }
 
@@ -70,7 +73,10 @@ class MarkoException extends Exception
     ): ?string {
         $parts = explode('\\', ltrim($className, '\\'));
 
-        if (count($parts) < 2 || $parts[0] !== 'Marko') {
+        if (
+            count($parts) < 2
+            || $parts[0] !== 'Marko'
+        ) {
             return null;
         }
 
@@ -79,7 +85,10 @@ class MarkoException extends Exception
 
         // For nested namespaces like Marko\Database\MySql\*, check if the third
         // segment is a sub-package (not a structural directory like Contracts/)
-        if (count($parts) >= 4 && !in_array($parts[2], $structural, true)) {
+        if (
+            count($parts) >= 4
+            && !in_array($parts[2], $structural, true)
+        ) {
             return 'marko/' . self::camelToKebab($segment) . '-' . self::camelToKebab($parts[2]);
         }
 

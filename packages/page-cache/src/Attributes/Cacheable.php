@@ -30,7 +30,10 @@ readonly class Cacheable
         }
 
         foreach ($query as $param) {
-            if (!is_string($param) || $param === '') {
+            if (
+                !is_string($param)
+                || $param === ''
+            ) {
                 throw PageCacheException::invalidQueryParam($param);
             }
         }

@@ -10,8 +10,9 @@ use Marko\Database\Connection\ConnectionInterface;
 
 readonly class SqliteConnectionFactory implements ConnectionFactoryInterface
 {
-    public function make(DatabaseConfig $config): ConnectionInterface
-    {
+    public function make(
+        DatabaseConfig $config,
+    ): ConnectionInterface {
         return new SqliteConnection($config);
     }
 }

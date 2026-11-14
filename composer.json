@@ -571,7 +571,8 @@
         "cs:check": "phpcs --standard=phpcs.xml",
         "cs:fix": [
             "php-cs-fixer fix --config=.php-cs-fixer.php",
-            "phpcbf --standard=phpcs.xml || true"
+            "phpcbf --standard=phpcs.xml || true",
+            "php-cs-fixer fix --config=.php-cs-fixer.php"
         ],
         "phpstan": "php -d memory_limit=2G vendor/bin/phpstan analyse",
         "docs:lint": [
@@ -585,7 +586,9 @@
             "@phpstan",
             "@docs:lint"
         ],
-        "rector": "rector process"
+        "rector": "rector process",
+        "post-install-cmd": "@php tools/install-git-hooks.php",
+        "post-update-cmd": "@php tools/install-git-hooks.php"
     },
     "config": {
         "sort-packages": true,

@@ -25,7 +25,10 @@ readonly class FormsConfig
         $fields = [];
 
         foreach ($this->config->getArray('forms.never_flash') as $field) {
-            if (!is_string($field) || trim($field) === '') {
+            if (
+                !is_string($field)
+                || trim($field) === ''
+            ) {
                 throw FormsException::invalidNeverFlashField($field);
             }
 
@@ -45,7 +48,11 @@ readonly class FormsConfig
         $path = $this->config->getString('forms.fallback_redirect');
 
         // '//host' and '/\host' are protocol-relative URLs to another site in browsers
-        if (!str_starts_with($path, '/') || str_starts_with($path, '//') || str_starts_with($path, '/\\')) {
+        if (
+            !str_starts_with($path, '/')
+            || str_starts_with($path, '//')
+            || str_starts_with($path, '/\\')
+        ) {
             throw FormsException::invalidFallbackRedirect($path);
         }
 

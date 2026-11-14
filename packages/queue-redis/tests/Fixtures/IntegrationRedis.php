@@ -58,7 +58,10 @@ class IntegrationRedis
 
         $required = in_array(strtolower((string) getenv('MARKO_INTEGRATION_REQUIRED')), ['1', 'true', 'yes'], true);
 
-        if (self::$unreachableReason !== null && $required) {
+        if (
+            self::$unreachableReason !== null
+            && $required
+        ) {
             throw new RuntimeException(
                 'MARKO_INTEGRATION_REQUIRED is set but Redis is unreachable: ' . self::skipReason(),
             );

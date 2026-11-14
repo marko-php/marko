@@ -29,8 +29,9 @@ readonly class RelationshipLoader
      * @param string[] $relationships
      * @return array<string, mixed>
      */
-    public static function parseRelationshipTree(array $relationships): array
-    {
+    public static function parseRelationshipTree(
+        array $relationships,
+    ): array {
         $tree = [];
 
         foreach ($relationships as $relationship) {
@@ -75,7 +76,10 @@ readonly class RelationshipLoader
         array $relationshipTree,
         EntityMetadata $parentMetadata,
     ): void {
-        if ($entities === [] || $relationshipTree === []) {
+        if (
+            $entities === []
+            || $relationshipTree === []
+        ) {
             return;
         }
 
@@ -109,7 +113,10 @@ readonly class RelationshipLoader
                     continue;
                 }
 
-                if (is_array($value) || $value instanceof EntityCollection) {
+                if (
+                    is_array($value)
+                    || $value instanceof EntityCollection
+                ) {
                     foreach ($value as $related) {
                         $relatedEntities[] = $related;
                     }
@@ -140,7 +147,10 @@ readonly class RelationshipLoader
         RelationshipMetadata $relationship,
         EntityMetadata $parentMetadata,
     ): void {
-        if ($relationship->type === RelationshipType::BelongsToMany && $relationship->pivotClass === null) {
+        if (
+            $relationship->type === RelationshipType::BelongsToMany
+            && $relationship->pivotClass === null
+        ) {
             throw EntityException::missingPivotClass($parentMetadata->entityClass, $relationship->propertyName);
         }
 
@@ -332,7 +342,10 @@ readonly class RelationshipLoader
         $fkProperty = $pivotMetadata->getProperty($relationship->foreignKey);
         $relatedKeyProperty = $pivotMetadata->getProperty($relationship->relatedKey);
 
-        if ($fkProperty === null || $relatedKeyProperty === null) {
+        if (
+            $fkProperty === null
+            || $relatedKeyProperty === null
+        ) {
             return;
         }
 
@@ -448,7 +461,10 @@ readonly class RelationshipLoader
         if (is_array($value)) {
             $type = $property->getType();
 
-            if ($type instanceof ReflectionNamedType && is_a($type->getName(), EntityCollection::class, true)) {
+            if (
+                $type instanceof ReflectionNamedType
+                && is_a($type->getName(), EntityCollection::class, true)
+            ) {
                 $value = new EntityCollection($value);
             }
         }

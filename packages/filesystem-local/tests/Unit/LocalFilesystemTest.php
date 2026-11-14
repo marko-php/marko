@@ -28,13 +28,19 @@ function cleanupTestPath(
     }
 
     foreach ($items as $item) {
-        if ($item === '.' || $item === '..') {
+        if (
+            $item === '.'
+            || $item === '..'
+        ) {
             continue;
         }
 
         $itemPath = $path . '/' . $item;
 
-        if (is_dir($itemPath) && !is_link($itemPath)) {
+        if (
+            is_dir($itemPath)
+            && !is_link($itemPath)
+        ) {
             cleanupTestPath($itemPath);
         } else {
             unlink($itemPath);

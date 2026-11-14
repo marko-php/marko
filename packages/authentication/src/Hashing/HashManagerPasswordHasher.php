@@ -63,7 +63,10 @@ class HashManagerPasswordHasher implements PasswordHasherInterface
         string $hash,
     ): bool {
         // Every bcrypt variant ($2a$, $2b$, $2x$, $2y$); password_get_info() only recognises $2y$
-        if (str_starts_with($hash, '$2') && !$this->isBcryptHashable($password)) {
+        if (
+            str_starts_with($hash, '$2')
+            && !$this->isBcryptHashable($password)
+        ) {
             $this->verifyDummy($password);
 
             return false;
@@ -102,6 +105,7 @@ class HashManagerPasswordHasher implements PasswordHasherInterface
     private function isBcryptHashable(
         string $password,
     ): bool {
-        return strlen($password) <= BcryptPasswordHasher::MAX_PASSWORD_BYTES && !str_contains($password, "\0");
+        return strlen($password) <= BcryptPasswordHasher::MAX_PASSWORD_BYTES
+            && !str_contains($password, "\0");
     }
 }

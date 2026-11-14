@@ -48,7 +48,8 @@ readonly class Mimes extends AbstractFileRule
     ): bool {
         $extension = $file->guessExtension();
 
-        return $extension !== null && in_array(self::normalize($extension), $this->extensions, true);
+        return $extension !== null
+            && in_array(self::normalize($extension), $this->extensions, true);
     }
 
     protected function fileMessage(

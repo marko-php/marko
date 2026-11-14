@@ -10,8 +10,9 @@ final class FakeProcessRunner implements ProcessRunnerInterface
 {
     public ?string $lastCommand = null;
 
-    public function run(string $command): int
-    {
+    public function run(
+        string $command,
+    ): int {
         $this->lastCommand = $command;
 
         return 0;

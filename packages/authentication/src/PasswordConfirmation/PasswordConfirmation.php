@@ -72,7 +72,8 @@ readonly class PasswordConfirmation implements PasswordConfirmationInterface
 
         $age = $this->clock->now()->getTimestamp() - $confirmedAt;
 
-        return $age >= 0 && $age < $this->authConfig->passwordConfirmationTimeoutSeconds();
+        return $age >= 0
+            && $age < $this->authConfig->passwordConfirmationTimeoutSeconds();
     }
 
     private function throttleKey(

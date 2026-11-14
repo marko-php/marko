@@ -35,7 +35,10 @@ readonly class UrlGenerator implements UrlGeneratorInterface
 
         $baseUrl = $diskConfig['url'] ?? null;
 
-        if (!is_string($baseUrl) || $baseUrl === '') {
+        if (
+            !is_string($baseUrl)
+            || $baseUrl === ''
+        ) {
             throw UrlGenerationException::diskHasNoUrl($media->disk, $media->path);
         }
 

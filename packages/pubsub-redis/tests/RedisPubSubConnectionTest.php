@@ -41,8 +41,9 @@ class StubRedisLink implements RedisLink
 
 class StubRedisConnector implements RedisConnector
 {
-    public function connect(?Cancellation $cancellation = null): RedisConnection
-    {
+    public function connect(
+        ?Cancellation $cancellation = null,
+    ): RedisConnection {
         throw new RuntimeException('StubRedisConnector::connect() should not be called in tests');
     }
 }

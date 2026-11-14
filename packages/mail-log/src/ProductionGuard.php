@@ -26,7 +26,10 @@ readonly class ProductionGuard
      */
     public function check(): void
     {
-        if ($this->appEnvironment->isProduction() && !$this->config->allowProduction()) {
+        if (
+            $this->appEnvironment->isProduction()
+            && !$this->config->allowProduction()
+        ) {
             throw MailLogException::productionNotAllowed($this->appEnvironment->name());
         }
     }

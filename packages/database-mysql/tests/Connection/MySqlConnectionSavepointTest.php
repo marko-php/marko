@@ -59,8 +59,9 @@ function makeSavepointMySqlConnection(ArrayObject $statements = new ArrayObject(
                     parent::__construct($dsn);
                 }
 
-                public function exec(string $statement): int|false
-                {
+                public function exec(
+                    string $statement,
+                ): int|false {
                     // SQLite has no SET NAMES; ignore the encoding query.
                     if (str_starts_with($statement, 'SET NAMES')) {
                         return 0;
@@ -105,8 +106,9 @@ function makeSavepointMySqlConnection(ArrayObject $statements = new ArrayObject(
 /**
  * @return list<string>
  */
-function mysqlItemNames(MySqlConnection $connection): array
-{
+function mysqlItemNames(
+    MySqlConnection $connection,
+): array {
     return array_column($connection->query('SELECT name FROM items ORDER BY rowid'), 'name');
 }
 

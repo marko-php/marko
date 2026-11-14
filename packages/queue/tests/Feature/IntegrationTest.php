@@ -40,13 +40,15 @@ function createIntegrationNullContainer(): ContainerInterface
 {
     return new class () implements ContainerInterface
     {
-        public function get(string $id): never
-        {
+        public function get(
+            string $id,
+        ): never {
             throw new RuntimeException("No container binding for: $id");
         }
 
-        public function has(string $id): bool
-        {
+        public function has(
+            string $id,
+        ): bool {
             return false;
         }
 
@@ -57,13 +59,15 @@ function createIntegrationNullContainer(): ContainerInterface
             object $instance,
         ): void {}
 
-        public function call(Closure $callable): mixed
-        {
+        public function call(
+            Closure $callable,
+        ): mixed {
             return null;
         }
 
-        public function resolvedInstances(?string $interface = null): array
-        {
+        public function resolvedInstances(
+            ?string $interface = null,
+        ): array {
             return [];
         }
     };
@@ -195,7 +199,10 @@ function createInMemoryQueue(): QueueInterface
             $now = time();
 
             foreach ($this->jobs as $id => $data) {
-                if ($data['queue'] === $queueName && $data['availableAt'] <= $now) {
+                if (
+                    $data['queue'] === $queueName
+                    && $data['availableAt'] <= $now
+                ) {
                     unset($this->jobs[$id]);
 
                     return $data['job'];
@@ -213,7 +220,10 @@ function createInMemoryQueue(): QueueInterface
             $count = 0;
 
             foreach ($this->jobs as $data) {
-                if ($data['queue'] === $queueName && $data['availableAt'] <= $now) {
+                if (
+                    $data['queue'] === $queueName
+                    && $data['availableAt'] <= $now
+                ) {
                     $count++;
                 }
             }
@@ -379,13 +389,15 @@ describe('Integration Tests', function (): void {
                 private object $observer,
             ) {}
 
-            public function get(string $id): object
-            {
+            public function get(
+                string $id,
+            ): object {
                 return $this->observer;
             }
 
-            public function has(string $id): bool
-            {
+            public function has(
+                string $id,
+            ): bool {
                 return true;
             }
 
@@ -396,13 +408,15 @@ describe('Integration Tests', function (): void {
                 object $instance,
             ): void {}
 
-            public function call(Closure $callable): mixed
-            {
+            public function call(
+                Closure $callable,
+            ): mixed {
                 return null;
             }
 
-            public function resolvedInstances(?string $interface = null): array
-            {
+            public function resolvedInstances(
+                ?string $interface = null,
+            ): array {
                 return [];
             }
         };
@@ -431,8 +445,9 @@ describe('Integration Tests', function (): void {
                     private object $capture,
                 ) {}
 
-                public function handle(object $event): void
-                {
+                public function handle(
+                    object $event,
+                ): void {
                     $this->capture->callCount++;
                     $this->capture->event = $event;
                 }
@@ -449,13 +464,15 @@ describe('Integration Tests', function (): void {
                     private object $observer,
                 ) {}
 
-                public function get(string $id): object
-                {
+                public function get(
+                    string $id,
+                ): object {
                     return $this->observer;
                 }
 
-                public function has(string $id): bool
-                {
+                public function has(
+                    string $id,
+                ): bool {
                     return true;
                 }
 
@@ -466,13 +483,15 @@ describe('Integration Tests', function (): void {
                     object $instance,
                 ): void {}
 
-                public function call(Closure $callable): mixed
-                {
+                public function call(
+                    Closure $callable,
+                ): mixed {
                     return null;
                 }
 
-                public function resolvedInstances(?string $interface = null): array
-                {
+                public function resolvedInstances(
+                    ?string $interface = null,
+                ): array {
                     return [];
                 }
             };
@@ -525,8 +544,9 @@ describe('Integration Tests', function (): void {
                     private object $capture,
                 ) {}
 
-                public function handle(object $event): void
-                {
+                public function handle(
+                    object $event,
+                ): void {
                     $this->capture->event = $event;
                 }
             };
@@ -542,13 +562,15 @@ describe('Integration Tests', function (): void {
                     private object $observer,
                 ) {}
 
-                public function get(string $id): object
-                {
+                public function get(
+                    string $id,
+                ): object {
                     return $this->observer;
                 }
 
-                public function has(string $id): bool
-                {
+                public function has(
+                    string $id,
+                ): bool {
                     return true;
                 }
 
@@ -559,13 +581,15 @@ describe('Integration Tests', function (): void {
                     object $instance,
                 ): void {}
 
-                public function call(Closure $callable): mixed
-                {
+                public function call(
+                    Closure $callable,
+                ): mixed {
                     return null;
                 }
 
-                public function resolvedInstances(?string $interface = null): array
-                {
+                public function resolvedInstances(
+                    ?string $interface = null,
+                ): array {
                     return [];
                 }
             };

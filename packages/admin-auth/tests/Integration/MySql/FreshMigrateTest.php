@@ -68,7 +68,8 @@ describe('db:migrate for marko/admin-auth on MySQL', function (): void {
 
         $uniqueIndexColumns = fn (string $table, string $name): ?array => array_find(
             $this->introspector->getIndexes($table),
-            fn (Index $index): bool => $index->name === $name && $index->type === IndexType::Unique,
+            fn (Index $index): bool => $index->name === $name
+                && $index->type === IndexType::Unique,
         )?->columns;
 
         expect($result['exitCode'])->toBe(0)

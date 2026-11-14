@@ -18,7 +18,10 @@ readonly class DigitsBetween extends AbstractDigitsRule
         private int $minimum,
         private int $maximum,
     ) {
-        if ($minimum < 1 || $minimum > $maximum) {
+        if (
+            $minimum < 1
+            || $minimum > $maximum
+        ) {
             throw new InvalidArgumentException(
                 "The digits_between rule needs a minimum of at least 1 and no greater than its maximum, $minimum,$maximum given",
             );
@@ -28,7 +31,8 @@ readonly class DigitsBetween extends AbstractDigitsRule
     protected function acceptsLength(
         int $length,
     ): bool {
-        return $length >= $this->minimum && $length <= $this->maximum;
+        return $length >= $this->minimum
+            && $length <= $this->maximum;
     }
 
     public function message(

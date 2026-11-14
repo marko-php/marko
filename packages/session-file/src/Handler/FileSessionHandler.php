@@ -40,7 +40,10 @@ readonly class FileSessionHandler implements SessionHandlerInterface
         $publicDirectory = $this->normalize($paths->base . '/public');
         $normalized = $this->normalize($path);
 
-        if ($normalized === $publicDirectory || str_starts_with($normalized, $publicDirectory . '/')) {
+        if (
+            $normalized === $publicDirectory
+            || str_starts_with($normalized, $publicDirectory . '/')
+        ) {
             throw InsecureSessionPathException::insidePublicDirectory($normalized, $publicDirectory);
         }
 
@@ -113,7 +116,10 @@ readonly class FileSessionHandler implements SessionHandlerInterface
             $expected = strlen($data);
             $written = fwrite($handle, $data);
 
-            if ($written === false || $written !== $expected) {
+            if (
+                $written === false
+                || $written !== $expected
+            ) {
                 throw SessionWriteException::partialWrite($path, $written === false ? 0 : $written, $expected);
             }
 
@@ -154,7 +160,10 @@ readonly class FileSessionHandler implements SessionHandlerInterface
         foreach ($files as $file) {
             $mtime = filemtime($file);
 
-            if ($mtime !== false && $mtime < $expireTime) {
+            if (
+                $mtime !== false
+                && $mtime < $expireTime
+            ) {
                 if (unlink($file)) {
                     $count++;
                 }
@@ -184,7 +193,8 @@ readonly class FileSessionHandler implements SessionHandlerInterface
         $mtime = filemtime($path);
         $expiresBefore = $this->clock->now()->getTimestamp() - $this->config->lifetime() * self::SECONDS_PER_MINUTE;
 
-        return $mtime !== false && $mtime >= $expiresBefore;
+        return $mtime !== false
+            && $mtime >= $expiresBefore;
     }
 
     /**
@@ -222,7 +232,10 @@ readonly class FileSessionHandler implements SessionHandlerInterface
         $segments = [];
 
         foreach (explode('/', $path) as $segment) {
-            if ($segment === '' || $segment === '.') {
+            if (
+                $segment === ''
+                || $segment === '.'
+            ) {
                 continue;
             }
 

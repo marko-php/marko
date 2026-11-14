@@ -62,7 +62,11 @@ class DiscoveryFingerprint
         $found = [];
 
         foreach (scandir($directory) ?: [] as $item) {
-            if ($item === '.' || $item === '..' || !is_dir($directory . '/' . $item)) {
+            if (
+                $item === '.'
+                || $item === '..'
+                || !is_dir($directory . '/' . $item)
+            ) {
                 continue;
             }
 

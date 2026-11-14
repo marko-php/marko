@@ -90,9 +90,13 @@ class FakeHttpClient implements HttpClientInterface
             throw $response;
         }
 
-        $isError = $response->isClientError() || $response->isServerError();
+        $isError = $response->isClientError()
+            || $response->isServerError();
 
-        if ($isError && RequestOptions::throwsOnHttpError($options)) {
+        if (
+            $isError
+            && RequestOptions::throwsOnHttpError($options)
+        ) {
             throw new HttpException(
                 "HTTP request returned status code {$response->statusCode()}: $method $url",
                 $response,

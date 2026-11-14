@@ -13,8 +13,9 @@ use PDO;
  * A PgSqlConnection backed by an in-memory SQLite PDO, which supports real
  * transactions, so reset() can be exercised without a PostgreSQL server.
  */
-function makeResettablePgSqlConnection(int &$pdoCreations = 0): PgSqlConnection
-{
+function makeResettablePgSqlConnection(
+    int &$pdoCreations = 0,
+): PgSqlConnection {
     $config = DatabaseConfig::fromArray([
         'driver' => 'pgsql',
         'host' => 'localhost',
@@ -43,8 +44,9 @@ function makeResettablePgSqlConnection(int &$pdoCreations = 0): PgSqlConnection
 
             $pdo = new class ('sqlite::memory:') extends PDO
             {
-                public function exec(string $statement): int|false
-                {
+                public function exec(
+                    string $statement,
+                ): int|false {
                     // SQLite has no SET NAMES or SET TIME ZONE; ignore the session statements.
                     return str_starts_with($statement, 'SET ') ? 0 : parent::exec($statement);
                 }

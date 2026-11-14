@@ -15,8 +15,9 @@ use Marko\Core\Plugin\PluginRegistry;
 
 class InterceptionTestTarget
 {
-    public function hash(string $value): string
-    {
+    public function hash(
+        string $value,
+    ): string {
         return md5($value);
     }
 
@@ -27,8 +28,9 @@ class InterceptionTestTarget
         return $a + $b;
     }
 
-    public function greet(string $name): string
-    {
+    public function greet(
+        string $name,
+    ): string {
         return "Hello, $name!";
     }
 }
@@ -66,15 +68,17 @@ class PI_TrackingPlugin
         self::$callLog = [];
     }
 
-    public function beforeHash(string $value): ?string
-    {
+    public function beforeHash(
+        string $value,
+    ): ?string {
         self::$callLog[] = 'PI_TrackingPlugin::beforeHash';
 
         return null;
     }
 
-    public function afterHash(string $result): string
-    {
+    public function afterHash(
+        string $result,
+    ): string {
         self::$callLog[] = 'PI_TrackingPlugin::afterHash';
 
         return $result;
@@ -83,8 +87,9 @@ class PI_TrackingPlugin
 
 class PI_SecondTrackingPlugin
 {
-    public function beforeHash(string $value): ?string
-    {
+    public function beforeHash(
+        string $value,
+    ): ?string {
         PI_TrackingPlugin::$callLog[] = 'PI_SecondTrackingPlugin::beforeHash';
 
         return null;
@@ -93,16 +98,18 @@ class PI_SecondTrackingPlugin
 
 class PI_ShortCircuitPlugin
 {
-    public function beforeHash(string $value): string
-    {
+    public function beforeHash(
+        string $value,
+    ): string {
         return 'short-circuited';
     }
 }
 
 class PI_SecondShortCircuitPlugin
 {
-    public function beforeHash(string $value): ?string
-    {
+    public function beforeHash(
+        string $value,
+    ): ?string {
         PI_TrackingPlugin::$callLog[] = 'PI_SecondShortCircuitPlugin::beforeHash';
 
         return null;
@@ -111,40 +118,45 @@ class PI_SecondShortCircuitPlugin
 
 class PI_ArgModifyPlugin
 {
-    public function beforeHash(string $value): array
-    {
+    public function beforeHash(
+        string $value,
+    ): array {
         return [strtoupper($value)];
     }
 }
 
 class PI_SecondArgModifyPlugin
 {
-    public function beforeHash(string $value): array
-    {
+    public function beforeHash(
+        string $value,
+    ): array {
         return [$value . '_modified'];
     }
 }
 
 class PI_WrongArgCountPlugin
 {
-    public function beforeHash(string $value): array
-    {
+    public function beforeHash(
+        string $value,
+    ): array {
         return ['too', 'many', 'args'];
     }
 }
 
 class PI_ResultDoublePlugin
 {
-    public function afterHash(string $result): string
-    {
+    public function afterHash(
+        string $result,
+    ): string {
         return $result . $result;
     }
 }
 
 class PI_SecondResultPlugin
 {
-    public function afterHash(string $result): string
-    {
+    public function afterHash(
+        string $result,
+    ): string {
         return '[' . $result . ']';
     }
 }
@@ -167,11 +179,17 @@ class PI_AfterWithArgsPlugin
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeRegistry(array $beforeMethods = [], array $afterMethods = [], string $targetClass = InterceptionTestTarget::class): PluginRegistry
-{
+function makeRegistry(
+    array $beforeMethods = [],
+    array $afterMethods = [],
+    string $targetClass = InterceptionTestTarget::class,
+): PluginRegistry {
     $registry = new PluginRegistry();
 
-    if ($beforeMethods !== [] || $afterMethods !== []) {
+    if (
+        $beforeMethods !== []
+        || $afterMethods !== []
+    ) {
         $registry->register(new PluginDefinition(
             pluginClass: DummyPlugin::class,
             targetClass: $targetClass,
@@ -183,8 +201,9 @@ function makeRegistry(array $beforeMethods = [], array $afterMethods = [], strin
     return $registry;
 }
 
-function makeRegistryWith(array $definitions): PluginRegistry
-{
+function makeRegistryWith(
+    array $definitions,
+): PluginRegistry {
     $registry = new PluginRegistry();
 
     foreach ($definitions as $definition) {
@@ -199,19 +218,22 @@ function makeRegistryWith(array $definitions): PluginRegistry
     return $registry;
 }
 
-function makeContainer(array $instances = []): ContainerInterface
-{
+function makeContainer(
+    array $instances = [],
+): ContainerInterface {
     return new class ($instances) implements ContainerInterface
     {
         public function __construct(private array $instances) {}
 
-        public function get(string $id): mixed
-        {
+        public function get(
+            string $id,
+        ): mixed {
             return $this->instances[$id] ?? new $id();
         }
 
-        public function has(string $id): bool
-        {
+        public function has(
+            string $id,
+        ): bool {
             return isset($this->instances[$id]);
         }
 
@@ -224,13 +246,15 @@ function makeContainer(array $instances = []): ContainerInterface
             $this->instances[$id] = $instance;
         }
 
-        public function call(Closure $callable): mixed
-        {
+        public function call(
+            Closure $callable,
+        ): mixed {
             return $callable();
         }
 
-        public function resolvedInstances(?string $interface = null): array
-        {
+        public function resolvedInstances(
+            ?string $interface = null,
+        ): array {
             if ($interface === null) {
                 return $this->instances;
             }
@@ -314,8 +338,9 @@ it('passes method arguments to before plugins', function (): void {
             private array &$received,
         ) {}
 
-        public function beforeHash(string $value): ?string
-        {
+        public function beforeHash(
+            string $value,
+        ): ?string {
             $this->received[] = $value;
 
             return null;
@@ -495,8 +520,9 @@ it('executes complete flow of before plugins then target then after plugins', fu
             private array &$log,
         ) {}
 
-        public function beforeHash(string $value): ?string
-        {
+        public function beforeHash(
+            string $value,
+        ): ?string {
             $this->log[] = 'before';
 
             return null;
@@ -509,8 +535,9 @@ it('executes complete flow of before plugins then target then after plugins', fu
             private array &$log,
         ) {}
 
-        public function afterHash(string $result): string
-        {
+        public function afterHash(
+            string $result,
+        ): string {
             $this->log[] = 'after';
 
             return $result;

@@ -33,13 +33,15 @@ $fakePageCache = function (bool $purgeUrlResult = true, bool $purgeTagResult = t
             return $response;
         }
 
-        public function purgeUrl(string $url): bool
-        {
+        public function purgeUrl(
+            string $url,
+        ): bool {
             return $this->purgeUrlResult;
         }
 
-        public function purgeTag(string $tag): bool
-        {
+        public function purgeTag(
+            string $tag,
+        ): bool {
             return $this->purgeTagResult;
         }
 
@@ -90,15 +92,17 @@ it('purges tag homepage for page-cache:purge --tag homepage', function (): void 
             return $response;
         }
 
-        public function purgeUrl(string $url): bool
-        {
+        public function purgeUrl(
+            string $url,
+        ): bool {
             $this->purgedUrls[] = $url;
 
             return true;
         }
 
-        public function purgeTag(string $tag): bool
-        {
+        public function purgeTag(
+            string $tag,
+        ): bool {
             $this->purgedTags[] = $tag;
 
             return true;

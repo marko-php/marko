@@ -80,7 +80,10 @@ class Container implements ContainerInterface
     private function validateConfiguredClass(
         string $class,
     ): void {
-        if (!class_exists($class) && !interface_exists($class)) {
+        if (
+            !class_exists($class)
+            && !interface_exists($class)
+        ) {
             throw BindingException::classNotFound($class);
         }
 
@@ -96,25 +99,38 @@ class Container implements ContainerInterface
             throw ArgumentException::closureBound($class);
         }
 
-        if ($binding !== null && $binding !== $class) {
+        if (
+            $binding !== null
+            && $binding !== $class
+        ) {
             throw ArgumentException::reboundClass($class, $binding);
         }
 
         $replacement = $this->preferenceRegistry?->getPreference($class);
 
-        if ($reflection->isAbstract() && ($replacement === null || $replacement === $class)) {
+        if (
+            $reflection->isAbstract()
+            && (
+                $replacement === null
+                || $replacement === $class
+            )
+        ) {
             throw ArgumentException::abstractKey($class);
         }
 
         $this->validateClassArguments($reflection);
 
-        if ($replacement !== null && $replacement !== $class) {
+        if (
+            $replacement !== null
+            && $replacement !== $class
+        ) {
             $this->validateClassArguments(new ReflectionClass($replacement));
         }
     }
 
-    public function setPluginInterceptor(PluginInterceptor $interceptor): void
-    {
+    public function setPluginInterceptor(
+        PluginInterceptor $interceptor,
+    ): void {
         $this->pluginInterceptor = $interceptor;
     }
 
@@ -137,7 +153,9 @@ class Container implements ContainerInterface
     public function has(
         string $id,
     ): bool {
-        return isset($this->instances[$id]) || isset($this->bindings[$id]) || class_exists($id);
+        return isset($this->instances[$id])
+            || isset($this->bindings[$id])
+            || class_exists($id);
     }
 
     public function singleton(
@@ -163,8 +181,9 @@ class Container implements ContainerInterface
      *
      * @return array<string, object>
      */
-    public function resolvedInstances(?string $interface = null): array
-    {
+    public function resolvedInstances(
+        ?string $interface = null,
+    ): array {
         if ($interface === null) {
             return $this->instances;
         }
@@ -178,8 +197,9 @@ class Container implements ContainerInterface
     /**
      * @throws ArgumentException|BindingException|CircularDependencyException|ReflectionException|PluginException|PreferenceConflictException
      */
-    public function call(Closure $callable): mixed
-    {
+    public function call(
+        Closure $callable,
+    ): mixed {
         $reflection = new ReflectionFunction($callable);
         $parameters = $reflection->getParameters();
         $dependencies = [];
@@ -187,7 +207,10 @@ class Container implements ContainerInterface
         foreach ($parameters as $parameter) {
             $type = $parameter->getType();
 
-            if (!$type instanceof ReflectionNamedType || $type->isBuiltin()) {
+            if (
+                !$type instanceof ReflectionNamedType
+                || $type->isBuiltin()
+            ) {
                 if ($parameter->isDefaultValueAvailable()) {
                     $dependencies[] = $parameter->getDefaultValue();
                     continue;
@@ -197,7 +220,10 @@ class Container implements ContainerInterface
 
             $typeName = $type->getName();
 
-            if ($type->allowsNull() && !$this->has($typeName)) {
+            if (
+                $type->allowsNull()
+                && !$this->has($typeName)
+            ) {
                 $dependencies[] = null;
                 continue;
             }
@@ -301,7 +327,10 @@ class Container implements ContainerInterface
             $id = $binding;
         }
 
-        if (interface_exists($id) && !class_exists($id)) {
+        if (
+            interface_exists($id)
+            && !class_exists($id)
+        ) {
             if (str_starts_with($id, 'Marko\\')) {
                 $parts = explode('\\', $id);
                 $segment = $parts[1] ?? '';
@@ -371,7 +400,10 @@ class Container implements ContainerInterface
                     $type = $parameter->getType();
 
                     // Use default value for builtin types or untyped parameters
-                    if (!$type instanceof ReflectionNamedType || $type->isBuiltin()) {
+                    if (
+                        !$type instanceof ReflectionNamedType
+                        || $type->isBuiltin()
+                    ) {
                         if ($parameter->isDefaultValueAvailable()) {
                             $dependencies[] = $parameter->getDefaultValue();
                             continue;
@@ -382,7 +414,10 @@ class Container implements ContainerInterface
                     $typeName = $type->getName();
 
                     // Closure cannot be instantiated - use default value if available
-                    if ($typeName === 'Closure' || $typeName === Closure::class) {
+                    if (
+                        $typeName === 'Closure'
+                        || $typeName === Closure::class
+                    ) {
                         if ($parameter->isDefaultValueAvailable()) {
                             $dependencies[] = $parameter->getDefaultValue();
                             continue;

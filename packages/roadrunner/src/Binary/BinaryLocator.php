@@ -19,7 +19,10 @@ readonly class BinaryLocator implements BinaryLocatorInterface
     public function locate(): ?string
     {
         foreach ($this->projectCandidates() as $candidate) {
-            if (is_file($candidate) && is_executable($candidate)) {
+            if (
+                is_file($candidate)
+                && is_executable($candidate)
+            ) {
                 return $candidate;
             }
         }

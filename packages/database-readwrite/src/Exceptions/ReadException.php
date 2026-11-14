@@ -14,8 +14,9 @@ class ReadException extends MarkoException
     /**
      * @param string[] $messages
      */
-    public static function allReplicasFailed(array $messages): self
-    {
+    public static function allReplicasFailed(
+        array $messages,
+    ): self {
         $detail = implode('; ', $messages);
 
         return new self(

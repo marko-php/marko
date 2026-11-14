@@ -22,7 +22,10 @@ class ConfigLoadException extends ConfigException
             ? sprintf('%s [file: %s]', $message, $this->filePath)
             : sprintf('Failed to load configuration file: %s', $this->filePath);
 
-        if ($context === '' && $parseError !== '') {
+        if (
+            $context === ''
+            && $parseError !== ''
+        ) {
             $context = sprintf('Parse error: %s', $parseError);
         }
 

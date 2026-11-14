@@ -17,8 +17,9 @@ readonly class ReadLogEntriesTool implements ToolHandlerInterface
 
     public function __construct(private LogReaderInterface $reader) {}
 
-    public static function definition(LogReaderInterface $reader): ToolDefinition
-    {
+    public static function definition(
+        LogReaderInterface $reader,
+    ): ToolDefinition {
         return new ToolDefinition(
             name: 'read_log_entries',
             description: 'Return the last N log entries from the application log',
@@ -38,8 +39,9 @@ readonly class ReadLogEntriesTool implements ToolHandlerInterface
         );
     }
 
-    public function handle(array $arguments): array
-    {
+    public function handle(
+        array $arguments,
+    ): array {
         $requested = isset($arguments['count']) ? (int) $arguments['count'] : self::DEFAULT_COUNT;
         $count = max(1, min(self::MAX_COUNT, $requested));
 

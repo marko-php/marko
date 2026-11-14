@@ -94,7 +94,13 @@ readonly class LineFormatter implements LogFormatterInterface
     private function escapeCharacter(
         string $character,
     ): string {
-        if (!$this->escapeNewlines && ($character === "\n" || $character === "\r")) {
+        if (
+            !$this->escapeNewlines
+            && (
+                $character === "\n"
+                || $character === "\r"
+            )
+        ) {
             return $character;
         }
 

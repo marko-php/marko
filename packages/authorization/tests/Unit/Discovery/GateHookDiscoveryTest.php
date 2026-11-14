@@ -60,8 +60,11 @@ use Marko\Authorization\Contracts\GateHookInterface;
 $attribute
 class $class$implementsClause
 {
-    public function before(?AuthorizableInterface \$user, string \$ability, array \$arguments): ?bool
-    {
+    public function before(
+        ?AuthorizableInterface \$user,
+        string \$ability,
+        array \$arguments,
+    ): ?bool {
         return null;
     }
 }

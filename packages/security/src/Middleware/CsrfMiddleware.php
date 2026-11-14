@@ -76,7 +76,11 @@ class CsrfMiddleware implements MiddlewareInterface
 
         $token = $this->extractToken($request);
 
-        if ($token === null || $token === '' || !$this->tokenManager->validate($token)) {
+        if (
+            $token === null
+            || $token === ''
+            || !$this->tokenManager->validate($token)
+        ) {
             throw CsrfTokenMismatchException::invalidToken();
         }
     }

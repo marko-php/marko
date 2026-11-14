@@ -12,8 +12,9 @@ readonly class CheckConfigKeyTool implements ToolHandlerInterface
         private IndexCache $index,
     ) {}
 
-    public static function definition(IndexCache $index): ToolDefinition
-    {
+    public static function definition(
+        IndexCache $index,
+    ): ToolDefinition {
         return new ToolDefinition(
             name: 'check_config_key',
             description: 'Checks whether a configuration key exists in the index. Returns metadata for known keys or closest-match suggestions for unknown ones.',
@@ -28,8 +29,9 @@ readonly class CheckConfigKeyTool implements ToolHandlerInterface
         );
     }
 
-    public function handle(array $arguments): array
-    {
+    public function handle(
+        array $arguments,
+    ): array {
         $key = (string) $arguments['key'];
 
         foreach ($this->index->getConfigKeys() as $e) {

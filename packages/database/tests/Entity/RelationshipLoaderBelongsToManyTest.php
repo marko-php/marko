@@ -195,8 +195,9 @@ function makeBtmPostTagExtraMetadata(): EntityMetadata
     );
 }
 
-function makeBtmFakeQueryBuilder(array $rows): QueryBuilderInterface
-{
+function makeBtmFakeQueryBuilder(
+    array $rows,
+): QueryBuilderInterface {
     return new class ($rows) implements QueryBuilderInterface
     {
         public function __construct(
@@ -210,8 +211,9 @@ function makeBtmFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function select(string ...$columns): static
-        {
+        public function select(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -230,13 +232,15 @@ function makeBtmFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function whereNull(string $column): static
-        {
+        public function whereNull(
+            string $column,
+        ): static {
             return $this;
         }
 
-        public function whereNotNull(string $column): static
-        {
+        public function whereNotNull(
+            string $column,
+        ): static {
             return $this;
         }
 
@@ -303,13 +307,15 @@ function makeBtmFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function limit(int $limit): static
-        {
+        public function limit(
+            int $limit,
+        ): static {
             return $this;
         }
 
-        public function offset(int $offset): static
-        {
+        public function offset(
+            int $offset,
+        ): static {
             return $this;
         }
 
@@ -318,13 +324,15 @@ function makeBtmFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function union(QueryBuilderInterface $other): static
-        {
+        public function union(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
-        public function unionAll(QueryBuilderInterface $other): static
-        {
+        public function unionAll(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
@@ -333,8 +341,9 @@ function makeBtmFakeQueryBuilder(array $rows): QueryBuilderInterface
             return 1;
         }
 
-        public function compileSubquery(array &$bindings): string
-        {
+        public function compileSubquery(
+            array &$bindings,
+        ): string {
             return '';
         }
 
@@ -355,8 +364,9 @@ function makeBtmFakeQueryBuilder(array $rows): QueryBuilderInterface
             return 0;
         }
 
-        public function update(array $data): int
-        {
+        public function update(
+            array $data,
+        ): int {
             return 0;
         }
 
@@ -365,8 +375,9 @@ function makeBtmFakeQueryBuilder(array $rows): QueryBuilderInterface
             return 0;
         }
 
-        public function count(?string $column = null): int
-        {
+        public function count(
+            ?string $column = null,
+        ): int {
             return count($this->rows);
         }
 
@@ -412,13 +423,15 @@ function makeBtmFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function whereJsonExists(string $path): static
-        {
+        public function whereJsonExists(
+            string $path,
+        ): static {
             return $this;
         }
 
-        public function whereJsonMissing(string $path): static
-        {
+        public function whereJsonMissing(
+            string $path,
+        ): static {
             return $this;
         }
 
@@ -437,18 +450,21 @@ function makeBtmFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function whereExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
-        public function whereNotExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereNotExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
-        public function groupBy(string ...$columns): static
-        {
+        public function groupBy(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -459,23 +475,27 @@ function makeBtmFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function min(string $column): int|float|null
-        {
+        public function min(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function max(string $column): int|float|null
-        {
+        public function max(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function sum(string $column): int|float|null
-        {
+        public function sum(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function avg(string $column): int|float|null
-        {
+        public function avg(
+            string $column,
+        ): int|float|null {
             return null;
         }
     };
@@ -484,8 +504,9 @@ function makeBtmFakeQueryBuilder(array $rows): QueryBuilderInterface
 /**
  * Creates a factory that returns different rows per `create()` call (in order).
  */
-function makeBtmMultiResponseFactory(array $responsesQueue): QueryBuilderFactoryInterface
-{
+function makeBtmMultiResponseFactory(
+    array $responsesQueue,
+): QueryBuilderFactoryInterface {
     return new class ($responsesQueue) implements QueryBuilderFactoryInterface
     {
         private int $callCount = 0;
@@ -510,8 +531,10 @@ function makeBtmMultiResponseFactory(array $responsesQueue): QueryBuilderFactory
  * @param array<int, array<int, array<string, mixed>>> $responsesQueue
  * @param array<array{table: string, column: string, values: array<mixed>}> $queries
  */
-function makeBtmDataAndTrackingFactory(array $responsesQueue, array &$queries): QueryBuilderFactoryInterface
-{
+function makeBtmDataAndTrackingFactory(
+    array $responsesQueue,
+    array &$queries,
+): QueryBuilderFactoryInterface {
     return new class ($responsesQueue, $queries) implements QueryBuilderFactoryInterface
     {
         private int $callCount = 0;
@@ -545,8 +568,9 @@ function makeBtmDataAndTrackingFactory(array $responsesQueue, array &$queries): 
                     return $this;
                 }
 
-                public function select(string ...$columns): static
-                {
+                public function select(
+                    string ...$columns,
+                ): static {
                     return $this;
                 }
 
@@ -567,13 +591,15 @@ function makeBtmDataAndTrackingFactory(array $responsesQueue, array &$queries): 
                     return $this;
                 }
 
-                public function whereNull(string $column): static
-                {
+                public function whereNull(
+                    string $column,
+                ): static {
                     return $this;
                 }
 
-                public function whereNotNull(string $column): static
-                {
+                public function whereNotNull(
+                    string $column,
+                ): static {
                     return $this;
                 }
 
@@ -640,13 +666,15 @@ function makeBtmDataAndTrackingFactory(array $responsesQueue, array &$queries): 
                     return $this;
                 }
 
-                public function limit(int $limit): static
-                {
+                public function limit(
+                    int $limit,
+                ): static {
                     return $this;
                 }
 
-                public function offset(int $offset): static
-                {
+                public function offset(
+                    int $offset,
+                ): static {
                     return $this;
                 }
 
@@ -655,13 +683,15 @@ function makeBtmDataAndTrackingFactory(array $responsesQueue, array &$queries): 
                     return $this;
                 }
 
-                public function union(QueryBuilderInterface $other): static
-                {
+                public function union(
+                    QueryBuilderInterface $other,
+                ): static {
                     return $this;
                 }
 
-                public function unionAll(QueryBuilderInterface $other): static
-                {
+                public function unionAll(
+                    QueryBuilderInterface $other,
+                ): static {
                     return $this;
                 }
 
@@ -670,8 +700,9 @@ function makeBtmDataAndTrackingFactory(array $responsesQueue, array &$queries): 
                     return 1;
                 }
 
-                public function compileSubquery(array &$bindings): string
-                {
+                public function compileSubquery(
+                    array &$bindings,
+                ): string {
                     return '';
                 }
 
@@ -692,8 +723,9 @@ function makeBtmDataAndTrackingFactory(array $responsesQueue, array &$queries): 
                     return 0;
                 }
 
-                public function update(array $data): int
-                {
+                public function update(
+                    array $data,
+                ): int {
                     return 0;
                 }
 
@@ -702,8 +734,9 @@ function makeBtmDataAndTrackingFactory(array $responsesQueue, array &$queries): 
                     return 0;
                 }
 
-                public function count(?string $column = null): int
-                {
+                public function count(
+                    ?string $column = null,
+                ): int {
                     return count($this->rows);
                 }
 
@@ -749,13 +782,15 @@ function makeBtmDataAndTrackingFactory(array $responsesQueue, array &$queries): 
                     return $this;
                 }
 
-                public function whereJsonExists(string $path): static
-                {
+                public function whereJsonExists(
+                    string $path,
+                ): static {
                     return $this;
                 }
 
-                public function whereJsonMissing(string $path): static
-                {
+                public function whereJsonMissing(
+                    string $path,
+                ): static {
                     return $this;
                 }
 
@@ -774,18 +809,21 @@ function makeBtmDataAndTrackingFactory(array $responsesQueue, array &$queries): 
                     return $this;
                 }
 
-                public function whereExists(callable|QueryBuilderInterface $subquery): static
-                {
+                public function whereExists(
+                    callable|QueryBuilderInterface $subquery,
+                ): static {
                     return $this;
                 }
 
-                public function whereNotExists(callable|QueryBuilderInterface $subquery): static
-                {
+                public function whereNotExists(
+                    callable|QueryBuilderInterface $subquery,
+                ): static {
                     return $this;
                 }
 
-                public function groupBy(string ...$columns): static
-                {
+                public function groupBy(
+                    string ...$columns,
+                ): static {
                     return $this;
                 }
 
@@ -796,23 +834,27 @@ function makeBtmDataAndTrackingFactory(array $responsesQueue, array &$queries): 
                     return $this;
                 }
 
-                public function min(string $column): int|float|null
-                {
+                public function min(
+                    string $column,
+                ): int|float|null {
                     return null;
                 }
 
-                public function max(string $column): int|float|null
-                {
+                public function max(
+                    string $column,
+                ): int|float|null {
                     return null;
                 }
 
-                public function sum(string $column): int|float|null
-                {
+                public function sum(
+                    string $column,
+                ): int|float|null {
                     return null;
                 }
 
-                public function avg(string $column): int|float|null
-                {
+                public function avg(
+                    string $column,
+                ): int|float|null {
                     return null;
                 }
             };
@@ -820,23 +862,27 @@ function makeBtmDataAndTrackingFactory(array $responsesQueue, array &$queries): 
     };
 }
 
-function makeBtmMetadataFactory(array $metadataMap): EntityMetadataFactory
-{
+function makeBtmMetadataFactory(
+    array $metadataMap,
+): EntityMetadataFactory {
     return new class ($metadataMap) extends EntityMetadataFactory
     {
         public function __construct(
             private array $metadataMap,
         ) {}
 
-        public function parse(string $entityClass): EntityMetadata
-        {
+        public function parse(
+            string $entityClass,
+        ): EntityMetadata {
             return $this->metadataMap[$entityClass];
         }
     };
 }
 
-function makeBtmLoader(QueryBuilderFactoryInterface $factory, EntityMetadataFactory $metadataFactory): RelationshipLoader
-{
+function makeBtmLoader(
+    QueryBuilderFactoryInterface $factory,
+    EntityMetadataFactory $metadataFactory,
+): RelationshipLoader {
     return new RelationshipLoader(
         entityMetadataFactory: $metadataFactory,
         entityHydrator: new EntityHydrator(),

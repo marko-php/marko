@@ -10,21 +10,13 @@ use Marko\PubSub\Subscription;
 
 class SubscriptionMockPostgresListener implements PostgresListener, IteratorAggregate
 {
-    /** @var PostgresNotification[] */
-    private array $notifications;
-
     public bool $unlistenCalled = false;
-
-    private string $channel;
 
     /** @param PostgresNotification[] $notifications */
     public function __construct(
-        string $channel,
-        array $notifications = [],
-    ) {
-        $this->channel = $channel;
-        $this->notifications = $notifications;
-    }
+        private string $channel,
+        private array $notifications = [],
+    ) {}
 
     public function getChannel(): string
     {

@@ -17,7 +17,10 @@ readonly class SplComposerAutoloaderLocator implements ComposerAutoloaderLocator
     public function locate(): ?string
     {
         foreach (spl_autoload_functions() ?: [] as $function) {
-            if (!is_array($function) || !($function[0] instanceof ClassLoader)) {
+            if (
+                !is_array($function)
+                || !($function[0] instanceof ClassLoader)
+            ) {
                 continue;
             }
 

@@ -58,8 +58,9 @@ class LspServer
     }
 
     /** @param array<string, mixed> $params */
-    public function initialize(array $params): array
-    {
+    public function initialize(
+        array $params,
+    ): array {
         $this->initialized = true;
 
         return [
@@ -104,8 +105,9 @@ class LspServer
     }
 
     /** @param array<string, mixed> $params */
-    private function didOpen(array $params): null
-    {
+    private function didOpen(
+        array $params,
+    ): null {
         $uri = (string) ($params['textDocument']['uri'] ?? '');
         $text = (string) ($params['textDocument']['text'] ?? '');
         $this->documents->open($uri, $text);
@@ -115,8 +117,9 @@ class LspServer
     }
 
     /** @param array<string, mixed> $params */
-    private function didChange(array $params): null
-    {
+    private function didChange(
+        array $params,
+    ): null {
         $uri = (string) ($params['textDocument']['uri'] ?? '');
         $changes = $params['contentChanges'] ?? [];
 
@@ -125,7 +128,10 @@ class LspServer
         }
 
         foreach ($changes as $change) {
-            if (is_array($change) && !isset($change['range'])) {
+            if (
+                is_array($change)
+                && !isset($change['range'])
+            ) {
                 $this->documents->update($uri, (string) ($change['text'] ?? ''));
             }
         }
@@ -137,8 +143,9 @@ class LspServer
     }
 
     /** @param array<string, mixed> $params */
-    private function didClose(array $params): null
-    {
+    private function didClose(
+        array $params,
+    ): null {
         $uri = (string) ($params['textDocument']['uri'] ?? '');
         $this->documents->close($uri);
 
@@ -149,8 +156,9 @@ class LspServer
      * @param array<string, mixed> $params
      * @return array{isIncomplete: bool, items: list<array<string, mixed>>}
      */
-    private function completion(array $params): array
-    {
+    private function completion(
+        array $params,
+    ): array {
         $uri = (string) ($params['textDocument']['uri'] ?? '');
         $line = (int) ($params['position']['line'] ?? 0);
         $character = (int) ($params['position']['character'] ?? 0);
@@ -182,15 +190,19 @@ class LspServer
      * @param array<string, mixed> $params
      * @return array<string, mixed>|null
      */
-    private function definition(array $params): ?array
-    {
+    private function definition(
+        array $params,
+    ): ?array {
         $uri = (string) ($params['textDocument']['uri'] ?? '');
         $line = (int) ($params['position']['line'] ?? 0);
         $character = (int) ($params['position']['character'] ?? 0);
 
         $symbol = $this->documents->quotedStringAt($uri, $line, $character);
 
-        if ($symbol === null || $symbol === '') {
+        if (
+            $symbol === null
+            || $symbol === ''
+        ) {
             return null;
         }
 
@@ -207,15 +219,19 @@ class LspServer
      * @param array<string, mixed> $params
      * @return array<string, mixed>|null
      */
-    private function hover(array $params): ?array
-    {
+    private function hover(
+        array $params,
+    ): ?array {
         $uri = (string) ($params['textDocument']['uri'] ?? '');
         $line = (int) ($params['position']['line'] ?? 0);
         $character = (int) ($params['position']['character'] ?? 0);
 
         $symbol = $this->documents->quotedStringAt($uri, $line, $character);
 
-        if ($symbol === null || $symbol === '') {
+        if (
+            $symbol === null
+            || $symbol === ''
+        ) {
             return null;
         }
 
@@ -234,8 +250,9 @@ class LspServer
      * @param array<string, mixed> $params
      * @return array{kind: string, items: list<array<string, mixed>>}
      */
-    private function diagnostic(array $params): array
-    {
+    private function diagnostic(
+        array $params,
+    ): array {
         $uri = (string) ($params['textDocument']['uri'] ?? '');
         $text = $this->documents->get($uri) ?? '';
 
@@ -254,8 +271,9 @@ class LspServer
      * @param array<string, mixed> $params
      * @return list<array<string, mixed>>
      */
-    private function codeLensRequest(array $params): array
-    {
+    private function codeLensRequest(
+        array $params,
+    ): array {
         $uri = (string) ($params['textDocument']['uri'] ?? '');
         $text = $this->documents->get($uri) ?? '';
 

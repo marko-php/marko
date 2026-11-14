@@ -11,8 +11,10 @@ use Marko\Database\MySql\Query\MySqlQueryBuilder;
 /**
  * Recording connection that captures the last SQL and bindings passed to query().
  */
-function makeRecordingConnection(string &$lastSql, array &$lastBindings): MySqlConnection
-{
+function makeRecordingConnection(
+    string &$lastSql,
+    array &$lastBindings,
+): MySqlConnection {
     return new class ($lastSql, $lastBindings) extends MySqlConnection
     {
         public function __construct(

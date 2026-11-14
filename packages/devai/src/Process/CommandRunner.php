@@ -70,7 +70,13 @@ class CommandRunner implements CommandRunnerInterface
 
             foreach ($read as $stream) {
                 $chunk = fread($stream, 8192);
-                if ($chunk === false || ($chunk === '' && feof($stream))) {
+                if (
+                    $chunk === false
+                    || (
+                        $chunk === ''
+                        && feof($stream)
+                    )
+                ) {
                     $open = array_values(array_filter($open, fn ($s) => $s !== $stream));
 
                     continue;
@@ -90,12 +96,14 @@ class CommandRunner implements CommandRunnerInterface
         return ['exitCode' => $exitCode, 'stdout' => $stdout, 'stderr' => $stderr];
     }
 
-    public function isOnPath(string $binary): bool
-    {
+    public function isOnPath(
+        string $binary,
+    ): bool {
         // `command` is a shell builtin, so it has to run inside sh. The binary name is
         // passed as a positional parameter ($1), never interpolated into the script.
         $result = $this->run('sh', ['-c', 'command -v "$1"', 'sh', $binary]);
 
-        return $result['exitCode'] === 0 && trim($result['stdout']) !== '';
+        return $result['exitCode'] === 0
+            && trim($result['stdout']) !== '';
     }
 }

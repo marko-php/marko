@@ -32,6 +32,18 @@
         </properties>
     </rule>
 
+    <!-- Put each check of a compound if/elseif/while/do-while condition on its own line -->
+    <rule ref="SlevomatCodingStandard.ControlStructures.RequireMultiLineCondition">
+        <properties>
+            <property name="minLineLength" value="0"/>
+            <property name="alwaysSplitAllConditionParts" value="true"/>
+            <property name="booleanOperatorOnPreviousLine" value="false"/>
+        </properties>
+    </rule>
+
+    <!-- Marko's own sniffs: one check per line for every compound boolean expression, and the compound ternary layout -->
+    <rule ref="./tools/phpcs/Marko"/>
+
     <!-- Require trailing commas in multiline -->
     <rule ref="SlevomatCodingStandard.Functions.RequireTrailingCommaInDeclaration"/>
 

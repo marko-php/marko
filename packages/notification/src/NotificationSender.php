@@ -40,7 +40,10 @@ readonly class NotificationSender implements NotificationSenderInterface
         foreach ($channelRecipients as $channelName => $recipients) {
             $channel = $this->manager->channel($channelName);
 
-            if ($channel instanceof BatchChannelInterface && count($recipients) > 1) {
+            if (
+                $channel instanceof BatchChannelInterface
+                && count($recipients) > 1
+            ) {
                 try {
                     $channel->sendMany($recipients, $notification);
                 } catch (ChannelException $e) {

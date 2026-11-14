@@ -35,8 +35,9 @@ class MercureException extends BroadcastException
         );
     }
 
-    public static function unsafeTopic(string $topic): self
-    {
+    public static function unsafeTopic(
+        string $topic,
+    ): self {
         $printable = addcslashes($topic, "\0..\37\177");
 
         return new self(

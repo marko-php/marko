@@ -43,7 +43,10 @@ class Lock implements LockInterface
             throw LockException::emptyOwner($name);
         }
 
-        if ($seconds !== null && $seconds < 1) {
+        if (
+            $seconds !== null
+            && $seconds < 1
+        ) {
             throw LockException::invalidExpiry($name, $seconds);
         }
     }

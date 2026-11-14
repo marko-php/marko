@@ -35,13 +35,15 @@ readonly class MercureJwt
      * @param array<string, mixed> $value
      * @throws JsonException
      */
-    private function json(array $value): string
-    {
+    private function json(
+        array $value,
+    ): string {
         return json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
-    private function base64UrlEncode(string $value): string
-    {
+    private function base64UrlEncode(
+        string $value,
+    ): string {
         return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
     }
 }

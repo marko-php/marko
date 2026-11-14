@@ -562,8 +562,9 @@ function createProductMetadata(): EntityMetadata
     );
 }
 
-function createProductMetadataWithExtenders(string ...$extenders): EntityMetadata
-{
+function createProductMetadataWithExtenders(
+    string ...$extenders,
+): EntityMetadata {
     return new EntityMetadata(
         entityClass: HydratorTestProduct::class,
         tableName: 'products',
@@ -633,8 +634,9 @@ function createProductPricingMetadata(): EntityMetadata
  *
  * @param array<class-string, EntityMetadata> $map
  */
-function createStubMetadataFactory(array $map): EntityMetadataFactory
-{
+function createStubMetadataFactory(
+    array $map,
+): EntityMetadataFactory {
     /** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
     return new class ($map) extends EntityMetadataFactory
     {
@@ -644,8 +646,9 @@ function createStubMetadataFactory(array $map): EntityMetadataFactory
         /** @noinspection PhpMissingParentConstructorInspection */
         public function __construct(private readonly array $map) {}
 
-        public function parse(string $entityClass): EntityMetadata
-        {
+        public function parse(
+            string $entityClass,
+        ): EntityMetadata {
             return $this->map[$entityClass];
         }
     };

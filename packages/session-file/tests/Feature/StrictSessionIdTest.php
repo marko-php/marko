@@ -39,8 +39,9 @@ class RecordingFileSessionHandler implements SessionHandlerInterface
         return $this->fileSessionHandler->close();
     }
 
-    public function read(string $id): string|false
-    {
+    public function read(
+        string $id,
+    ): string|false {
         return $this->fileSessionHandler->read($id);
     }
 
@@ -53,18 +54,21 @@ class RecordingFileSessionHandler implements SessionHandlerInterface
         return $this->fileSessionHandler->write($id, $data);
     }
 
-    public function destroy(string $id): bool
-    {
+    public function destroy(
+        string $id,
+    ): bool {
         return $this->fileSessionHandler->destroy($id);
     }
 
-    public function gc(int $max_lifetime): int|false
-    {
+    public function gc(
+        int $max_lifetime,
+    ): int|false {
         return $this->fileSessionHandler->gc($max_lifetime);
     }
 
-    public function validateId(string $id): bool
-    {
+    public function validateId(
+        string $id,
+    ): bool {
         return $this->fileSessionHandler->validateId($id);
     }
 

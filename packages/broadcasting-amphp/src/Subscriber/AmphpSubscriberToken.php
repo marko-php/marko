@@ -51,7 +51,10 @@ readonly class AmphpSubscriberToken
         foreach ($channels as $channel) {
             $channel = $this->normalize($channel);
 
-            if ($channel->isPrivate() && $this->channelRegistry->authorize($channel->name, $user)) {
+            if (
+                $channel->isPrivate()
+                && $this->channelRegistry->authorize($channel->name, $user)
+            ) {
                 $authorized[] = $this->streamChannel($channel);
             }
         }
@@ -95,8 +98,9 @@ readonly class AmphpSubscriberToken
      *
      * @throws BroadcastException
      */
-    private function normalize(string|Channel $channel): Channel
-    {
+    private function normalize(
+        string|Channel $channel,
+    ): Channel {
         $channel = Channel::from($channel);
 
         if ($channel->isPresence()) {
@@ -114,8 +118,9 @@ readonly class AmphpSubscriberToken
         return $channel;
     }
 
-    private function streamChannel(Channel $channel): string
-    {
+    private function streamChannel(
+        Channel $channel,
+    ): string {
         return $channel->isPrivate() ? AmphpBroadcaster::PRIVATE_PREFIX . $channel->name : $channel->name;
     }
 }

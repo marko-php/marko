@@ -48,8 +48,9 @@ class DevServerException extends MarkoException
         );
     }
 
-    public static function portInUse(int $port): self
-    {
+    public static function portInUse(
+        int $port,
+    ): self {
         return new self(
             message: "Port $port is already in use",
             context: 'While starting PHP development server',
@@ -57,8 +58,9 @@ class DevServerException extends MarkoException
         );
     }
 
-    public static function invalidHost(string $host): self
-    {
+    public static function invalidHost(
+        string $host,
+    ): self {
         return new self(
             message: "Invalid host value: '$host'",
             context: 'While reading the --host option or the dev.host config value',

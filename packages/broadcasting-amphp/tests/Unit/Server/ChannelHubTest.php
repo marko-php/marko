@@ -43,8 +43,9 @@ function hubPublish(
     ])));
 }
 
-function readFrame(SseConnection $connection): ?string
-{
+function readFrame(
+    SseConnection $connection,
+): ?string {
     return $connection->stream()->read(new TimeoutCancellation(1));
 }
 
@@ -166,8 +167,9 @@ describe('ChannelHub', function (): void {
     it('throws and keeps no channel open when a subscription cannot be opened', function (): void {
         $pubSub = new class () extends InMemoryPubSub
         {
-            public function subscribe(string ...$channels): Subscription
-            {
+            public function subscribe(
+                string ...$channels,
+            ): Subscription {
                 throw PubSubException::connectionFailed('redis', 'refused');
             }
         };

@@ -212,7 +212,11 @@ readonly class ImagickImageProcessor implements ImageProcessorInterface
         $maxHeight = $this->config->maxHeight();
         $maxPixels = $this->config->maxPixels();
 
-        if ($width > $maxWidth || $height > $maxHeight || $width * $height > $maxPixels) {
+        if (
+            $width > $maxWidth
+            || $height > $maxHeight
+            || $width * $height > $maxPixels
+        ) {
             throw ImagickProcessingException::imageTooLarge(
                 $imagePath,
                 $width,

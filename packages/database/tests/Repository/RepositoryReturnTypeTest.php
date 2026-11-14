@@ -35,8 +35,9 @@ class ReturnTypeItemRepository extends Repository
 /**
  * @param array<array<string, mixed>> $queryResult
  */
-function createReturnTypeMockConnection(array $queryResult = []): ConnectionInterface
-{
+function createReturnTypeMockConnection(
+    array $queryResult = [],
+): ConnectionInterface {
     return new readonly class ($queryResult) implements ConnectionInterface
     {
         public function __construct(
@@ -66,8 +67,9 @@ function createReturnTypeMockConnection(array $queryResult = []): ConnectionInte
             return 1;
         }
 
-        public function prepare(string $sql): StatementInterface
-        {
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
             throw new RuntimeException('Not implemented');
         }
 

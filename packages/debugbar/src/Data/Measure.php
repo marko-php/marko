@@ -20,8 +20,9 @@ readonly class Measure
     /**
      * @return array<string, mixed>
      */
-    public function toArray(float $requestStart): array
-    {
+    public function toArray(
+        float $requestStart,
+    ): array {
         return [
             'name' => $this->name,
             'start_ms' => round(($this->start - $requestStart) * 1000, 2),

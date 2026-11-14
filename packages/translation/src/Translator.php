@@ -37,7 +37,10 @@ class Translator implements TranslatorInterface
 
         $value = $this->resolve($group, $keyPath, $locale, $namespace);
 
-        if ($value === null && $locale !== $this->fallbackLocale) {
+        if (
+            $value === null
+            && $locale !== $this->fallbackLocale
+        ) {
             $value = $this->resolve($group, $keyPath, $this->fallbackLocale, $namespace);
         }
 
@@ -66,7 +69,10 @@ class Translator implements TranslatorInterface
 
         $value = $this->resolve($group, $keyPath, $locale, $namespace);
 
-        if ($value === null && $locale !== $this->fallbackLocale) {
+        if (
+            $value === null
+            && $locale !== $this->fallbackLocale
+        ) {
             $value = $this->resolve($group, $keyPath, $this->fallbackLocale, $namespace);
         }
 
@@ -130,7 +136,10 @@ class Translator implements TranslatorInterface
         $current = $translations;
 
         foreach ($segments as $segment) {
-            if (!is_array($current) || !array_key_exists($segment, $current)) {
+            if (
+                !is_array($current)
+                || !array_key_exists($segment, $current)
+            ) {
                 return null;
             }
 
@@ -216,10 +225,15 @@ class Translator implements TranslatorInterface
         }
 
         $form = match (true) {
-            $count === 0 && isset($forms['zero']) => 'zero',
-            $count === 1 && isset($forms['one']) => 'one',
-            $count >= 2 && $count <= 4 && isset($forms['few']) => 'few',
-            $count >= 5 && isset($forms['many']) => 'many',
+            $count === 0
+                && isset($forms['zero']) => 'zero',
+            $count === 1
+                && isset($forms['one']) => 'one',
+            $count >= 2
+                && $count <= 4
+                && isset($forms['few']) => 'few',
+            $count >= 5
+                && isset($forms['many']) => 'many',
             default => 'other',
         };
 

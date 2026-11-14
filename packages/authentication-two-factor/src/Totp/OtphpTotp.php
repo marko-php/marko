@@ -47,7 +47,13 @@ readonly class OtphpTotp implements TotpInterface
         $currentStep = intdiv($this->clock->now()->getTimestamp(), self::PERIOD);
 
         for ($step = $currentStep - self::WINDOW; $step <= $currentStep + self::WINDOW; $step++) {
-            if ($step < 0 || ($lastUsedStep !== null && $step <= $lastUsedStep)) {
+            if (
+                $step < 0
+                || (
+                    $lastUsedStep !== null
+                    && $step <= $lastUsedStep
+                )
+            ) {
                 continue;
             }
 

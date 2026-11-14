@@ -432,7 +432,7 @@ readonly class S3Filesystem implements FilesystemInterface
     ): DirectoryListingInterface {
         try {
             $normalized = rtrim($path, '/');
-            $prefix = $normalized === '' || $normalized === '/'
+            $prefix = ($normalized === '' || $normalized === '/')
                 ? ($this->config->prefix !== '' ? $this->config->prefix . '/' : '')
                 : rtrim($this->prefixPath($normalized), '/') . '/';
 
@@ -458,7 +458,10 @@ readonly class S3Filesystem implements FilesystemInterface
                     $key = $this->stripPrefix((string) $object['Key']);
 
                     // Skip the directory marker itself
-                    if ($key === rtrim($path, '/') . '/' || $key === '') {
+                    if (
+                        $key === rtrim($path, '/') . '/'
+                        || $key === ''
+                    ) {
                         continue;
                     }
 
@@ -651,7 +654,10 @@ readonly class S3Filesystem implements FilesystemInterface
 
                 $uri = $grantee['URI'] ?? '';
 
-                if ($uri === 'http://acs.amazonaws.com/groups/global/AllUsers' && $permission === 'READ') {
+                if (
+                    $uri === 'http://acs.amazonaws.com/groups/global/AllUsers'
+                    && $permission === 'READ'
+                ) {
                     return 'public';
                 }
             }
@@ -679,7 +685,10 @@ readonly class S3Filesystem implements FilesystemInterface
             return rtrim($this->config->url, '/') . '/' . ltrim($prefixedPath, '/');
         }
 
-        if ($this->config->endpoint !== null && $this->config->pathStyleEndpoint) {
+        if (
+            $this->config->endpoint !== null
+            && $this->config->pathStyleEndpoint
+        ) {
             return rtrim($this->config->endpoint, '/')
                 . '/' . $this->config->bucket
                 . '/' . ltrim($prefixedPath, '/');
@@ -699,7 +708,10 @@ readonly class S3Filesystem implements FilesystemInterface
         string $path,
         int $expiration = 3600,
     ): string {
-        if ($expiration < 1 || $expiration > self::MAX_TEMPORARY_URL_EXPIRATION) {
+        if (
+            $expiration < 1
+            || $expiration > self::MAX_TEMPORARY_URL_EXPIRATION
+        ) {
             throw new FilesystemException(
                 message: "Invalid temporary URL expiration: $expiration seconds",
                 context: 'S3 pre-signed URLs must expire between 1 and ' . self::MAX_TEMPORARY_URL_EXPIRATION . ' seconds (7 days)',
@@ -744,7 +756,10 @@ readonly class S3Filesystem implements FilesystemInterface
         $normalized = $this->pathNormalizer->normalize($path);
 
         // Keep a trailing slash: on S3 'dir/' is the directory marker object, distinct from 'dir'.
-        if ($normalized !== '' && str_ends_with($path, '/')) {
+        if (
+            $normalized !== ''
+            && str_ends_with($path, '/')
+        ) {
             $normalized .= '/';
         }
 

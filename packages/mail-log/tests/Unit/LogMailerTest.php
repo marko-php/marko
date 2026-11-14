@@ -89,7 +89,8 @@ test('it includes from address in log context', function (): void {
         ->with(
             'Email sent',
             $this->callback(function (array $context): bool {
-                return isset($context['from']) && $context['from'] === 'sender@example.com';
+                return isset($context['from'])
+                    && $context['from'] === 'sender@example.com';
             }),
         );
 
@@ -185,7 +186,8 @@ test('it includes subject in log context', function (): void {
         ->with(
             'Email sent',
             $this->callback(function (array $context): bool {
-                return isset($context['subject']) && $context['subject'] === 'Test Subject';
+                return isset($context['subject'])
+                    && $context['subject'] === 'Test Subject';
             }),
         );
 
@@ -207,7 +209,8 @@ test('it includes has_html flag in log context', function (): void {
         ->with(
             'Email sent',
             $this->callback(function (array $context): bool {
-                return isset($context['has_html']) && $context['has_html'] === true;
+                return isset($context['has_html'])
+                    && $context['has_html'] === true;
             }),
         );
 
@@ -229,7 +232,8 @@ test('it includes has_text flag in log context', function (): void {
         ->with(
             'Email sent',
             $this->callback(function (array $context): bool {
-                return isset($context['has_text']) && $context['has_text'] === true;
+                return isset($context['has_text'])
+                    && $context['has_text'] === true;
             }),
         );
 
@@ -251,7 +255,8 @@ test('it includes attachment count in log context', function (): void {
         ->with(
             'Email sent',
             $this->callback(function (array $context): bool {
-                return isset($context['attachment_count']) && $context['attachment_count'] === 2;
+                return isset($context['attachment_count'])
+                    && $context['attachment_count'] === 2;
             }),
         );
 
@@ -286,7 +291,8 @@ test('it logs text body at debug level', function (): void {
         ->with(
             'Email body (text)',
             $this->callback(function (array $context): bool {
-                return isset($context['body']) && $context['body'] === 'Hello World';
+                return isset($context['body'])
+                    && $context['body'] === 'Hello World';
             }),
         );
 
@@ -308,7 +314,8 @@ test('it logs html body at debug level', function (): void {
         ->with(
             'Email body (html)',
             $this->callback(function (array $context): bool {
-                return isset($context['body']) && $context['body'] === '<p>Hello World</p>';
+                return isset($context['body'])
+                    && $context['body'] === '<p>Hello World</p>';
             }),
         );
 
@@ -347,7 +354,8 @@ test('it logs raw email content for sendRaw', function (): void {
         ->with(
             'Raw email content',
             $this->callback(function (array $context) use ($rawContent): bool {
-                return isset($context['content']) && $context['content'] === $rawContent;
+                return isset($context['content'])
+                    && $context['content'] === $rawContent;
             }),
         );
 
@@ -363,7 +371,10 @@ test('it includes attachment metadata without binary content', function (): void
         ->with(
             'Email sent',
             $this->callback(function (array $context): bool {
-                if (!isset($context['attachments']) || count($context['attachments']) !== 1) {
+                if (
+                    !isset($context['attachments'])
+                    || count($context['attachments']) !== 1
+                ) {
                     return false;
                 }
 

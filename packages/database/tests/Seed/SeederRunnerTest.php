@@ -212,7 +212,8 @@ describe('SeederRunner', function (): void {
 
             public function inTransaction(): bool
             {
-                return $this->started && !$this->committed;
+                return $this->started
+                    && !$this->committed;
             }
 
             public function transaction(

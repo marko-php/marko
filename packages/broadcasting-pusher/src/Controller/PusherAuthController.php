@@ -47,11 +47,17 @@ readonly class PusherAuthController
         $socketId = $request->post('socket_id');
         $channelName = $request->post('channel_name');
 
-        if (!is_string($socketId) || preg_match(self::SOCKET_ID_PATTERN, $socketId) !== 1) {
+        if (
+            !is_string($socketId)
+            || preg_match(self::SOCKET_ID_PATTERN, $socketId) !== 1
+        ) {
             throw HttpException::badRequest('A valid socket_id is required.');
         }
 
-        if (!is_string($channelName) || $channelName === '') {
+        if (
+            !is_string($channelName)
+            || $channelName === ''
+        ) {
             throw HttpException::badRequest('A channel_name is required.');
         }
 

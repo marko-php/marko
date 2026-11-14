@@ -26,7 +26,10 @@ readonly class Min extends AbstractSizeRule
         mixed $value,
         array $data,
     ): bool {
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return true;
         }
 
@@ -37,7 +40,8 @@ readonly class Min extends AbstractSizeRule
 
         $size = $this->size($value);
 
-        return $size !== null && $size >= $this->minimum;
+        return $size !== null
+            && $size >= $this->minimum;
     }
 
     public function message(

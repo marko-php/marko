@@ -11,8 +11,9 @@ class ProfilerPageRenderer
     /**
      * @param list<array<string, mixed>> $items
      */
-    public function index(array $items): string
-    {
+    public function index(
+        array $items,
+    ): string {
         $rows = '';
         $totalDuration = 0.0;
         $slowestDuration = 0.0;
@@ -104,8 +105,9 @@ HTML);
     /**
      * @param array<string, mixed> $dataset
      */
-    public function show(array $dataset): string
-    {
+    public function show(
+        array $dataset,
+    ): string {
         $id = $this->stringValue($dataset['id'] ?? null, '');
         $summary = $this->arrayValue($dataset['summary'] ?? null);
         $collectors = $this->arrayValue($dataset['collectors'] ?? null);
@@ -263,8 +265,9 @@ HTML;
     /**
      * @return array<string, mixed>
      */
-    private function arrayValue(mixed $value): array
-    {
+    private function arrayValue(
+        mixed $value,
+    ): array {
         if (! is_array($value)) {
             return [];
         }
@@ -280,9 +283,13 @@ HTML;
         return $result;
     }
 
-    private function scalarValue(mixed $value): string
-    {
-        if (is_array($value) || is_object($value)) {
+    private function scalarValue(
+        mixed $value,
+    ): string {
+        if (
+            is_array($value)
+            || is_object($value)
+        ) {
             try {
                 return json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
             } catch (JsonException) {
@@ -298,7 +305,11 @@ HTML;
             return 'null';
         }
 
-        if (is_string($value) || is_int($value) || is_float($value)) {
+        if (
+            is_string($value)
+            || is_int($value)
+            || is_float($value)
+        ) {
             return (string) $value;
         }
 
@@ -313,7 +324,11 @@ HTML;
             return $value;
         }
 
-        if (is_int($value) || is_float($value) || is_bool($value)) {
+        if (
+            is_int($value)
+            || is_float($value)
+            || is_bool($value)
+        ) {
             return (string) $value;
         }
 
@@ -324,19 +339,26 @@ HTML;
         mixed $value,
         float $default,
     ): float {
-        if (is_int($value) || is_float($value)) {
+        if (
+            is_int($value)
+            || is_float($value)
+        ) {
             return (float) $value;
         }
 
-        if (is_string($value) && is_numeric($value)) {
+        if (
+            is_string($value)
+            && is_numeric($value)
+        ) {
             return (float) $value;
         }
 
         return $default;
     }
 
-    private function escape(string $value): string
-    {
+    private function escape(
+        string $value,
+    ): string {
         return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 }

@@ -49,7 +49,10 @@ class CronExpression
         $domRestricted = $dayOfMonth !== '*';
         $dowRestricted = $dayOfWeek !== '*';
 
-        if ($domRestricted && $dowRestricted) {
+        if (
+            $domRestricted
+            && $dowRestricted
+        ) {
             return self::matchField($dayOfMonth, (int) $time->format('j'))
                 || self::matchField($dayOfWeek, (int) $time->format('w'));
         }
@@ -115,7 +118,8 @@ class CronExpression
         if (str_contains($field, '-')) {
             [$min, $max] = array_map('intval', explode('-', $field, 2));
 
-            return $value >= $min && $value <= $max;
+            return $value >= $min
+                && $value <= $max;
         }
 
         // Direct value

@@ -54,7 +54,10 @@ readonly class AuthConfig
             return null;
         }
 
-        if (!is_string($providerName) || $providerName === '') {
+        if (
+            !is_string($providerName)
+            || $providerName === ''
+        ) {
             throw AuthException::invalidGuardProvider($guard);
         }
 

@@ -18,8 +18,9 @@ class LogsCollector implements CollectorInterface
         return 'logs';
     }
 
-    public function collect(Debugbar $debugbar): array
-    {
+    public function collect(
+        Debugbar $debugbar,
+    ): array {
         return [
             'label' => 'Logs',
             'badge' => count($debugbar->logs()),
@@ -34,8 +35,9 @@ class LogsCollector implements CollectorInterface
      * @param array<string, mixed> $entry
      * @return array<string, mixed>
      */
-    private function redactContext(array $entry): array
-    {
+    private function redactContext(
+        array $entry,
+    ): array {
         if (is_array($entry['context'] ?? null)) {
             $entry['context'] = $this->redactor->redact($entry['context']);
         }

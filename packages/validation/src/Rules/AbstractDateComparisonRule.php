@@ -36,13 +36,17 @@ abstract readonly class AbstractDateComparisonRule implements WildcardAwareRuleI
         mixed $value,
         array $data,
     ): bool {
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return true;
         }
 
         $comparison = $this->comparison->compare($value, $data);
 
-        return $comparison !== null && $this->accepts($comparison);
+        return $comparison !== null
+            && $this->accepts($comparison);
     }
 
     public function message(

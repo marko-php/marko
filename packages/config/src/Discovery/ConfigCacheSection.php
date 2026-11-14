@@ -50,7 +50,10 @@ readonly class ConfigCacheSection
     public function values(
         array $section,
     ): array {
-        if (!isset($section['values']) || !is_array($section['values'])) {
+        if (
+            !isset($section['values'])
+            || !is_array($section['values'])
+        ) {
             throw DiscoveryCacheException::malformedSection(ConfigCacheContributor::KEY, "'values' must be an array");
         }
 
@@ -58,7 +61,11 @@ readonly class ConfigCacheSection
 
         if (
             !is_array($hashes)
-            || !array_all($hashes, fn (mixed $hash, int|string $name): bool => is_string($name) && is_string($hash))
+            || !array_all(
+                $hashes,
+                fn (mixed $hash, int|string $name): bool => is_string($name)
+                && is_string($hash),
+            )
         ) {
             throw DiscoveryCacheException::malformedSection(
                 ConfigCacheContributor::KEY,

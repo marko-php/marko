@@ -26,8 +26,9 @@ class Redactor
         'cookie',
     ];
 
-    public function isSensitiveKey(string $key): bool
-    {
+    public function isSensitiveKey(
+        string $key,
+    ): bool {
         $key = strtolower($key);
 
         foreach (self::SENSITIVE_FRAGMENTS as $fragment) {
@@ -45,8 +46,9 @@ class Redactor
      * @param array<mixed> $values
      * @return array<mixed>
      */
-    public function redact(array $values): array
-    {
+    public function redact(
+        array $values,
+    ): array {
         foreach ($values as $key => $value) {
             if ($this->isSensitiveKey((string) $key)) {
                 $values[$key] = self::MASK;
@@ -79,8 +81,9 @@ class Redactor
     /**
      * Mask a raw `Name: value` header line as returned by headers_list().
      */
-    public function headerLine(string $line): string
-    {
+    public function headerLine(
+        string $line,
+    ): string {
         $separator = strpos($line, ':');
 
         if ($separator === false) {
@@ -95,8 +98,9 @@ class Redactor
     /**
      * Mask sensitive query-string values inside a request URI, leaving everything else intact.
      */
-    public function uri(string $uri): string
-    {
+    public function uri(
+        string $uri,
+    ): string {
         $queryStart = strpos($uri, '?');
 
         if ($queryStart === false) {
@@ -114,7 +118,10 @@ class Redactor
         foreach (explode('&', $query) as $pair) {
             $parts = explode('=', $pair, 2);
 
-            if (count($parts) === 2 && $this->isSensitiveKey(urldecode($parts[0]))) {
+            if (
+                count($parts) === 2
+                && $this->isSensitiveKey(urldecode($parts[0]))
+            ) {
                 $pair = $parts[0].'='.self::MASK;
             }
 
@@ -124,8 +131,9 @@ class Redactor
         return substr($uri, 0, $queryStart + 1).implode('&', $pairs).$fragment;
     }
 
-    private function cookieHeader(string $value): string
-    {
+    private function cookieHeader(
+        string $value,
+    ): string {
         $cookies = [];
 
         foreach (explode(';', $value) as $cookie) {
@@ -141,16 +149,18 @@ class Redactor
         return implode('; ', $cookies);
     }
 
-    private function setCookieHeader(string $value): string
-    {
+    private function setCookieHeader(
+        string $value,
+    ): string {
         $parts = explode(';', $value, 2);
         $masked = $this->maskCookiePair(trim($parts[0]));
 
         return isset($parts[1]) ? $masked.';'.$parts[1] : $masked;
     }
 
-    private function maskCookiePair(string $pair): string
-    {
+    private function maskCookiePair(
+        string $pair,
+    ): string {
         $separator = strpos($pair, '=');
 
         if ($separator === false) {

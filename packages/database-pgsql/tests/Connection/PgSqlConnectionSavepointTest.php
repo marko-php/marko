@@ -59,8 +59,9 @@ function makeSavepointPgSqlConnection(ArrayObject $statements = new ArrayObject(
                     parent::__construct($dsn);
                 }
 
-                public function exec(string $statement): int|false
-                {
+                public function exec(
+                    string $statement,
+                ): int|false {
                     // SQLite has no SET NAMES or SET TIME ZONE; ignore the session statements.
                     if (str_starts_with($statement, 'SET ')) {
                         return 0;
@@ -105,8 +106,9 @@ function makeSavepointPgSqlConnection(ArrayObject $statements = new ArrayObject(
 /**
  * @return list<string>
  */
-function pgsqlItemNames(PgSqlConnection $connection): array
-{
+function pgsqlItemNames(
+    PgSqlConnection $connection,
+): array {
     return array_column($connection->query('SELECT name FROM items ORDER BY rowid'), 'name');
 }
 

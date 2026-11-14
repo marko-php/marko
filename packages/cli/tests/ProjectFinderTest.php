@@ -13,7 +13,10 @@ function removeDirectory(
 
     $items = scandir($dir);
     foreach ($items as $item) {
-        if ($item === '.' || $item === '..') {
+        if (
+            $item === '.'
+            || $item === '..'
+        ) {
             continue;
         }
 

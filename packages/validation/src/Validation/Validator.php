@@ -100,7 +100,10 @@ readonly class Validator implements ValidatorInterface
         );
 
         // A field marked sometimes is validated only when its key is present
-        if ($this->hasRule($parsedRules, Sometimes::class) && !DataPath::has($data, $field)) {
+        if (
+            $this->hasRule($parsedRules, Sometimes::class)
+            && !DataPath::has($data, $field)
+        ) {
             return;
         }
 
@@ -108,24 +111,34 @@ readonly class Validator implements ValidatorInterface
         $isEmpty = EmptyValue::is($value);
 
         // If nullable and value is null/empty, skip every rule
-        if ($isEmpty && $this->hasRule($parsedRules, Nullable::class)) {
+        if (
+            $isEmpty
+            && $this->hasRule($parsedRules, Nullable::class)
+        ) {
             return;
         }
 
         // An empty value runs only the implicit rules, unless one of them requires a value
-        $runsAllRules = !$isEmpty || array_any(
-            $parsedRules,
-            static fn (RuleInterface $rule): bool => $rule instanceof ImplicitRuleInterface
+        $runsAllRules = !$isEmpty
+            || array_any(
+                $parsedRules,
+                static fn (RuleInterface $rule): bool => $rule instanceof ImplicitRuleInterface
                 && $rule->requiresValue($field, $data),
-        );
+            );
 
         foreach ($parsedRules as $rule) {
             // Skip the meta rules
-            if ($rule instanceof Nullable || $rule instanceof Sometimes) {
+            if (
+                $rule instanceof Nullable
+                || $rule instanceof Sometimes
+            ) {
                 continue;
             }
 
-            if (!$runsAllRules && !$rule instanceof ImplicitRuleInterface) {
+            if (
+                !$runsAllRules
+                && !$rule instanceof ImplicitRuleInterface
+            ) {
                 continue;
             }
 
@@ -170,7 +183,9 @@ readonly class Validator implements ValidatorInterface
         $segment = array_shift($segments);
 
         if ($segment !== '*') {
-            $next = is_array($value) && array_key_exists($segment, $value) ? $value[$segment] : null;
+            $next = (is_array($value) && array_key_exists($segment, $value))
+                ? $value[$segment]
+                : null;
 
             return $this->expand($key, $segments, $next, $this->join($prefix, $segment), $indexes, $errors);
         }

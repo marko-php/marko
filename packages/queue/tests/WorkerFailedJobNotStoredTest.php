@@ -31,8 +31,9 @@ use Marko\Testing\Fake\FakeLogger;
  */
 class UnreachableFailedJobRepository implements FailedJobRepositoryInterface
 {
-    public function store(FailedJob $failedJob): void
-    {
+    public function store(
+        FailedJob $failedJob,
+    ): void {
         throw new RuntimeException('failed_jobs is unreachable');
     }
 
@@ -41,13 +42,15 @@ class UnreachableFailedJobRepository implements FailedJobRepositoryInterface
         return [];
     }
 
-    public function find(string $id): ?FailedJob
-    {
+    public function find(
+        string $id,
+    ): ?FailedJob {
         return null;
     }
 
-    public function delete(string $id): bool
-    {
+    public function delete(
+        string $id,
+    ): bool {
         return false;
     }
 
@@ -161,8 +164,9 @@ class NotStoredFailingJob extends Job implements FailableJobInterface
         throw new RuntimeException('job broke');
     }
 
-    public function failed(Throwable $exception): void
-    {
+    public function failed(
+        Throwable $exception,
+    ): void {
         $this->failedCalls++;
     }
 }

@@ -65,7 +65,10 @@ class FileTaskMutex implements TaskMutexInterface
             $expiresAt = $this->readExpiry($handle);
             fclose($handle);
 
-            if ($expiresAt === null || $expiresAt > $this->now()) {
+            if (
+                $expiresAt === null
+                || $expiresAt > $this->now()
+            ) {
                 return false;
             }
 
@@ -127,7 +130,8 @@ class FileTaskMutex implements TaskMutexInterface
         $expiresAt = $this->readExpiry($handle);
         fclose($handle);
 
-        return $expiresAt === null || $expiresAt > $this->now();
+        return $expiresAt === null
+            || $expiresAt > $this->now();
     }
 
     private function now(): int
@@ -157,7 +161,10 @@ class FileTaskMutex implements TaskMutexInterface
             return;
         }
 
-        if (!mkdir($this->directory, 0755, true) && !is_dir($this->directory)) {
+        if (
+            !mkdir($this->directory, 0755, true)
+            && !is_dir($this->directory)
+        ) {
             throw SchedulerException::mutexDirectoryNotWritable($this->directory);
         }
     }

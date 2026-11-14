@@ -8,6 +8,7 @@ The following are handled automatically by the pre-commit toolchain (Rector, php
 - Import organization, unused imports, alphabetization (php-cs-fixer)
 - Multiline method signatures with trailing commas (PHPCS + fix-multiline-params)
 - String interpolation curly brace removal (php-cs-fixer)
+- One check per line in compound conditions, and parenthesized compound ternary conditions with `?` and `:` on their own lines (rule 16, PHPCS Marko sniffs)
 - Parentheses around `new` in chains (PHPCS `UselessParentheses`)
 - Anonymous class brace placement (php-cs-fixer)
 - `@throws` tag consolidation — multiple tags merged to pipe-delimited (php-cs-fixer)
@@ -467,13 +468,11 @@ private function discoverObservers(): void
 
 ## Git Hooks
 
-The pre-commit hook (`.githooks/pre-commit`) runs: Rector → fix-multiline-params → PHP-CS-Fixer → PHPCBF → PHPCS.
+The pre-commit hook (`.githooks/pre-commit`) runs: Rector → fix-multiline-params → PHP-CS-Fixer → PHPCBF → PHP-CS-Fixer → PHPCS.
 
-```bash
-git config core.hooksPath .githooks  # Setup
-```
+The hook is installed automatically by `composer install` (and `composer update`): `tools/install-git-hooks.php` sets `core.hooksPath` to `.githooks`. Worktrees share the main repository's git config, so one install covers every checkout. The installer leaves a custom `core.hooksPath` alone and prints a warning, and skips quietly outside a git checkout or when git cannot run.
 
-Config files: `rector.php`, `.php-cs-fixer.php`, `phpcs.xml`, `tools/fix-multiline-params.php`
+Config files: `rector.php`, `.php-cs-fixer.php`, `phpcs.xml`, `tools/fix-multiline-params.php`, `tools/phpcs/Marko`
 
 ## Configuration Standards
 

@@ -37,7 +37,8 @@ class ValidationErrors implements Countable, IteratorAggregate
     public function has(
         string $field,
     ): bool {
-        return isset($this->errors[$field]) && $this->errors[$field] !== [];
+        return isset($this->errors[$field])
+            && $this->errors[$field] !== [];
     }
 
     /**

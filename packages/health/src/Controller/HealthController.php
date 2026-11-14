@@ -76,14 +76,16 @@ readonly class HealthController
         $provided = $request->header(self::SECRET_HEADER)
             ?? $request->query(self::SECRET_QUERY_PARAMETER);
 
-        return is_string($provided) && hash_equals($secret, $provided);
+        return is_string($provided)
+            && hash_equals($secret, $provided);
     }
 
     /**
      * @param array<HealthResult> $results
      */
-    private function aggregateStatus(array $results): HealthStatus
-    {
+    private function aggregateStatus(
+        array $results,
+    ): HealthStatus {
         if (array_any($results, fn (HealthResult $result) => $result->isUnhealthy())) {
             return HealthStatus::Unhealthy;
         }

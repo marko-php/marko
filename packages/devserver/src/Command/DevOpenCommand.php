@@ -47,7 +47,10 @@ readonly class DevOpenCommand implements CommandInterface
             }
         }
 
-        if ($phpEntry === null || !$this->pidFile->isRunning($phpEntry->pid)) {
+        if (
+            $phpEntry === null
+            || !$this->pidFile->isRunning($phpEntry->pid)
+        ) {
             throw new DevServerException(
                 message: 'PHP server is not running.',
                 context: 'While trying to open the development server',

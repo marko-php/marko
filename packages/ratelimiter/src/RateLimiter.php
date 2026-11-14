@@ -35,7 +35,10 @@ readonly class RateLimiter implements RateLimiterInterface
             $item = $this->cache->getItem($cacheKey);
             $retryAfter = null;
 
-            if ($item->isHit() && $item->expiresAt() !== null) {
+            if (
+                $item->isHit()
+                && $item->expiresAt() !== null
+            ) {
                 $retryAfter = max(0, $item->expiresAt()->getTimestamp() - $this->clock->now()->getTimestamp());
             }
 

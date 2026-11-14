@@ -22,8 +22,9 @@ class FailableCrashJob extends Job implements ContainerAwareJobInterface, Failab
         public string $message = 'crashy',
     ) {}
 
-    public function setContainer(ContainerInterface $container): void
-    {
+    public function setContainer(
+        ContainerInterface $container,
+    ): void {
         $this->container = $container;
     }
 
@@ -36,8 +37,9 @@ class FailableCrashJob extends Job implements ContainerAwareJobInterface, Failab
 
     public function handle(): void {}
 
-    public function failed(Throwable $exception): void
-    {
+    public function failed(
+        Throwable $exception,
+    ): void {
         $this->container->get(FailedHookRecorder::class)->record($this->message, $exception);
     }
 }

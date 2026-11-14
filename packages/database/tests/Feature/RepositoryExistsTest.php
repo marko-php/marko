@@ -49,8 +49,10 @@ class ExistUserRepository extends Repository
  * @param array<array<string, mixed>> $rows Rows to return for SELECT 1 probes
  * @param list<array{sql: string, bindings: array<mixed>}> $log Reference to capture queries
  */
-function makeExistsConnection(array $rows, array &$log): ConnectionInterface
-{
+function makeExistsConnection(
+    array $rows,
+    array &$log,
+): ConnectionInterface {
     return new class ($rows, $log) implements ConnectionInterface
     {
         public function __construct(
@@ -84,8 +86,9 @@ function makeExistsConnection(array $rows, array &$log): ConnectionInterface
             return 0;
         }
 
-        public function prepare(string $sql): StatementInterface
-        {
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
             throw new RuntimeException('Not implemented');
         }
 

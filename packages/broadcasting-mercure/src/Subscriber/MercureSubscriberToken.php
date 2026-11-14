@@ -56,7 +56,10 @@ readonly class MercureSubscriberToken
         foreach ($channels as $channel) {
             $channel = $this->rejectPresence(Channel::from($channel));
 
-            if ($channel->isPrivate() && $this->channelRegistry->authorize($channel->name, $user)) {
+            if (
+                $channel->isPrivate()
+                && $this->channelRegistry->authorize($channel->name, $user)
+            ) {
                 $topics[] = $this->topic($channel);
             }
         }
@@ -93,7 +96,9 @@ readonly class MercureSubscriberToken
             name: self::COOKIE_NAME,
             value: $this->for($channels, $user),
             expires: $this->clock->now()->getTimestamp() + $this->mercureConfig->subscriberJwtTtl,
-            path: is_string($path) && $path !== '' ? $path : '/',
+            path: (is_string($path) && $path !== '')
+                ? $path
+                : '/',
             domain: $this->mercureConfig->cookieDomain !== '' ? $this->mercureConfig->cookieDomain : null,
             secure: $this->mercureConfig->cookieSecure,
             httpOnly: true,
@@ -107,8 +112,9 @@ readonly class MercureSubscriberToken
      * @param list<string|Channel> $channels
      * @throws BroadcastException|MercureException
      */
-    public function subscribeUrl(array $channels): string
-    {
+    public function subscribeUrl(
+        array $channels,
+    ): string {
         $query = implode('&', array_map(
             fn (string|Channel $channel): string => 'topic='
                 . rawurlencode($this->topic($this->rejectPresence(Channel::from($channel)))),
@@ -121,8 +127,9 @@ readonly class MercureSubscriberToken
     /**
      * @throws BroadcastException
      */
-    private function rejectPresence(Channel $channel): Channel
-    {
+    private function rejectPresence(
+        Channel $channel,
+    ): Channel {
         if ($channel->isPresence()) {
             throw BroadcastException::presenceChannelsUnsupported('Mercure', $channel->name);
         }
@@ -136,8 +143,9 @@ readonly class MercureSubscriberToken
      *
      * @throws MercureException
      */
-    private function topic(Channel $channel): string
-    {
+    private function topic(
+        Channel $channel,
+    ): string {
         $topic = $this->mercureConfig->topicPrefix . $channel->name;
 
         if (preg_match(Channel::FORBIDDEN_CHARACTERS_PATTERN, $topic) === 1) {

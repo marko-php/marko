@@ -220,7 +220,10 @@ class TestResponse
     ): static {
         $status = $this->status();
 
-        if ($status < 300 || $status > 399) {
+        if (
+            $status < 300
+            || $status > 399
+        ) {
             $this->fail("Expected a redirect status (3xx) but got $status.");
         }
 
@@ -230,7 +233,10 @@ class TestResponse
             $this->fail("Expected a redirect but the $status response was sent without a Location header.");
         }
 
-        if ($to !== null && $location !== $to) {
+        if (
+            $to !== null
+            && $location !== $to
+        ) {
             $this->fail("Expected a redirect to [$to] but it redirects to [$location].");
         }
 
@@ -250,7 +256,10 @@ class TestResponse
             $this->fail("Expected header [$name] to be present but it was not.");
         }
 
-        if ($value !== null && $actual !== $value) {
+        if (
+            $value !== null
+            && $actual !== $value
+        ) {
             $this->fail("Expected header [$name] to be [$value] but it was [$actual].");
         }
 
@@ -287,7 +296,10 @@ class TestResponse
             $this->fail("Expected the response to set cookie [$name] but it did not.");
         }
 
-        if ($value !== null && $cookie->value() !== $value) {
+        if (
+            $value !== null
+            && $cookie->value() !== $value
+        ) {
             $this->fail("Expected cookie [$name] to be [$value] but it was [{$cookie->value()}].");
         }
 
@@ -507,11 +519,17 @@ class TestResponse
             $field = is_int($key) ? $value : $key;
             $messages = $errors[$field] ?? [];
 
-            if (!is_array($messages) || $messages === []) {
+            if (
+                !is_array($messages)
+                || $messages === []
+            ) {
                 $this->fail("Expected a JSON validation error for [$field] but there was none.");
             }
 
-            if (is_string($key) && !in_array($value, $messages, true)) {
+            if (
+                is_string($key)
+                && !in_array($value, $messages, true)
+            ) {
                 $this->fail(
                     "Expected JSON validation error [$value] for [$field] but its errors were "
                     . $this->export($messages) . '.',
@@ -539,12 +557,18 @@ class TestResponse
         $errors = $this->jsonValidationErrors();
         $fields = (array) $fields;
 
-        if ($fields === [] && $errors !== []) {
+        if (
+            $fields === []
+            && $errors !== []
+        ) {
             $this->fail('Expected no JSON validation errors but there were: ' . $this->export($errors));
         }
 
         foreach ($fields as $field) {
-            if (isset($errors[$field]) && $errors[$field] !== []) {
+            if (
+                isset($errors[$field])
+                && $errors[$field] !== []
+            ) {
                 $this->fail(
                     "Expected no JSON validation error for [$field] but it has {$this->export($errors[$field])}.",
                 );
@@ -579,7 +603,10 @@ class TestResponse
             return $this->passed();
         }
 
-        if ($value !== null && $data[$key] !== $value) {
+        if (
+            $value !== null
+            && $data[$key] !== $value
+        ) {
             $this->fail(
                 "Expected session [$key] to be {$this->export($value)} but it was {$this->export($data[$key])}.",
             );
@@ -620,7 +647,10 @@ class TestResponse
             $this->fail("Expected a [$type] flash message but there was none.");
         }
 
-        if ($message !== null && !in_array($message, $messages, true)) {
+        if (
+            $message !== null
+            && !in_array($message, $messages, true)
+        ) {
             $this->fail(
                 "Expected a [$type] flash message [$message] but the [$type] messages were {$this->export($messages)}.",
             );
@@ -644,7 +674,10 @@ class TestResponse
         $errors = $this->flashedErrors();
         $fields = (array) $fields;
 
-        if ($fields === [] && $errors->isEmpty()) {
+        if (
+            $fields === []
+            && $errors->isEmpty()
+        ) {
             $this->fail('Expected flashed validation errors but there were none.');
         }
 
@@ -740,7 +773,10 @@ class TestResponse
             return $this->passed();
         }
 
-        if ($value !== null && $actual !== $value) {
+        if (
+            $value !== null
+            && $actual !== $value
+        ) {
             $this->fail(
                 "Expected flashed input [$field] to be {$this->export($value)} but it was {$this->export($actual)}.",
             );
@@ -887,7 +923,10 @@ class TestResponse
         string $path,
     ): array {
         foreach (explode('.', $path) as $segment) {
-            if (!is_array($data) || !array_key_exists($segment, $data)) {
+            if (
+                !is_array($data)
+                || !array_key_exists($segment, $data)
+            ) {
                 return [false, null];
             }
 
@@ -910,7 +949,10 @@ class TestResponse
         }
 
         foreach ($subset as $key => $value) {
-            if (!array_key_exists($key, $actual) || !$this->containsSubset($actual[$key], $value)) {
+            if (
+                !array_key_exists($key, $actual)
+                || !$this->containsSubset($actual[$key], $value)
+            ) {
                 return false;
             }
         }

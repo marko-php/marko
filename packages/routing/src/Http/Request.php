@@ -292,7 +292,13 @@ readonly class Request
             return (string) $this->server[$serverKey];
         }
 
-        if (($normalized === 'CONTENT_TYPE' || $normalized === 'CONTENT_LENGTH') && isset($this->server[$normalized])) {
+        if (
+            (
+                $normalized === 'CONTENT_TYPE'
+                || $normalized === 'CONTENT_LENGTH'
+            )
+            && isset($this->server[$normalized])
+        ) {
             return (string) $this->server[$normalized];
         }
 
@@ -331,7 +337,10 @@ readonly class Request
         $normalized = [];
 
         foreach ($files as $field => $spec) {
-            if (!is_array($spec) || !isset($spec['name'], $spec['tmp_name'], $spec['error'])) {
+            if (
+                !is_array($spec)
+                || !isset($spec['name'], $spec['tmp_name'], $spec['error'])
+            ) {
                 continue;
             }
 
@@ -423,7 +432,8 @@ readonly class Request
     private function isJsonMediaType(
         string $mediaType,
     ): bool {
-        return $mediaType === 'application/json' || str_ends_with($mediaType, '+json');
+        return $mediaType === 'application/json'
+            || str_ends_with($mediaType, '+json');
     }
 
     /**
@@ -443,7 +453,10 @@ readonly class Request
         }
 
         foreach (explode('.', $key) as $segment) {
-            if (!is_array($data) || !array_key_exists($segment, $data)) {
+            if (
+                !is_array($data)
+                || !array_key_exists($segment, $data)
+            ) {
                 return $default;
             }
 

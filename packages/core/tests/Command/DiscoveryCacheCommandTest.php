@@ -181,7 +181,11 @@ it(
         // Create a read-only directory so the write will fail
         mkdir($dir, 0555, true);
 
-        if (function_exists('posix_geteuid') && posix_geteuid() === 0 || is_writable($dir)) {
+        if (
+            function_exists('posix_geteuid')
+            && posix_geteuid() === 0
+            || is_writable($dir)
+        ) {
             chmod($dir, 0755);
             discoveryCacheTestCleanup($dir);
             $this->markTestSkipped('Directory permissions are not enforced for this user (e.g. root).');

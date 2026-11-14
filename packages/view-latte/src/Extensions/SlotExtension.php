@@ -24,8 +24,9 @@ class SlotNode extends StatementNode
 {
     public string $name;
 
-    public static function create(Tag $tag): Generator
-    {
+    public static function create(
+        Tag $tag,
+    ): Generator {
         $tag->expectArguments();
         $node = $tag->node = new static();
         $node->name = $tag->parser->stream->consume()->text;
@@ -34,8 +35,9 @@ class SlotNode extends StatementNode
         return $node;
     }
 
-    public function print(PrintContext $context): string
-    {
+    public function print(
+        PrintContext $context,
+    ): string {
         return $context->format(
             'echo \Marko\View\Slot::render(isset($slots) && is_array($slots) ? $slots : null, %dump) %line;',
             $this->name,
@@ -45,6 +47,7 @@ class SlotNode extends StatementNode
 
     public function &getIterator(): Generator
     {
-        false && yield;
+        false
+            && yield;
     }
 }

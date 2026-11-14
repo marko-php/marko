@@ -55,7 +55,10 @@ function sharedConnectionSkipReason(): ?string
 
     $required = in_array(strtolower((string) getenv('MARKO_INTEGRATION_REQUIRED')), ['1', 'true', 'yes'], true);
 
-    if ($reason !== null && $required) {
+    if (
+        $reason !== null
+        && $required
+    ) {
         throw new RuntimeException("MARKO_INTEGRATION_REQUIRED is set but Redis is unusable: $reason");
     }
 
@@ -89,8 +92,9 @@ function sharedConnectionFixture(): array
  *
  * @return array<string, int> Number of channel subscriptions per client id
  */
-function sharedConnectionPubSubClients(RedisClient $client): array
-{
+function sharedConnectionPubSubClients(
+    RedisClient $client,
+): array {
     $clients = [];
 
     foreach (explode("\n", trim((string) $client->execute('CLIENT', 'LIST', 'TYPE', 'pubsub'))) as $line) {

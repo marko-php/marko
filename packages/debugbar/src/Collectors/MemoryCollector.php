@@ -13,8 +13,9 @@ class MemoryCollector implements CollectorInterface
         return 'memory';
     }
 
-    public function collect(Debugbar $debugbar): array
-    {
+    public function collect(
+        Debugbar $debugbar,
+    ): array {
         $current = memory_get_usage(true);
         $peak = memory_get_peak_usage(true);
 
@@ -29,8 +30,9 @@ class MemoryCollector implements CollectorInterface
         ];
     }
 
-    private function formatBytes(int $bytes): string
-    {
+    private function formatBytes(
+        int $bytes,
+    ): string {
         if ($bytes >= 1048576) {
             return round($bytes / 1048576, 2).' MB';
         }

@@ -23,7 +23,10 @@ readonly class TwoFactorConfig
     {
         $issuer = $this->config->get('authentication-two-factor.issuer');
 
-        if (!is_string($issuer) || trim($issuer) === '') {
+        if (
+            !is_string($issuer)
+            || trim($issuer) === ''
+        ) {
             throw TwoFactorException::missingIssuer();
         }
 

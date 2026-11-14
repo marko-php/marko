@@ -65,7 +65,10 @@ readonly class Input
         for ($index = 0; $index < $count; $index++) {
             $token = $tokens[$index];
 
-            if ($optionsEnded || !$this->isOptionToken($token)) {
+            if (
+                $optionsEnded
+                || !$this->isOptionToken($token)
+            ) {
                 $positionals[] = $token;
 
                 continue;
@@ -87,7 +90,11 @@ readonly class Input
 
             $next = $tokens[$index + 1] ?? null;
 
-            if ($next !== null && !$this->isFlag($token) && !str_starts_with($next, '-')) {
+            if (
+                $next !== null
+                && !$this->isFlag($token)
+                && !str_starts_with($next, '-')
+            ) {
                 $options[$token][] = $next;
                 $index++;
 
@@ -245,7 +252,8 @@ readonly class Input
     private function isOptionToken(
         string $token,
     ): bool {
-        return str_starts_with($token, '-') && $token !== '-';
+        return str_starts_with($token, '-')
+            && $token !== '-';
     }
 
     /**

@@ -92,7 +92,10 @@ readonly class DatabaseTimezoneConfig
     public static function resolveTimezone(
         mixed $name,
     ): DateTimeZone {
-        if (!is_string($name) || $name === '') {
+        if (
+            !is_string($name)
+            || $name === ''
+        ) {
             throw ConfigurationException::invalidTimezone(var_export($name, true));
         }
 

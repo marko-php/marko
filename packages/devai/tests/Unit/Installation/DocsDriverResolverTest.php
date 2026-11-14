@@ -17,8 +17,10 @@ afterEach(function (): void {
  *
  * @param array<string, string> $drivers
  */
-function writeKnownDrivers(string $tempRoot, array $drivers): void
-{
+function writeKnownDrivers(
+    string $tempRoot,
+    array $drivers,
+): void {
     $docsDir = $tempRoot . '/vendor/marko/docs';
     mkdir($docsDir, 0755, true);
     $export = var_export($drivers, true);
@@ -26,8 +28,10 @@ function writeKnownDrivers(string $tempRoot, array $drivers): void
 }
 
 /** Create a fake vendor directory for the given package (e.g. 'marko/docs-fts'). */
-function makeVendorDir(string $tempRoot, string $package): void
-{
+function makeVendorDir(
+    string $tempRoot,
+    string $package,
+): void {
     mkdir($tempRoot . '/vendor/' . $package, 0755, true);
 }
 

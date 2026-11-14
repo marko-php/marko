@@ -13,8 +13,9 @@ function pathValidationCreateTempDir(): string
     return $tmpDir;
 }
 
-function pathValidationCleanupDir(string $dir): void
-{
+function pathValidationCleanupDir(
+    string $dir,
+): void {
     if (!is_dir($dir)) {
         return;
     }

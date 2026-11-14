@@ -75,7 +75,10 @@ readonly class CacheValueSigner
         // reported even when the envelope is malformed or unsigned.
         $expectedHmac = $this->mac($serialized, $context);
 
-        if ($separator !== self::SEPARATOR || !hash_equals($expectedHmac, $hmac)) {
+        if (
+            $separator !== self::SEPARATOR
+            || !hash_equals($expectedHmac, $hmac)
+        ) {
             return null;
         }
 

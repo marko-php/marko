@@ -19,7 +19,10 @@ readonly class Date implements RuleInterface
         mixed $value,
         array $data,
     ): bool {
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return true;
         }
 
@@ -37,7 +40,8 @@ readonly class Date implements RuleInterface
 
         $date = date_create_from_format($this->format, $value);
 
-        return $date !== false && $date->format($this->format) === $value;
+        return $date !== false
+            && $date->format($this->format) === $value;
     }
 
     public function message(

@@ -144,7 +144,8 @@ function makeConfigRepository(
             string $key,
             ?string $scope = null,
         ): bool {
-            return $key !== 'database.timezone' || $this->timezone !== null;
+            return $key !== 'database.timezone'
+                || $this->timezone !== null;
         }
 
         public function getString(

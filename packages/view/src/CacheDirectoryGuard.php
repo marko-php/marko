@@ -37,7 +37,10 @@ readonly class CacheDirectoryGuard
         // mod_php chdir into public/ before running the front controller.
         $directory = rtrim($this->paths->resolve($directory), '/');
 
-        if (file_exists($directory) && !is_dir($directory)) {
+        if (
+            file_exists($directory)
+            && !is_dir($directory)
+        ) {
             throw InsecureCacheDirectoryException::notADirectory($directory);
         }
 
@@ -57,7 +60,10 @@ readonly class CacheDirectoryGuard
 
         $permissions = fileperms($directory);
 
-        if ($permissions !== false && ($permissions & 0o002) !== 0) {
+        if (
+            $permissions !== false
+            && ($permissions & 0o002) !== 0
+        ) {
             throw InsecureCacheDirectoryException::worldWritable($directory, $permissions);
         }
 
@@ -65,7 +71,10 @@ readonly class CacheDirectoryGuard
             $owner = fileowner($directory);
             $currentUid = posix_geteuid();
 
-            if ($owner !== false && $owner !== $currentUid) {
+            if (
+                $owner !== false
+                && $owner !== $currentUid
+            ) {
                 throw InsecureCacheDirectoryException::notOwnedByCurrentUser($directory, $owner, $currentUid);
             }
         }

@@ -11,8 +11,9 @@ use Marko\Routing\Middleware\MiddlewareInterface;
 // Minimal stub middleware for testing (avoids needing real middleware classes)
 // ---------------------------------------------------------------------------
 
-function makeMiddlewareClass(string $className): void
-{
+function makeMiddlewareClass(
+    string $className,
+): void {
     if (class_exists($className)) {
         return;
     }

@@ -137,7 +137,10 @@ class SessionProbe
     ): void {
         $id = $this->client->lastRequestCookie($cookieName);
 
-        if ($id === null || $id === '') {
+        if (
+            $id === null
+            || $id === ''
+        ) {
             $session->arm();
 
             return;

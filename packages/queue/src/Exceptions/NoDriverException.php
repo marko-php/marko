@@ -23,7 +23,10 @@ class NoDriverException extends QueueException
     public static function noDriverInstalled(
         ?string $interface = null,
     ): self {
-        if ($interface !== null && !in_array($interface, self::DRIVER_CONTRACTS, true)) {
+        if (
+            $interface !== null
+            && !in_array($interface, self::DRIVER_CONTRACTS, true)
+        ) {
             return new self(
                 message: "No implementation is bound for $interface.",
                 context: "Attempted to resolve $interface, but no module binds it to a concrete class.",
@@ -45,8 +48,9 @@ class NoDriverException extends QueueException
     /**
      * @param array<string, string> $drivers
      */
-    private static function formatDriverList(array $drivers): string
-    {
+    private static function formatDriverList(
+        array $drivers,
+    ): string {
         $lines = [];
         foreach ($drivers as $package => $description) {
             $docsUrl = self::docsUrl($package);
@@ -58,8 +62,9 @@ class NoDriverException extends QueueException
         return implode("\n", $lines);
     }
 
-    private static function docsUrl(string $package): string
-    {
+    private static function docsUrl(
+        string $package,
+    ): string {
         $basename = substr($package, strlen('marko/'));
 
         return "https://marko.build/docs/packages/$basename/";

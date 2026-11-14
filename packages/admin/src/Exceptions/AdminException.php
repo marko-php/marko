@@ -18,7 +18,7 @@ class AdminException extends MarkoException
         ?string $existingClass = null,
         ?string $duplicateClass = null,
     ): self {
-        $message = $existingClass !== null && $duplicateClass !== null
+        $message = ($existingClass !== null && $duplicateClass !== null)
             ? "Admin section with id '$id' is declared by both '$existingClass' and '$duplicateClass'"
             : "Admin section with id '$id' is already registered";
 
@@ -67,8 +67,9 @@ class AdminException extends MarkoException
         );
     }
 
-    public static function sectionNotFound(string $id): self
-    {
+    public static function sectionNotFound(
+        string $id,
+    ): self {
         return new self(
             message: "Admin section '$id' not found",
             context: "While retrieving admin section '$id'",
@@ -76,8 +77,9 @@ class AdminException extends MarkoException
         );
     }
 
-    public static function missingSectionAttribute(string $className): self
-    {
+    public static function missingSectionAttribute(
+        string $className,
+    ): self {
         return new self(
             message: "Class '$className' is not marked with #[AdminSection]",
             context: "While parsing admin section class '$className'",
@@ -85,8 +87,9 @@ class AdminException extends MarkoException
         );
     }
 
-    public static function sectionMustImplementInterface(string $className): self
-    {
+    public static function sectionMustImplementInterface(
+        string $className,
+    ): self {
         return new self(
             message: "Class '$className' has #[AdminSection] attribute but does not implement AdminSectionInterface",
             context: "While discovering admin sections in class '$className'",

@@ -64,7 +64,10 @@ readonly class BcryptHasher implements HasherInterface
         string $value,
         string $hash,
     ): bool {
-        if (strlen($value) > self::MAX_VALUE_BYTES || str_contains($value, "\0")) {
+        if (
+            strlen($value) > self::MAX_VALUE_BYTES
+            || str_contains($value, "\0")
+        ) {
             $this->verifyDummy($value);
 
             return false;
@@ -99,7 +102,10 @@ readonly class BcryptHasher implements HasherInterface
      */
     private function validateCost(): void
     {
-        if ($this->cost < 4 || $this->cost > 31) {
+        if (
+            $this->cost < 4
+            || $this->cost > 31
+        ) {
             throw new InvalidHasherConfigException(
                 message: 'Invalid bcrypt cost parameter',
                 context: "Cost must be between 4 and 31, got $this->cost",

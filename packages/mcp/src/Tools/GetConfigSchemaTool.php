@@ -12,8 +12,9 @@ readonly class GetConfigSchemaTool implements ToolHandlerInterface
         private IndexCache $index,
     ) {}
 
-    public static function definition(IndexCache $index): ToolDefinition
-    {
+    public static function definition(
+        IndexCache $index,
+    ): ToolDefinition {
         return new ToolDefinition(
             name: 'get_config_schema',
             description: 'Returns all indexed configuration keys with their type, default value, and source location.',
@@ -25,8 +26,9 @@ readonly class GetConfigSchemaTool implements ToolHandlerInterface
         );
     }
 
-    public function handle(array $arguments): array
-    {
+    public function handle(
+        array $arguments,
+    ): array {
         $entries = $this->index->getConfigKeys();
         $rows = array_map(
             fn ($e) => "$e->key ($e->type) = " . var_export($e->defaultValue, true) . " ($e->file:$e->line)",

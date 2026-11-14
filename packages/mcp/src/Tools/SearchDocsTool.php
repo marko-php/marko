@@ -14,8 +14,9 @@ readonly class SearchDocsTool implements ToolHandlerInterface
         private DocsSearchInterface $search,
     ) {}
 
-    public static function definition(DocsSearchInterface $search): ToolDefinition
-    {
+    public static function definition(
+        DocsSearchInterface $search,
+    ): ToolDefinition {
         return new ToolDefinition(
             name: 'search_docs',
             description: 'Search Marko Framework documentation. Returns ranked results with excerpts.',
@@ -31,8 +32,9 @@ readonly class SearchDocsTool implements ToolHandlerInterface
         );
     }
 
-    public function handle(array $arguments): array
-    {
+    public function handle(
+        array $arguments,
+    ): array {
         try {
             $results = $this->search->search(new DocsQuery(
                 query: (string) $arguments['query'],

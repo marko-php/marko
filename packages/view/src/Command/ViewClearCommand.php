@@ -53,7 +53,10 @@ readonly class ViewClearCommand implements CommandInterface
         foreach ($entries as $entry) {
             $path = $entry->getPathname();
 
-            if ($entry->isDir() && !$entry->isLink()) {
+            if (
+                $entry->isDir()
+                && !$entry->isLink()
+            ) {
                 $this->remove($path, fn (): bool => rmdir($path));
 
                 continue;

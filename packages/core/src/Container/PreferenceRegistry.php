@@ -72,7 +72,10 @@ class PreferenceRegistry
         string $moduleName = '',
         string $moduleSource = '',
     ): void {
-        if (isset($this->sources[$original]) && $moduleName !== '') {
+        if (
+            isset($this->sources[$original])
+            && $moduleName !== ''
+        ) {
             $existing = $this->sources[$original];
             $existingPriority = self::SOURCE_PRIORITY[$existing['source']] ?? 0;
             $newPriority = self::SOURCE_PRIORITY[$moduleSource] ?? 0;

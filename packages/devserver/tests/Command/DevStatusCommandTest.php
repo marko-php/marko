@@ -23,13 +23,17 @@ function devStatusTmpDir(): string
 /**
  * Recursively remove a directory.
  */
-function devStatusRemoveDir(string $dir): void
-{
+function devStatusRemoveDir(
+    string $dir,
+): void {
     if (!is_dir($dir)) {
         return;
     }
     foreach (scandir($dir) as $file) {
-        if ($file === '.' || $file === '..') {
+        if (
+            $file === '.'
+            || $file === '..'
+        ) {
             continue;
         }
         $path = $dir . '/' . $file;
@@ -43,8 +47,10 @@ function devStatusRemoveDir(string $dir): void
  *
  * @param resource $stream
  */
-function devStatusExecute(DevStatusCommand $command, mixed &$stream): string
-{
+function devStatusExecute(
+    DevStatusCommand $command,
+    mixed &$stream,
+): string {
     $stream = fopen('php://memory', 'r+');
     $output = new Output($stream);
     $command->execute(new Input([]), $output);

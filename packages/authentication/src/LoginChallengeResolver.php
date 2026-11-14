@@ -32,7 +32,10 @@ readonly class LoginChallengeResolver
     ): array {
         $classes = $guardConfig['challenges'] ?? [];
 
-        if (!is_array($classes) || !array_is_list($classes)) {
+        if (
+            !is_array($classes)
+            || !array_is_list($classes)
+        ) {
             throw AuthException::invalidChallenges($guard);
         }
 

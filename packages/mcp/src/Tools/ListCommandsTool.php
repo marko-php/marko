@@ -11,8 +11,9 @@ readonly class ListCommandsTool implements ToolHandlerInterface
 {
     public function __construct(private IndexCache $index) {}
 
-    public static function definition(IndexCache $index): ToolDefinition
-    {
+    public static function definition(
+        IndexCache $index,
+    ): ToolDefinition {
         return new ToolDefinition(
             name: 'list_commands',
             description: 'List all Marko console commands discovered in the project',
@@ -24,8 +25,9 @@ readonly class ListCommandsTool implements ToolHandlerInterface
         );
     }
 
-    public function handle(array $arguments): array
-    {
+    public function handle(
+        array $arguments,
+    ): array {
         $filter = isset($arguments['filter']) ? (string) $arguments['filter'] : '';
         $commands = $this->index->getCommands();
 
@@ -33,7 +35,8 @@ readonly class ListCommandsTool implements ToolHandlerInterface
             $commands = array_values(
                 array_filter(
                     $commands,
-                    fn (CommandEntry $c) => str_contains($c->name, $filter) || str_contains($c->class, $filter),
+                    fn (CommandEntry $c) => str_contains($c->name, $filter)
+                        || str_contains($c->class, $filter),
                 ),
             );
         }

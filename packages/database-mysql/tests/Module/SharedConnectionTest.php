@@ -107,8 +107,9 @@ describe('MySQL shared connection wiring', function (): void {
                 return 0;
             }
 
-            public function prepare(string $sql): StatementInterface
-            {
+            public function prepare(
+                string $sql,
+            ): StatementInterface {
                 throw new RuntimeException('Not implemented');
             }
 

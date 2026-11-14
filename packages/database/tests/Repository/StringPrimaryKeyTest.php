@@ -97,8 +97,11 @@ class StringPkOrderLineRepository extends Repository
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function makeStringPkConnection(array $queryResults = [], array &$executedSql = [], array &$executedBindings = []): ConnectionInterface
-{
+function makeStringPkConnection(
+    array $queryResults = [],
+    array &$executedSql = [],
+    array &$executedBindings = [],
+): ConnectionInterface {
     return new class ($queryResults, $executedSql, $executedBindings) implements ConnectionInterface
     {
         private int $queryIndex = 0;
@@ -138,8 +141,9 @@ function makeStringPkConnection(array $queryResults = [], array &$executedSql = 
             return 1;
         }
 
-        public function prepare(string $sql): StatementInterface
-        {
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
             throw new RuntimeException('Not implemented');
         }
 
@@ -166,8 +170,10 @@ function makeStringPkConnection(array $queryResults = [], array &$executedSql = 
     };
 }
 
-function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): QueryBuilderInterface
-{
+function makeStringPkQueryBuilder(
+    array $rows,
+    array &$capturedWhereIn = [],
+): QueryBuilderInterface {
     return new class ($rows, $capturedWhereIn) implements QueryBuilderInterface
     {
         public function __construct(
@@ -182,8 +188,9 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             return $this;
         }
 
-        public function select(string ...$columns): static
-        {
+        public function select(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -204,13 +211,15 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             return $this;
         }
 
-        public function whereNull(string $column): static
-        {
+        public function whereNull(
+            string $column,
+        ): static {
             return $this;
         }
 
-        public function whereNotNull(string $column): static
-        {
+        public function whereNotNull(
+            string $column,
+        ): static {
             return $this;
         }
 
@@ -221,13 +230,15 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             return $this;
         }
 
-        public function whereJsonExists(string $path): static
-        {
+        public function whereJsonExists(
+            string $path,
+        ): static {
             return $this;
         }
 
-        public function whereJsonMissing(string $path): static
-        {
+        public function whereJsonMissing(
+            string $path,
+        ): static {
             return $this;
         }
 
@@ -246,13 +257,15 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             return $this;
         }
 
-        public function whereExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
-        public function whereNotExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereNotExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
@@ -319,13 +332,15 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             return $this;
         }
 
-        public function limit(int $limit): static
-        {
+        public function limit(
+            int $limit,
+        ): static {
             return $this;
         }
 
-        public function offset(int $offset): static
-        {
+        public function offset(
+            int $offset,
+        ): static {
             return $this;
         }
 
@@ -334,13 +349,15 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             return $this;
         }
 
-        public function union(QueryBuilderInterface $other): static
-        {
+        public function union(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
-        public function unionAll(QueryBuilderInterface $other): static
-        {
+        public function unionAll(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
@@ -349,8 +366,9 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             return 1;
         }
 
-        public function compileSubquery(array &$bindings): string
-        {
+        public function compileSubquery(
+            array &$bindings,
+        ): string {
             return '';
         }
 
@@ -371,8 +389,9 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             return 1;
         }
 
-        public function update(array $data): int
-        {
+        public function update(
+            array $data,
+        ): int {
             return 1;
         }
 
@@ -381,33 +400,39 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             return 1;
         }
 
-        public function count(?string $column = null): int
-        {
+        public function count(
+            ?string $column = null,
+        ): int {
             return 0;
         }
 
-        public function min(string $column): int|float|null
-        {
+        public function min(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function max(string $column): int|float|null
-        {
+        public function max(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function sum(string $column): int|float|null
-        {
+        public function sum(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function avg(string $column): int|float|null
-        {
+        public function avg(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function groupBy(string ...$columns): static
-        {
+        public function groupBy(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -455,8 +480,10 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
     };
 }
 
-function makeStringPkQueryBuilderFactory(array $rowSets, array &$capturedWhereIn = []): QueryBuilderFactoryInterface
-{
+function makeStringPkQueryBuilderFactory(
+    array $rowSets,
+    array &$capturedWhereIn = [],
+): QueryBuilderFactoryInterface {
     return new class ($rowSets, $capturedWhereIn) implements QueryBuilderFactoryInterface
     {
         private int $index = 0;

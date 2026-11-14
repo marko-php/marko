@@ -80,7 +80,10 @@ class CastResolver
     ): CastInterface {
         $constructor = new ReflectionClass($castClass)->getConstructor();
 
-        if ($constructor !== null && $constructor->getNumberOfRequiredParameters() > 0) {
+        if (
+            $constructor !== null
+            && $constructor->getNumberOfRequiredParameters() > 0
+        ) {
             throw EntityException::castRequiresContainer($castClass);
         }
 

@@ -29,9 +29,13 @@ readonly class FileLogReader implements LogReaderInterface
     ) {}
 
     /** @return list<string> */
-    public function readLast(int $count): array
-    {
-        if ($count < 1 || !is_dir($this->logsDir)) {
+    public function readLast(
+        int $count,
+    ): array {
+        if (
+            $count < 1
+            || !is_dir($this->logsDir)
+        ) {
             return [];
         }
 
@@ -67,7 +71,11 @@ readonly class FileLogReader implements LogReaderInterface
             $bytesRead = 0;
 
             // Read until the buffer holds more newlines than wanted lines, so the oldest line kept is complete.
-            while ($position > 0 && $bytesRead < self::MAX_BYTES && substr_count($buffer, "\n") <= $count) {
+            while (
+                $position > 0
+                && $bytesRead < self::MAX_BYTES
+                && substr_count($buffer, "\n") <= $count
+            ) {
                 $length = min(self::CHUNK_BYTES, $position, self::MAX_BYTES - $bytesRead);
                 $position -= $length;
                 fseek($handle, $position);
@@ -86,7 +94,10 @@ readonly class FileLogReader implements LogReaderInterface
 
         // The first line is cut short when reading stopped before the start of the file; drop it unless it is all
         // there is.
-        if ($position > 0 && count($lines) > 1) {
+        if (
+            $position > 0
+            && count($lines) > 1
+        ) {
             array_shift($lines);
         }
 

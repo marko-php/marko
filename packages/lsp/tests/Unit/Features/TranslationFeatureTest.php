@@ -6,12 +6,14 @@ use Marko\CodeIndexer\Cache\IndexCache;
 use Marko\CodeIndexer\ValueObject\TranslationEntry;
 use Marko\Lsp\Features\TranslationFeature;
 
-function makeTranslationIndex(array $entries): IndexCache
-{
+function makeTranslationIndex(
+    array $entries,
+): IndexCache {
     return new class ($entries) extends IndexCache
     {
-        public function __construct(private array $entries)
-        {
+        public function __construct(
+            private array $entries,
+        ) {
             // Skip parent constructor
         }
 

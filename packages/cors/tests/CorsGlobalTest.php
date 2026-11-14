@@ -61,7 +61,10 @@ describe('module registration', function (): void {
 
             $config = require $manifest;
 
-            if (is_array($config) && ($config['globalMiddleware'] ?? []) !== []) {
+            if (
+                is_array($config)
+                && ($config['globalMiddleware'] ?? []) !== []
+            ) {
                 $declaring[] = "marko/$package";
             }
         }

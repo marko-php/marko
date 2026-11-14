@@ -53,7 +53,8 @@ class PublicSuffixList
             return false;
         }
 
-        return !str_contains($domain, '.') || in_array($domain, self::MULTI_LABEL_SUFFIXES, true);
+        return !str_contains($domain, '.')
+            || in_array($domain, self::MULTI_LABEL_SUFFIXES, true);
     }
 
     /**
@@ -64,7 +65,10 @@ class PublicSuffixList
     public static function site(
         string $host,
     ): string {
-        if (self::isIpAddress($host) || self::isPublicSuffix($host)) {
+        if (
+            self::isIpAddress($host)
+            || self::isPublicSuffix($host)
+        ) {
             return $host;
         }
 

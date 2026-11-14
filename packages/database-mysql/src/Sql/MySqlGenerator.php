@@ -335,13 +335,19 @@ class MySqlGenerator implements SqlGeneratorInterface
         $mysqlType = $column->nativeType ?? $this->mapType($column->type, $column->length);
         $parts[] = $mysqlType;
 
-        if ($column->collation !== null && $this->baseTypeIn($mysqlType, self::COLLATED_TYPES)) {
+        if (
+            $column->collation !== null
+            && $this->baseTypeIn($mysqlType, self::COLLATED_TYPES)
+        ) {
             $parts[] = 'COLLATE ' . $column->collation;
         }
 
         // NULL/NOT NULL - PRIMARY KEY and AUTO_INCREMENT columns must be NOT NULL
-        $forceNotNull = $column->primaryKey || $column->autoIncrement;
-        $parts[] = ($column->nullable && !$forceNotNull) ? 'NULL' : 'NOT NULL';
+        $forceNotNull = $column->primaryKey
+            || $column->autoIncrement;
+        $parts[] = ($column->nullable && !$forceNotNull)
+            ? 'NULL'
+            : 'NOT NULL';
 
         // AUTO_INCREMENT (must come before DEFAULT)
         if ($column->autoIncrement) {
@@ -349,17 +355,27 @@ class MySqlGenerator implements SqlGeneratorInterface
         }
 
         // DEFAULT value
-        if ($column->default !== null && !$column->autoIncrement) {
+        if (
+            $column->default !== null
+            && !$column->autoIncrement
+        ) {
             $parts[] = 'DEFAULT ' . $this->formatDefault($column->default);
         }
 
-        if ($column->onUpdateExpression !== null && $this->baseTypeIn($mysqlType, self::ON_UPDATE_TYPES)) {
+        if (
+            $column->onUpdateExpression !== null
+            && $this->baseTypeIn($mysqlType, self::ON_UPDATE_TYPES)
+        ) {
             $parts[] = 'ON UPDATE ' . $column->onUpdateExpression;
         }
 
         // UNIQUE constraint (inline). Never restated by MODIFY COLUMN, where it would add a second unique
         // index to a column that has one; the index diff owns uniqueness there.
-        if ($inlineUnique && $column->unique && !$column->primaryKey) {
+        if (
+            $inlineUnique
+            && $column->unique
+            && !$column->primaryKey
+        ) {
             $parts[] = 'UNIQUE';
         }
 
@@ -458,11 +474,15 @@ class MySqlGenerator implements SqlGeneratorInterface
             return false;
         }
 
-        if (!in_array($nativeBase, self::LENGTH_TYPES, true) || $length === null) {
+        if (
+            !in_array($nativeBase, self::LENGTH_TYPES, true)
+            || $length === null
+        ) {
             return true;
         }
 
-        return preg_match('/\((\d+)\)/', $column->nativeType, $matches) === 1 && (int) $matches[1] === $length;
+        return preg_match('/\((\d+)\)/', $column->nativeType, $matches) === 1
+            && (int) $matches[1] === $length;
     }
 
     /**
@@ -509,12 +529,18 @@ class MySqlGenerator implements SqlGeneratorInterface
             return "'" . addslashes($default->value) . "'";
         }
 
-        if (is_string($default) && Expression::isShortcut($default)) {
+        if (
+            is_string($default)
+            && Expression::isShortcut($default)
+        ) {
             return $this->formatExpression($default);
         }
 
         // Kept from the original keyword list: a string 'NULL' is no default rather than the text NULL
-        if (is_string($default) && strtoupper($default) === 'NULL') {
+        if (
+            is_string($default)
+            && strtoupper($default) === 'NULL'
+        ) {
             return 'NULL';
         }
 
@@ -524,7 +550,10 @@ class MySqlGenerator implements SqlGeneratorInterface
         }
 
         // Numeric values
-        if (is_int($default) || is_float($default)) {
+        if (
+            is_int($default)
+            || is_float($default)
+        ) {
             return (string) $default;
         }
 
@@ -544,7 +573,11 @@ class MySqlGenerator implements SqlGeneratorInterface
     private function isExpressionDefault(
         mixed $default,
     ): bool {
-        return $default instanceof Expression || (is_string($default) && Expression::isShortcut($default));
+        return $default instanceof Expression
+            || (
+                is_string($default)
+                && Expression::isShortcut($default)
+            );
     }
 
     /**
@@ -556,7 +589,10 @@ class MySqlGenerator implements SqlGeneratorInterface
     ): string {
         $sql = trim($sql);
 
-        if (preg_match(self::BARE_EXPRESSION_PATTERN, $sql) === 1 || $this->isParenthesized($sql)) {
+        if (
+            preg_match(self::BARE_EXPRESSION_PATTERN, $sql) === 1
+            || $this->isParenthesized($sql)
+        ) {
             return $sql;
         }
 
@@ -569,7 +605,10 @@ class MySqlGenerator implements SqlGeneratorInterface
     private function isParenthesized(
         string $sql,
     ): bool {
-        if (!str_starts_with($sql, '(') || !str_ends_with($sql, ')')) {
+        if (
+            !str_starts_with($sql, '(')
+            || !str_ends_with($sql, ')')
+        ) {
             return false;
         }
 
@@ -583,7 +622,10 @@ class MySqlGenerator implements SqlGeneratorInterface
                 default => 0,
             };
 
-            if ($depth === 0 && $index < $lastIndex) {
+            if (
+                $depth === 0
+                && $index < $lastIndex
+            ) {
                 return false;
             }
         }
@@ -828,7 +870,8 @@ class MySqlGenerator implements SqlGeneratorInterface
             static fn (Index $index): bool => array_any(
                 $tableDiff->indexesToDrop,
                 static fn (Index $dropped): bool => $dropped->columns === $index->columns,
-            ) && array_intersect($index->columns, $addedColumnNames) === [],
+            )
+                    && array_intersect($index->columns, $addedColumnNames) === [],
         ));
     }
 

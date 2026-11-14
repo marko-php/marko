@@ -30,13 +30,15 @@ $fakePageCache = function (bool $clearResult): PageCacheInterface {
             return $response;
         }
 
-        public function purgeUrl(string $url): bool
-        {
+        public function purgeUrl(
+            string $url,
+        ): bool {
             return true;
         }
 
-        public function purgeTag(string $tag): bool
-        {
+        public function purgeTag(
+            string $tag,
+        ): bool {
             return true;
         }
 

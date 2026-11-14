@@ -8,12 +8,14 @@ use Marko\Mcp\Protocol\JsonRpcProtocol;
 use Marko\Mcp\Server\McpServer;
 use Marko\Mcp\Tools\ResolveTemplateTool;
 
-function makeFakeIndexCacheForTemplate(array $templates = []): IndexCache
-{
+function makeFakeIndexCacheForTemplate(
+    array $templates = [],
+): IndexCache {
     return new class ($templates) extends IndexCache
     {
-        public function __construct(private array $tpls)
-        {
+        public function __construct(
+            private array $tpls,
+        ) {
             // Skip parent constructor
         }
 

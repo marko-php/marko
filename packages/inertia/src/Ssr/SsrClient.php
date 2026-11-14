@@ -22,8 +22,9 @@ readonly class SsrClient
      * @param array<string, mixed> $page
      * @return array{head: string, body: string}|null
      */
-    public function render(array $page): ?array
-    {
+    public function render(
+        array $page,
+    ): ?array {
         try {
             $json = json_encode($page, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
@@ -42,14 +43,20 @@ readonly class SsrClient
             return null;
         }
 
-        if (! is_array($data) || isset($data['error'])) {
+        if (
+            ! is_array($data)
+            || isset($data['error'])
+        ) {
             return null;
         }
 
         $head = $data['head'] ?? '';
         $body = $data['body'] ?? null;
 
-        if (! is_string($body) || $body === '') {
+        if (
+            ! is_string($body)
+            || $body === ''
+        ) {
             return null;
         }
 

@@ -18,8 +18,9 @@ function replayBuffer(
  * @param list<SseEvent>|null $events
  * @return list<string>|null
  */
-function replayedIds(?array $events): ?array
-{
+function replayedIds(
+    ?array $events,
+): ?array {
     return $events === null ? null : array_map(fn (SseEvent $event): string => $event->id, $events);
 }
 

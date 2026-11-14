@@ -10,8 +10,9 @@ class DocsDriverResolver
      * Returns the first known driver package whose vendor directory exists,
      * or null if none is installed.
      */
-    public function installedDriver(string $projectRoot): ?string
-    {
+    public function installedDriver(
+        string $projectRoot,
+    ): ?string {
         return array_find(
             array_keys($this->knownDrivers($projectRoot)),
             fn (string $package) => is_dir($projectRoot . '/vendor/' . $package),
@@ -23,8 +24,9 @@ class DocsDriverResolver
      *
      * @return list<string>
      */
-    public function uninstalledDrivers(string $projectRoot): array
-    {
+    public function uninstalledDrivers(
+        string $projectRoot,
+    ): array {
         return array_values(array_filter(
             array_keys($this->knownDrivers($projectRoot)),
             fn (string $package) => !is_dir($projectRoot . '/vendor/' . $package),
@@ -35,8 +37,9 @@ class DocsDriverResolver
      * Returns the recommended uninstalled driver (description contains "recommended",
      * case-insensitive), else the first uninstalled, else null.
      */
-    public function recommendedUninstalled(string $projectRoot): ?string
-    {
+    public function recommendedUninstalled(
+        string $projectRoot,
+    ): ?string {
         $registry = $this->knownDrivers($projectRoot);
         $uninstalled = $this->uninstalledDrivers($projectRoot);
 
@@ -55,8 +58,9 @@ class DocsDriverResolver
      * Derives the build command from the package name by stripping the vendor
      * prefix and appending ":build" (e.g. "marko/docs-fts" → "docs-fts:build").
      */
-    public function buildCommand(string $package): string
-    {
+    public function buildCommand(
+        string $package,
+    ): string {
         $name = substr($package, (int) strpos($package, '/') + 1);
 
         return $name . ':build';
@@ -68,8 +72,9 @@ class DocsDriverResolver
      *
      * @return array<string, string>
      */
-    private function knownDrivers(string $projectRoot): array
-    {
+    private function knownDrivers(
+        string $projectRoot,
+    ): array {
         $file = $projectRoot . '/vendor/marko/docs/known-drivers.php';
 
         if (!is_file($file)) {

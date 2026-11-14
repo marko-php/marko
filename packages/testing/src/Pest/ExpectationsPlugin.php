@@ -167,7 +167,10 @@ class ExpectationsPlugin implements Bootable
 
             $hasPushed = count($matches) > 0;
 
-            if ($hasPushed && $callback !== null) {
+            if (
+                $hasPushed
+                && $callback !== null
+            ) {
                 $hasPushed = array_any($matches, fn (array $entry) => $callback($entry['job']));
             }
 
@@ -193,7 +196,10 @@ class ExpectationsPlugin implements Bootable
 
             $stored = $fake->isFile($path);
 
-            if ($stored && $content !== null) {
+            if (
+                $stored
+                && $content !== null
+            ) {
                 $stored = $fake->read($path) === $content;
             }
 
@@ -222,7 +228,10 @@ class ExpectationsPlugin implements Bootable
             $found = array_any(
                 $fake->entries,
                 fn (array $entry) => $entry['message'] === $message
-                    && ($level === null || $entry['level'] === $level),
+                    && (
+                        $level === null
+                        || $entry['level'] === $level
+                    ),
             );
 
             Assert::assertTrue(

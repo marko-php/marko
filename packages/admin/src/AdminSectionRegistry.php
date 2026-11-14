@@ -35,8 +35,9 @@ class AdminSectionRegistry implements AdminSectionRegistryInterface
     /**
      * @throws AdminException
      */
-    public function register(AdminSectionInterface $section): void
-    {
+    public function register(
+        AdminSectionInterface $section,
+    ): void {
         $id = $section->getId();
 
         $this->assertIdAvailable($id, $section::class);
@@ -50,8 +51,9 @@ class AdminSectionRegistry implements AdminSectionRegistryInterface
      *
      * @throws AdminException
      */
-    public function registerDefinition(AdminSectionDefinition $definition): void
-    {
+    public function registerDefinition(
+        AdminSectionDefinition $definition,
+    ): void {
         if (!class_exists($definition->className)) {
             throw AdminException::sectionClassNotFound($definition->className);
         }
@@ -91,8 +93,9 @@ class AdminSectionRegistry implements AdminSectionRegistryInterface
     /**
      * @throws AdminException
      */
-    public function get(string $id): AdminSectionInterface
-    {
+    public function get(
+        string $id,
+    ): AdminSectionInterface {
         if (!isset($this->sections[$id])) {
             throw AdminException::sectionNotFound($id);
         }
@@ -110,8 +113,9 @@ class AdminSectionRegistry implements AdminSectionRegistryInterface
     /**
      * @throws AdminException
      */
-    private function build(AdminSectionDefinition $definition): AdminSectionInterface
-    {
+    private function build(
+        AdminSectionDefinition $definition,
+    ): AdminSectionInterface {
         try {
             $section = $this->container->get($definition->className);
         } catch (Throwable $e) {

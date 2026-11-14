@@ -99,7 +99,8 @@ function drainWithWorker(
 ): void {
     $worker = $container->get(WorkerInterface::class);
 
-    for ($i = 0; $i < 20 && countRows($connection, 'jobs') > 0; $i++) {
+    for ($i = 0; $i < 20
+        && countRows($connection, 'jobs') > 0; $i++) {
         skipBackoff($connection);
         $worker->work(once: true);
     }

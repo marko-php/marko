@@ -44,7 +44,10 @@ class RetryPolicy
             return RetryDecision::fail($failure);
         }
 
-        if ($e === null && $job->releaseDelay !== null) {
+        if (
+            $e === null
+            && $job->releaseDelay !== null
+        ) {
             return RetryDecision::release($job->releaseDelay);
         }
 
@@ -69,7 +72,10 @@ class RetryPolicy
             }
         }
 
-        if ($job->maxExceptions !== null && $job->exceptions >= $job->maxExceptions) {
+        if (
+            $job->maxExceptions !== null
+            && $job->exceptions >= $job->maxExceptions
+        ) {
             return JobExceptionsExhaustedException::exhausted(
                 $job::class,
                 $job->id,

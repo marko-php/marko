@@ -33,7 +33,10 @@ class HttpException extends MarkoException implements HttpExceptionInterface
         string $suggestion = '',
         ?Throwable $previous = null,
     ) {
-        if ($statusCode < 400 || $statusCode > 599) {
+        if (
+            $statusCode < 400
+            || $statusCode > 599
+        ) {
             throw new InvalidArgumentException(
                 "HttpException status code must be between 400 and 599, got $statusCode. "
                 . 'Return a Response (e.g. Response::redirect()) for non-error statuses.',

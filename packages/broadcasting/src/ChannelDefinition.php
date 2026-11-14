@@ -26,8 +26,9 @@ readonly class ChannelDefinition
      *
      * @return array<string, string>|null Captured placeholder values, or null when the name does not match
      */
-    public function match(string $channelName): ?array
-    {
+    public function match(
+        string $channelName,
+    ): ?array {
         $regex = preg_replace_callback(
             '/\\\\\{([A-Za-z_][A-Za-z0-9_]*)\\\\}/',
             fn (array $matches): string => '(?P<' . $matches[1] . '>' . self::PLACEHOLDER_PATTERN . ')',

@@ -23,7 +23,10 @@ abstract readonly class AbstractSizeRule implements NumericAwareRuleInterface
     protected function size(
         mixed $value,
     ): int|float|null {
-        if (is_int($value) || is_float($value)) {
+        if (
+            is_int($value)
+            || is_float($value)
+        ) {
             return $value;
         }
 
@@ -44,6 +47,8 @@ abstract readonly class AbstractSizeRule implements NumericAwareRuleInterface
     protected function measuresLength(
         mixed $value,
     ): bool {
-        return is_string($value) && !($this->numeric && is_numeric($value));
+        return is_string($value)
+            && !($this->numeric
+            && is_numeric($value));
     }
 }

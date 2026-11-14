@@ -68,8 +68,9 @@ class EntityCollection implements Countable, IteratorAggregate
      * @param callable(T): bool $callback
      * @return self<T>
      */
-    public function filter(callable $callback): self
-    {
+    public function filter(
+        callable $callback,
+    ): self {
         return new self(array_values(array_filter($this->entities, $callback)));
     }
 
@@ -78,8 +79,9 @@ class EntityCollection implements Countable, IteratorAggregate
      * @param callable(T): U $callback
      * @return array<int, U>
      */
-    public function map(callable $callback): array
-    {
+    public function map(
+        callable $callback,
+    ): array {
         return array_map($callback, $this->entities);
     }
 
@@ -87,8 +89,9 @@ class EntityCollection implements Countable, IteratorAggregate
      * @param callable(T): void $callback
      * @return self<T>
      */
-    public function each(callable $callback): self
-    {
+    public function each(
+        callable $callback,
+    ): self {
         foreach ($this->entities as $entity) {
             $callback($entity);
         }
@@ -99,16 +102,18 @@ class EntityCollection implements Countable, IteratorAggregate
     /**
      * @param callable(T): bool $callback
      */
-    public function contains(callable $callback): bool
-    {
+    public function contains(
+        callable $callback,
+    ): bool {
         return array_any($this->entities, $callback);
     }
 
     /**
      * @return array<int, mixed>
      */
-    public function pluck(string $property): array
-    {
+    public function pluck(
+        string $property,
+    ): array {
         return array_map(fn (Entity $entity): mixed => $entity->$property, $this->entities);
     }
 
@@ -132,8 +137,9 @@ class EntityCollection implements Countable, IteratorAggregate
     /**
      * @return array<string, self<T>>
      */
-    public function groupBy(string $property): array
-    {
+    public function groupBy(
+        string $property,
+    ): array {
         $groups = [];
         foreach ($this->entities as $entity) {
             $key = (string) $entity->$property;
@@ -150,8 +156,9 @@ class EntityCollection implements Countable, IteratorAggregate
     /**
      * @return array<int, self<T>>
      */
-    public function chunk(int $size): array
-    {
+    public function chunk(
+        int $size,
+    ): array {
         $chunks = array_chunk($this->entities, $size);
 
         return array_map(fn (array $chunk): self => new self($chunk), $chunks);

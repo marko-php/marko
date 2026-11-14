@@ -27,7 +27,8 @@ readonly class TwoFactorLoginChallenge implements LoginChallengeInterface
     public function requiresChallenge(
         AuthenticatableInterface $user,
     ): bool {
-        return $user instanceof TwoFactorAuthenticatableInterface && $this->twoFactorManager->isEnabled($user);
+        return $user instanceof TwoFactorAuthenticatableInterface
+            && $this->twoFactorManager->isEnabled($user);
     }
 
     public function getName(): string

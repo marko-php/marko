@@ -210,7 +210,10 @@ class IdentifierValidator
             || str_contains($expression, '/*')
             || str_contains($expression, '*/')
             || str_contains($expression, '`')
-            || ($hashStartsComment && str_contains($expression, '#'))
+            || (
+                $hashStartsComment
+                && str_contains($expression, '#')
+            )
         ) {
             throw InvalidColumnException::invalidColumn($expression);
         }

@@ -8,8 +8,9 @@ use Marko\Core\Exceptions\MarkoException;
 
 class InvalidAdminConfigException extends MarkoException
 {
-    public static function routePrefixMustStartWithSlash(string $prefix): self
-    {
+    public static function routePrefixMustStartWithSlash(
+        string $prefix,
+    ): self {
         return new self(
             message: "Admin route prefix must start with '/', got: '$prefix'",
             context: 'While validating admin configuration',

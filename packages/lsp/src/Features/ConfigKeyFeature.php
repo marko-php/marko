@@ -36,12 +36,16 @@ readonly class ConfigKeyFeature
      *
      * @return list<array{label: string, kind: int, detail: string, documentation: string, insertText: string}>
      */
-    public function complete(string $partial): array
-    {
+    public function complete(
+        string $partial,
+    ): array {
         $items = [];
 
         foreach ($this->index->getConfigKeys() as $entry) {
-            if ($partial !== '' && !str_starts_with($entry->key, $partial)) {
+            if (
+                $partial !== ''
+                && !str_starts_with($entry->key, $partial)
+            ) {
                 continue;
             }
 
@@ -60,8 +64,9 @@ readonly class ConfigKeyFeature
     /**
      * @return ?array{uri: string, range: array}
      */
-    public function gotoDefinition(string $key): ?array
-    {
+    public function gotoDefinition(
+        string $key,
+    ): ?array {
         foreach ($this->index->getConfigKeys() as $entry) {
             if ($entry->key === $key) {
                 return [
@@ -80,8 +85,9 @@ readonly class ConfigKeyFeature
     /**
      * Markdown hover content for a config key, or null if the key is unknown.
      */
-    public function hover(string $key): ?string
-    {
+    public function hover(
+        string $key,
+    ): ?string {
         foreach ($this->index->getConfigKeys() as $entry) {
             if ($entry->key !== $key) {
                 continue;
@@ -100,8 +106,9 @@ readonly class ConfigKeyFeature
      *
      * @return list<array{range: array, severity: int, message: string, code: string}>
      */
-    public function diagnostics(string $documentText): array
-    {
+    public function diagnostics(
+        string $documentText,
+    ): array {
         $known = array_map(fn (ConfigKeyEntry $e) => $e->key, $this->index->getConfigKeys());
         $diagnostics = [];
         $lines = explode("\n", $documentText);

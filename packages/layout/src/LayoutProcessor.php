@@ -62,7 +62,10 @@ readonly class LayoutProcessor implements LayoutProcessorInterface
 
         // 5. Validate all component slots exist in the graph
         foreach ($collection->all() as $definition) {
-            if ($definition->slot !== null && !in_array($definition->slot, $allDefinedSlots, true)) {
+            if (
+                $definition->slot !== null
+                && !in_array($definition->slot, $allDefinedSlots, true)
+            ) {
                 throw SlotNotFoundException::forSlot($definition->slot, $layoutComponentClass);
             }
         }
@@ -134,7 +137,10 @@ readonly class LayoutProcessor implements LayoutProcessorInterface
         $slotToSubSlots = [];
 
         foreach ($collection->all() as $definition) {
-            if ($definition->slot === null || !$definition->hasSubSlots()) {
+            if (
+                $definition->slot === null
+                || !$definition->hasSubSlots()
+            ) {
                 continue;
             }
 

@@ -49,8 +49,9 @@ class EntityCompanionStorage
     /**
      * Replace the shared instance (used in tests to get a clean slate).
      */
-    public static function swap(EntityCompanionStorage $storage): void
-    {
+    public static function swap(
+        EntityCompanionStorage $storage,
+    ): void {
         self::$instance = $storage;
     }
 
@@ -59,8 +60,9 @@ class EntityCompanionStorage
      *
      * @return array<class-string, Entity>
      */
-    public function get(Entity $entity): array
-    {
+    public function get(
+        Entity $entity,
+    ): array {
         return $this->companions[$entity] ?? [];
     }
 

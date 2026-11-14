@@ -69,8 +69,9 @@ readonly class AttributeFeature
      *
      * @return list<array{range: array, severity: int, message: string, code: string}>
      */
-    public function diagnostics(string $documentText): array
-    {
+    public function diagnostics(
+        string $documentText,
+    ): array {
         $diagnostics = [];
         $lines = explode("\n", $documentText);
 
@@ -96,45 +97,55 @@ readonly class AttributeFeature
     }
 
     /** @return list<array{label: string, kind: int}> */
-    private function completeEventClasses(string $partial): array
-    {
+    private function completeEventClasses(
+        string $partial,
+    ): array {
         $events = array_unique(array_map(fn ($o) => $o->event, $this->index->getObservers()));
 
         return array_values(array_map(
             fn ($e) => ['label' => $e, 'kind' => 7],
-            array_filter($events, fn ($e) => $partial === '' || str_contains(strtolower($e), strtolower($partial))),
+            array_filter($events, fn ($e) => $partial === ''
+                || str_contains(strtolower($e), strtolower($partial))),
         ));
     }
 
     /** @return list<array{label: string, kind: int}> */
-    private function completeAllClasses(string $partial): array
-    {
+    private function completeAllClasses(
+        string $partial,
+    ): array {
         $classes = array_unique(array_map(fn ($p) => $p->target, $this->index->getPlugins()));
 
         return array_values(array_map(
             fn ($c) => ['label' => $c, 'kind' => 7],
-            array_filter($classes, fn ($c) => $partial === '' || str_contains(strtolower($c), strtolower($partial))),
+            array_filter($classes, fn ($c) => $partial === ''
+                || str_contains(strtolower($c), strtolower($partial))),
         ));
     }
 
     /** @return list<array{label: string, kind: int}> */
-    private function completeRoutePaths(string $partial): array
-    {
+    private function completeRoutePaths(
+        string $partial,
+    ): array {
         $paths = array_unique(array_map(fn ($r) => $r->path, $this->index->getRoutes()));
 
         return array_values(array_map(
             fn ($p) => ['label' => $p, 'kind' => 14],
-            array_filter($paths, fn ($p) => $partial === '' || str_starts_with($p, $partial)),
+            array_filter($paths, fn ($p) => $partial === ''
+                || str_starts_with($p, $partial)),
         ));
     }
 
     /** @return list<array{label: string, kind: int}> */
-    private function completeMiddlewareClasses(string $partial): array
-    {
+    private function completeMiddlewareClasses(
+        string $partial,
+    ): array {
         $middleware = [];
 
         foreach ($this->index->getRoutes() as $r) {
-            if (property_exists($r, 'middleware') && is_array($r->middleware ?? null)) {
+            if (
+                property_exists($r, 'middleware')
+                && is_array($r->middleware ?? null)
+            ) {
                 foreach ($r->middleware as $mw) {
                     $middleware[$mw] = true;
                 }
@@ -145,7 +156,8 @@ readonly class AttributeFeature
             fn ($mw) => ['label' => $mw, 'kind' => 7],
             array_keys(array_filter(
                 $middleware,
-                fn ($mw) => $partial === '' || str_contains(strtolower($mw), strtolower($partial)),
+                fn ($mw) => $partial === ''
+                    || str_contains(strtolower($mw), strtolower($partial)),
                 ARRAY_FILTER_USE_KEY,
             )),
         ));

@@ -969,7 +969,10 @@ it('supports exists(id) method returning boolean', function (): void {
             $this->queryCount++;
 
             // First call (id=1) returns exists, second call (id=999) returns not exists
-            if ($this->queryCount === 1 && $bindings[0] === 1) {
+            if (
+                $this->queryCount === 1
+                && $bindings[0] === 1
+            ) {
                 return [['id' => 1, 'name' => 'Exists', 'email_address' => 'exists@example.com', 'is_active' => 1]];
             }
 
@@ -1279,13 +1282,15 @@ function createMockQueryBuilder(
             return $this;
         }
 
-        public function whereJsonExists(string $path): static
-        {
+        public function whereJsonExists(
+            string $path,
+        ): static {
             return $this;
         }
 
-        public function whereJsonMissing(string $path): static
-        {
+        public function whereJsonMissing(
+            string $path,
+        ): static {
             return $this;
         }
 
@@ -1304,13 +1309,15 @@ function createMockQueryBuilder(
             return $this;
         }
 
-        public function whereExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
-        public function whereNotExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereNotExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
@@ -1394,13 +1401,15 @@ function createMockQueryBuilder(
             return $this;
         }
 
-        public function union(QueryBuilderInterface $other): static
-        {
+        public function union(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
-        public function unionAll(QueryBuilderInterface $other): static
-        {
+        public function unionAll(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
@@ -1409,8 +1418,9 @@ function createMockQueryBuilder(
             return 1;
         }
 
-        public function compileSubquery(array &$bindings): string
-        {
+        public function compileSubquery(
+            array &$bindings,
+        ): string {
             return '';
         }
 
@@ -1447,8 +1457,9 @@ function createMockQueryBuilder(
             return 1;
         }
 
-        public function count(?string $column = null): int
-        {
+        public function count(
+            ?string $column = null,
+        ): int {
             $this->countCalled = true;
 
             return 7;
@@ -1489,8 +1500,9 @@ function createMockQueryBuilder(
             return count($rows);
         }
 
-        public function groupBy(string ...$columns): static
-        {
+        public function groupBy(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -1501,23 +1513,27 @@ function createMockQueryBuilder(
             return $this;
         }
 
-        public function min(string $column): int|float|null
-        {
+        public function min(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function max(string $column): int|float|null
-        {
+        public function max(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function sum(string $column): int|float|null
-        {
+        public function sum(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function avg(string $column): int|float|null
-        {
+        public function avg(
+            string $column,
+        ): int|float|null {
             return null;
         }
     };
@@ -1572,7 +1588,10 @@ function createStorageConnection(
             string $sql,
             array $bindings = [],
         ): array {
-            if (str_contains($sql, 'WHERE "id" = ?') && count($bindings) > 0) {
+            if (
+                str_contains($sql, 'WHERE "id" = ?')
+                && count($bindings) > 0
+            ) {
                 $id = $bindings[0];
 
                 return isset($this->storage[$id]) ? [$this->storage[$id]] : [];
@@ -1666,8 +1685,10 @@ function createStorageConnection(
 }
 
 // Helper: create a spy connection that records all SQL and bindings
-function createSpyConnection(array &$sqlLog, array $queryResults = []): ConnectionInterface
-{
+function createSpyConnection(
+    array &$sqlLog,
+    array $queryResults = [],
+): ConnectionInterface {
     return new class ($sqlLog, $queryResults) implements ConnectionInterface
     {
         private int $queryIndex = 0;
@@ -1706,8 +1727,9 @@ function createSpyConnection(array &$sqlLog, array $queryResults = []): Connecti
             return 1;
         }
 
-        public function prepare(string $sql): StatementInterface
-        {
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
             throw new RuntimeException('Not implemented');
         }
 
@@ -1928,8 +1950,10 @@ describe('companion insert and update', function (): void {
     /**
      * Helper: create a spy connection that records execute() SQL.
      */
-    function createAccountSpyConnection(array &$sqlLog, int $lastInsertId = 1): ConnectionInterface
-    {
+    function createAccountSpyConnection(
+        array &$sqlLog,
+        int $lastInsertId = 1,
+    ): ConnectionInterface {
         return new class ($sqlLog, $lastInsertId) implements ConnectionInterface
         {
             public function __construct(
@@ -1962,8 +1986,9 @@ describe('companion insert and update', function (): void {
                 return 1;
             }
 
-            public function prepare(string $sql): StatementInterface
-            {
+            public function prepare(
+                string $sql,
+            ): StatementInterface {
                 throw new RuntimeException('Not implemented');
             }
 

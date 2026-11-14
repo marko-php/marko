@@ -108,7 +108,10 @@ class EnvironmentVariables
     private static function lookup(
         string $name,
     ): ?string {
-        if (array_key_exists($name, $_ENV) && is_scalar($_ENV[$name])) {
+        if (
+            array_key_exists($name, $_ENV)
+            && is_scalar($_ENV[$name])
+        ) {
             return (string) $_ENV[$name];
         }
 

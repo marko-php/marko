@@ -23,7 +23,8 @@ readonly class RouteListCommand implements CommandInterface
         Input $input,
         Output $output,
     ): int {
-        $hasFilters = $input->hasOption('method') || $input->hasOption('path');
+        $hasFilters = $input->hasOption('method')
+            || $input->hasOption('path');
         $routes = $this->applyFilters($input);
 
         if ($routes === []) {
@@ -80,8 +81,9 @@ readonly class RouteListCommand implements CommandInterface
      *
      * @return array<int, RouteDefinition>
      */
-    private function applyFilters(Input $input): array
-    {
+    private function applyFilters(
+        Input $input,
+    ): array {
         $routes = $this->routes->inMatchOrder();
 
         if ($input->hasOption('method')) {
@@ -101,8 +103,9 @@ readonly class RouteListCommand implements CommandInterface
         return $routes;
     }
 
-    private function shortAction(RouteDefinition $route): string
-    {
+    private function shortAction(
+        RouteDefinition $route,
+    ): string {
         $parts = explode('\\', $route->controller);
         $shortClass = end($parts);
 

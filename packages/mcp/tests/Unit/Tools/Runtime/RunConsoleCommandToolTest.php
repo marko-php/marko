@@ -30,7 +30,10 @@ function makeDispatcher(
             string $command,
         ): ?CommandDefinition {
             foreach ($this->definitions as $definition) {
-                if ($definition->name === $command || in_array($command, $definition->aliases, true)) {
+                if (
+                    $definition->name === $command
+                    || in_array($command, $definition->aliases, true)
+                ) {
                     return $definition;
                 }
             }

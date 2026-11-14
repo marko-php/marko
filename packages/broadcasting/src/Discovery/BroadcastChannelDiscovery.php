@@ -49,7 +49,10 @@ readonly class BroadcastChannelDiscovery
 
                 $existing = $definitions[$definition->pattern] ?? null;
 
-                if ($existing !== null && $existing->authorizerClass !== $definition->authorizerClass) {
+                if (
+                    $existing !== null
+                    && $existing->authorizerClass !== $definition->authorizerClass
+                ) {
                     throw ChannelAuthorizationException::duplicatePattern(
                         $definition->pattern,
                         [$existing->authorizerClass, $definition->authorizerClass],
@@ -66,11 +69,15 @@ readonly class BroadcastChannelDiscovery
     /**
      * @throws ChannelAuthorizationException|ReflectionException
      */
-    private function discoverFromFile(string $filePath): ?ChannelDefinition
-    {
+    private function discoverFromFile(
+        string $filePath,
+    ): ?ChannelDefinition {
         $className = $this->classFileParser->extractClassName($filePath);
 
-        if ($className === null || !$this->classFileParser->loadClass($filePath, $className)) {
+        if (
+            $className === null
+            || !$this->classFileParser->loadClass($filePath, $className)
+        ) {
             return null;
         }
 
@@ -81,8 +88,10 @@ readonly class BroadcastChannelDiscovery
             return null;
         }
 
-        if (!$reflection->implementsInterface(ChannelAuthorizerInterface::class)
+        if (
+            !$reflection->implementsInterface(ChannelAuthorizerInterface::class)
             && !$reflection->implementsInterface(PresenceChannelAuthorizerInterface::class)
+
         ) {
             throw ChannelAuthorizationException::notAnAuthorizer($className);
         }

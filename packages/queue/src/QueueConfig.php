@@ -59,7 +59,10 @@ readonly class QueueConfig
     public function retryAfterKey(
         ?string $queue = null,
     ): string {
-        if ($queue !== null && array_key_exists($queue, $this->queueRetryAfters())) {
+        if (
+            $queue !== null
+            && array_key_exists($queue, $this->queueRetryAfters())
+        ) {
             return "queue.queues.$queue.retry_after";
         }
 
@@ -101,7 +104,10 @@ readonly class QueueConfig
 
             $retryAfter = $settings['retry_after'];
 
-            if (!is_int($retryAfter) || $retryAfter < 1) {
+            if (
+                !is_int($retryAfter)
+                || $retryAfter < 1
+            ) {
                 throw QueueException::invalidQueueRetryAfter($name, $retryAfter);
             }
 

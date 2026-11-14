@@ -31,7 +31,10 @@ readonly class ReleaseUniqueJobLockOnProcessing
     ): void {
         $job = $event->job;
 
-        if ($job instanceof UniqueJobInterface && $job->uniqueUntil() === UniqueUntil::Processing) {
+        if (
+            $job instanceof UniqueJobInterface
+            && $job->uniqueUntil() === UniqueUntil::Processing
+        ) {
             $this->uniqueJobLocks->release($job);
         }
     }

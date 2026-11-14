@@ -45,7 +45,10 @@ readonly class RequestStateResetter
         foreach ($instances as $instance) {
             $resettable = $this->resettableBehind($instance);
 
-            if ($resettable === null || in_array($resettable, $except, true)) {
+            if (
+                $resettable === null
+                || in_array($resettable, $except, true)
+            ) {
                 continue;
             }
 
@@ -61,7 +64,10 @@ readonly class RequestStateResetter
     private function resettableBehind(
         object $instance,
     ): ?ResettableInterface {
-        while ($instance instanceof PluginInterceptedInterface && !$instance instanceof ResettableInterface) {
+        while (
+            $instance instanceof PluginInterceptedInterface
+            && !$instance instanceof ResettableInterface
+        ) {
             $instance = $instance->getPluginTarget();
         }
 

@@ -47,7 +47,10 @@ readonly class ContextRedactor
     public function redact(
         LogRecord $record,
     ): LogRecord {
-        if ($this->keys === [] || $record->context === []) {
+        if (
+            $this->keys === []
+            || $record->context === []
+        ) {
             return $record;
         }
 
@@ -68,7 +71,10 @@ readonly class ContextRedactor
         array $values,
     ): array {
         foreach ($values as $key => $value) {
-            if (is_string($key) && isset($this->keys[strtolower($key)])) {
+            if (
+                is_string($key)
+                && isset($this->keys[strtolower($key)])
+            ) {
                 $values[$key] = self::REDACTED;
             } elseif (is_array($value)) {
                 $values[$key] = $this->redactArray($value);

@@ -10,8 +10,9 @@ readonly class ResolveTemplateTool implements ToolHandlerInterface
 {
     public function __construct(private IndexCache $index) {}
 
-    public static function definition(IndexCache $index): ToolDefinition
-    {
+    public static function definition(
+        IndexCache $index,
+    ): ToolDefinition {
         return new ToolDefinition(
             name: 'resolve_template',
             description: "Find the absolute file path for a template using 'module::template/path' syntax",
@@ -24,8 +25,9 @@ readonly class ResolveTemplateTool implements ToolHandlerInterface
         );
     }
 
-    public function handle(array $arguments): array
-    {
+    public function handle(
+        array $arguments,
+    ): array {
         $template = (string) $arguments['template'];
         $parts = explode('::', $template, 2);
 
@@ -39,7 +41,10 @@ readonly class ResolveTemplateTool implements ToolHandlerInterface
         [$module, $name] = $parts;
 
         foreach ($this->index->getTemplates() as $t) {
-            if ($t->moduleName === $module && $t->templateName === $name) {
+            if (
+                $t->moduleName === $module
+                && $t->templateName === $name
+            ) {
                 return ['content' => [['type' => 'text', 'text' => "Template found: $t->absolutePath"]]];
             }
         }

@@ -36,7 +36,10 @@ readonly class AmphpBroadcastingConfig
         public int $tokenTtl = 3600,
         public int $logInterval = 60,
     ) {
-        if ($this->healthDetail && $this->healthSecret === '') {
+        if (
+            $this->healthDetail
+            && $this->healthSecret === ''
+        ) {
             throw AmphpBroadcastException::missingHealthSecret();
         }
     }

@@ -36,7 +36,11 @@ class GuidelinesWriter
         $endPos = strpos($existing, self::MARKER_END);
 
         // No valid markers or malformed (BEGIN without END, or END before BEGIN)
-        if ($beginPos === false || $endPos === false || $endPos < $beginPos) {
+        if (
+            $beginPos === false
+            || $endPos === false
+            || $endPos < $beginPos
+        ) {
             self::$notices[] = "File '$path' does not contain marko:devai markers. Edit it manually or delete it and run `marko devai:update` to regenerate.";
 
             return WriteOutcome::SkippedNoMarkers;

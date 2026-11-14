@@ -380,7 +380,10 @@ class SqliteConnection implements ConnectionInterface, TransactionInterface, Pen
             } catch (Throwable $e) {
                 $this->rollbackAfterFailure($e);
 
-                if ($e instanceof TransactionConflictException && $attempt < $maxAttempts) {
+                if (
+                    $e instanceof TransactionConflictException
+                    && $attempt < $maxAttempts
+                ) {
                     $this->transactionBackoff->wait($attempt, $backoff, $e);
 
                     continue;
@@ -475,7 +478,8 @@ class SqliteConnection implements ConnectionInterface, TransactionInterface, Pen
         PDOException $e,
         int $level,
     ): bool {
-        return $level === 1 && str_contains($e->getMessage(), self::NO_TRANSACTION_MESSAGE);
+        return $level === 1
+            && str_contains($e->getMessage(), self::NO_TRANSACTION_MESSAGE);
     }
 
     public function afterCommit(
@@ -508,7 +512,10 @@ class SqliteConnection implements ConnectionInterface, TransactionInterface, Pen
         $abandoned = $this->transactionState->level() > 0;
         $this->transactionState->clear();
 
-        if ($abandoned && $this->pdo !== null) {
+        if (
+            $abandoned
+            && $this->pdo !== null
+        ) {
             $this->rollbackOutermostQuietly();
         }
     }
@@ -542,7 +549,11 @@ class SqliteConnection implements ConnectionInterface, TransactionInterface, Pen
     {
         $path = $this->config->database;
 
-        if ($path === self::MEMORY || str_starts_with($path, 'file:') || file_exists($path)) {
+        if (
+            $path === self::MEMORY
+            || str_starts_with($path, 'file:')
+            || file_exists($path)
+        ) {
             return;
         }
 
@@ -558,7 +569,10 @@ class SqliteConnection implements ConnectionInterface, TransactionInterface, Pen
 
         $created = ErrorCapture::run($reason, fn (): bool => mkdir($directory, 0775, true));
 
-        if (!$created && !is_dir($directory)) {
+        if (
+            !$created
+            && !is_dir($directory)
+        ) {
             throw ConnectionException::directoryCreationFailed($directory, $reason);
         }
     }
@@ -591,10 +605,14 @@ class SqliteConnection implements ConnectionInterface, TransactionInterface, Pen
                 continue;
             }
 
-            if ((!is_int($value) && !is_string($value)) || preg_match(
-                self::PRAGMA_VALUE_PATTERN,
-                (string) $value,
-            ) !== 1) {
+            if (
+                (!is_int($value)
+                && !is_string($value))
+                || preg_match(
+                    self::PRAGMA_VALUE_PATTERN,
+                    (string) $value,
+                ) !== 1
+            ) {
                 throw ConnectionException::unsafePragmaValue($name, 'expected an integer or a bare word');
             }
         }

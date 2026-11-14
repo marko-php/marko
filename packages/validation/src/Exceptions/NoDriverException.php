@@ -37,7 +37,10 @@ class NoDriverException extends MarkoException
             );
         }
 
-        if ($interface !== null && !in_array($interface, self::DRIVER_CONTRACTS, true)) {
+        if (
+            $interface !== null
+            && !in_array($interface, self::DRIVER_CONTRACTS, true)
+        ) {
             return new self(
                 message: "No implementation is bound for $interface.",
                 context: "Attempted to resolve $interface, but no module binds it to a concrete class.",

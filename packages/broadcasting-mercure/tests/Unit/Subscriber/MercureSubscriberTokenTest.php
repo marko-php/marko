@@ -63,8 +63,9 @@ function mercureSubscriberToken(
  * A private channel that skips Channel's name validation, standing in for a subclass that
  * overrides the constructor.
  */
-function unvalidatedPrivateChannel(string $name): PrivateChannel
-{
+function unvalidatedPrivateChannel(
+    string $name,
+): PrivateChannel {
     return new readonly class ($name) extends PrivateChannel
     {
         /** @noinspection PhpMissingParentConstructorInspection - Deliberately bypasses name validation */
@@ -74,8 +75,9 @@ function unvalidatedPrivateChannel(string $name): PrivateChannel
     };
 }
 
-function mercureClaims(string $token): array
-{
+function mercureClaims(
+    string $token,
+): array {
     return json_decode(base64_decode(strtr(explode('.', $token)[1], '-_', '+/')), true);
 }
 

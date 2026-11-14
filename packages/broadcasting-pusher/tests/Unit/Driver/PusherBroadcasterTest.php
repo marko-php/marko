@@ -53,16 +53,19 @@ function pusherApi(
 /**
  * @return array<string, mixed>
  */
-function pusherRequestBody(FakeHttpClient $httpClient, int $index = 0): array
-{
+function pusherRequestBody(
+    FakeHttpClient $httpClient,
+    int $index = 0,
+): array {
     return json_decode($httpClient->requests[$index]->body(), true);
 }
 
 /**
  * @return array<string, string>
  */
-function pusherRequestQuery(FakeHttpClient $httpClient): array
-{
+function pusherRequestQuery(
+    FakeHttpClient $httpClient,
+): array {
     parse_str((string) parse_url($httpClient->requests[0]->url, PHP_URL_QUERY), $query);
 
     return $query;

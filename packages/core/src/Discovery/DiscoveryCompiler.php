@@ -179,7 +179,10 @@ readonly class DiscoveryCompiler
         ModuleManifest $module,
         mixed $className,
     ): DiscoveryCacheContributorInterface {
-        if (!is_string($className) || !class_exists($className)) {
+        if (
+            !is_string($className)
+            || !class_exists($className)
+        ) {
             throw DiscoveryCacheException::invalidContributor(
                 $module->name,
                 is_string($className) ? $className : get_debug_type($className),
@@ -218,7 +221,10 @@ readonly class DiscoveryCompiler
             return;
         }
 
-        if ($value === null || is_scalar($value)) {
+        if (
+            $value === null
+            || is_scalar($value)
+        ) {
             return;
         }
 

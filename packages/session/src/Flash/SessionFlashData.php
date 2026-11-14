@@ -131,7 +131,10 @@ readonly class SessionFlashData implements FlashDataInterface
             return;
         }
 
-        if ($value !== null && !is_scalar($value)) {
+        if (
+            $value !== null
+            && !is_scalar($value)
+        ) {
             throw InvalidFlashDataException::forValue($path, $value);
         }
     }

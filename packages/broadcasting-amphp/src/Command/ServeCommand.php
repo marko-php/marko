@@ -84,8 +84,9 @@ readonly class ServeCommand implements CommandInterface
     /**
      * @throws AmphpBroadcastException
      */
-    private function port(?string $value): ?int
-    {
+    private function port(
+        ?string $value,
+    ): ?int {
         if ($value === null) {
             return null;
         }

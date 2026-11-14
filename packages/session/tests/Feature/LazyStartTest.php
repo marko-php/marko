@@ -48,8 +48,9 @@ class LazyStartSpyHandler implements SessionHandlerInterface
         return true;
     }
 
-    public function read(string $id): string|false
-    {
+    public function read(
+        string $id,
+    ): string|false {
         $this->calls[] = 'read';
 
         return $this->stored[$id] ?? '';
@@ -65,23 +66,26 @@ class LazyStartSpyHandler implements SessionHandlerInterface
         return true;
     }
 
-    public function destroy(string $id): bool
-    {
+    public function destroy(
+        string $id,
+    ): bool {
         $this->calls[] = 'destroy';
         unset($this->stored[$id]);
 
         return true;
     }
 
-    public function gc(int $max_lifetime): int|false
-    {
+    public function gc(
+        int $max_lifetime,
+    ): int|false {
         $this->calls[] = 'gc';
 
         return 0;
     }
 
-    public function validateId(string $id): bool
-    {
+    public function validateId(
+        string $id,
+    ): bool {
         $this->calls[] = 'validateId';
 
         return isset($this->stored[$id]);

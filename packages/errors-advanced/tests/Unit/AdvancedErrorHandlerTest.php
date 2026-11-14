@@ -25,8 +25,9 @@ class TestableAdvancedHandler extends OutputSafeAdvancedErrorHandler
         return $this->registered;
     }
 
-    protected function handleNonFatal(ErrorReport $report): void
-    {
+    protected function handleNonFatal(
+        ErrorReport $report,
+    ): void {
         $this->nonFatalReports[] = $report;
     }
 }
@@ -182,7 +183,10 @@ describe('AdvancedErrorHandler registration', function (): void {
         while (true) {
             $current = set_exception_handler(fn () => null);
             restore_exception_handler();
-            if ($current === $this->originalExceptionHandler || $current === null) {
+            if (
+                $current === $this->originalExceptionHandler
+                || $current === null
+            ) {
                 break;
             }
             restore_exception_handler();
@@ -191,7 +195,10 @@ describe('AdvancedErrorHandler registration', function (): void {
         while (true) {
             $current = set_error_handler(fn () => true);
             restore_error_handler();
-            if ($current === $this->originalErrorHandler || $current === null) {
+            if (
+                $current === $this->originalErrorHandler
+                || $current === null
+            ) {
                 break;
             }
             restore_error_handler();
@@ -518,13 +525,15 @@ describe('AdvancedErrorHandler registration', function (): void {
                     private readonly TestableAdvancedHandler $handler,
                 ) {}
 
-                public function get(string $id): object
-                {
+                public function get(
+                    string $id,
+                ): object {
                     return $this->handler;
                 }
 
-                public function has(string $id): bool
-                {
+                public function has(
+                    string $id,
+                ): bool {
                     return $id === ErrorHandlerInterface::class;
                 }
 
@@ -535,13 +544,15 @@ describe('AdvancedErrorHandler registration', function (): void {
                     object $instance,
                 ): void {}
 
-                public function call(Closure $callable): mixed
-                {
+                public function call(
+                    Closure $callable,
+                ): mixed {
                     return $callable($this);
                 }
 
-                public function resolvedInstances(?string $interface = null): array
-                {
+                public function resolvedInstances(
+                    ?string $interface = null,
+                ): array {
                     return [];
                 }
             };

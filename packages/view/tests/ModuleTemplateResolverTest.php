@@ -615,7 +615,10 @@ describe('template name validation', function (): void {
             );
 
             foreach ($items as $item) {
-                if ($item->isDir() && !$item->isLink()) {
+                if (
+                    $item->isDir()
+                    && !$item->isLink()
+                ) {
                     rmdir($item->getPathname());
                 } else {
                     unlink($item->getPathname());

@@ -12,8 +12,9 @@ class DevAiInstallException extends MarkoException
     /**
      * @throws static
      */
-    public static function alreadyRegistered(string $projectRoot): static
-    {
+    public static function alreadyRegistered(
+        string $projectRoot,
+    ): static {
         return new static(
             message: 'Marko marketplace already registered in .claude/settings.json',
             context: 'While installing the claude-code agent at ' . $projectRoot,
@@ -58,8 +59,9 @@ class DevAiInstallException extends MarkoException
         );
     }
 
-    public static function intelephenseInstallFailed(string $stderr): static
-    {
+    public static function intelephenseInstallFailed(
+        string $stderr,
+    ): static {
         return new static(
             message: 'Failed to auto-install ' . IntelephenseEnsurer::PACKAGE . ' via npm install -g',
             context: $stderr,
