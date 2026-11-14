@@ -1084,3 +1084,4 @@ Proxies have **no equivalent** either, and the two reasons Magento uses them don
 - [Scheduling](/docs/guides/scheduling/)
 - [Queues](/docs/guides/queues/)
 - [Configuration](/docs/getting-started/configuration/)
+- [Coming From Laravel](/docs/guides/coming-from-laravel/)

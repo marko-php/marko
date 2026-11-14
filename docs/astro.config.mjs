@@ -140,6 +140,7 @@ export default defineConfig({
 						{ label: 'Error Handling', slug: 'guides/error-handling' },
 						{ label: 'Testing', slug: 'guides/testing' },
 						{ label: 'Coming From Magento', slug: 'guides/coming-from-magento' },
+						{ label: 'Coming From Laravel', slug: 'guides/coming-from-laravel' },
 					],
 				},
 				{
