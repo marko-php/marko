@@ -325,12 +325,12 @@ public function getPostsPerPage(): int
 
 Config files are merged in order of increasing priority:
 
-1. **Vendor modules** (lowest priority) — `vendor/*/config/*.php`
+1. **Vendor modules** (lowest priority) — `vendor/*/*/config/*.php`
 2. **Local modules** — `modules/**/config/*.php`
 3. **App modules** — `app/*/config/*.php`
 4. **Project config** (highest priority) — `config/*.php`
 
-Later sources override earlier ones. Within one of the first three tiers, modules merge in load order. For associative arrays, values are recursively merged. For indexed arrays, later values replace earlier ones entirely.
+Later sources override earlier ones. Within one of the first three tiers, modules merge in load order. Module `config/` files ship defaults with the module's code, and the project-root `config/` holds settings for your installation. See [Which config location to use](/docs/getting-started/configuration/#which-config-location-to-use). For associative arrays, values are recursively merged. For indexed arrays, later values replace earlier ones entirely.
 
 ```php title="vendor/acme/blog/config/blog.php"
 <?php

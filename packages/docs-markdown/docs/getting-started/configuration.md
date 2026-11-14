@@ -103,6 +103,23 @@ app/my-app/config/cache.php             → Your module overrides
 config/cache.php                        → Project overrides (wins)
 ```
 
+## Which Config Location to Use
+
+The four locations do two different jobs:
+
+- **A module's `config/` ships defaults with its code.** The file belongs to the module and travels with it, so every project that installs the module gets the same starting values.
+- **The project-root `config/` holds settings for this installation.** Database credentials, the cache or mail driver, the app URL and anything read from the environment belong to the deployment, not to any one module.
+
+When you're deciding where a value goes:
+
+| You're setting | Put it in |
+|----------------|-----------|
+| Defaults for a module you're writing | That module's `config/` |
+| An override that belongs with one of your app modules, such as a blog's `posts_per_page` | That app module's `config/` (`app/blog/config/blog.php`) |
+| A project-wide or per-environment value, or an override of a vendor package's config | The project-root `config/` (`config/cache.php`) |
+
+Most overrides belong in the project-root `config/`. A fresh project's `app/` is empty, and the root `config/` works without creating a module just to hold settings. It is also the one place that always wins.
+
 ## Next Steps
 
 - [Understand dependency injection](/docs/concepts/dependency-injection/)
