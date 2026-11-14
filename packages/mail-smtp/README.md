@@ -20,8 +20,10 @@ class OrderNotifier
         private MailerInterface $mailer,
     ) {}
 
-    public function notifyShipment(string $email, string $trackingNumber): void
-    {
+    public function notifyShipment(
+        string $email,
+        string $trackingNumber,
+    ): void {
         $message = Message::create()
             ->to($email)
             ->from('orders@example.com', 'Store')

@@ -286,7 +286,10 @@ public function __construct(
     private readonly RecordRules $recordRules,
 ) {}
 
-public function update(User $user, array $input): void
+public function update(
+    User $user,
+    array $input,
+): void
 {
     $this->validator->validateOrFail($input, [
         'channel_id' => ['required', $this->recordRules->exists(Channel::class)->where('archived', false)],
@@ -565,7 +568,12 @@ class RequiredForCountry implements ImplicitRuleInterface
         mixed $value,
         array $data,
     ): bool {
-        return !$this->requiresValue($field, $data) || ($value !== null && $value !== '');
+        if (!$this->requiresValue($field, $data)) {
+            return true;
+        }
+
+        return $value !== null
+            && $value !== '';
     }
 
     public function message(
@@ -598,10 +606,22 @@ A rule that refers to another field which may contain `*` also implements [`Wild
 ```php
 interface ValidatorInterface
 {
-    public function validate(array $data, array $rules): ValidationErrors;
-    public function validateOrFail(array $data, array $rules): void;
-    public function passes(array $data, array $rules): bool;
-    public function fails(array $data, array $rules): bool;
+    public function validate(
+        array $data,
+        array $rules,
+    ): ValidationErrors;
+    public function validateOrFail(
+        array $data,
+        array $rules,
+    ): void;
+    public function passes(
+        array $data,
+        array $rules,
+    ): bool;
+    public function fails(
+        array $data,
+        array $rules,
+    ): bool;
 }
 ```
 
@@ -610,8 +630,15 @@ interface ValidatorInterface
 ```php
 interface RuleInterface
 {
-    public function passes(string $field, mixed $value, array $data): bool;
-    public function message(string $field, mixed $value): string;
+    public function passes(
+        string $field,
+        mixed $value,
+        array $data,
+    ): bool;
+    public function message(
+        string $field,
+        mixed $value,
+    ): string;
 }
 ```
 
@@ -622,7 +649,10 @@ Under a wildcard key, `$field` is the concrete path being checked (`items.0.name
 ```php
 interface ImplicitRuleInterface extends RuleInterface
 {
-    public function requiresValue(string $field, array $data): bool;
+    public function requiresValue(
+        string $field,
+        array $data,
+    ): bool;
 }
 ```
 
@@ -633,7 +663,10 @@ The validator always runs an implicit rule, even on an empty value or an absent 
 ```php
 interface WildcardAwareRuleInterface extends RuleInterface
 {
-    public function forWildcardIndexes(string $key, array $indexes): RuleInterface;
+    public function forWildcardIndexes(
+        string $key,
+        array $indexes,
+    ): RuleInterface;
 }
 ```
 
@@ -655,7 +688,12 @@ Implement it on a custom size rule whose meaning for a numeric string depends on
 ```php
 interface RecordLookupInterface
 {
-    public function exists(string $entityClass, string $property, mixed $value, array $where = []): bool;
+    public function exists(
+        string $entityClass,
+        string $property,
+        mixed $value,
+        array $where = [],
+    ): bool;
     public function isTaken(
         string $entityClass,
         string $property,
@@ -675,8 +713,14 @@ The contract behind `Exists` and `Unique`; `$where` maps property names to value
 readonly class RecordRules
 {
     public function __construct(RecordLookupInterface $lookup);
-    public function exists(string $entityClass, string $property = 'id'): Exists;
-    public function unique(string $entityClass, string $property): Unique;
+    public function exists(
+        string $entityClass,
+        string $property = 'id',
+    ): Exists;
+    public function unique(
+        string $entityClass,
+        string $property,
+    ): Unique;
 }
 ```
 
@@ -685,7 +729,10 @@ readonly class RecordRules
 ```php
 interface MultiMessageRuleInterface extends RuleInterface
 {
-    public function messages(string $field, mixed $value): array; // list<string>
+    public function messages(
+        string $field,
+        mixed $value,
+    ): array; // list<string>
 }
 ```
 
@@ -696,7 +743,10 @@ When the rule fails, the validator adds each message to the field's errors inste
 ```php
 class ValidationErrors implements Countable, IteratorAggregate
 {
-    public function add(string $field, string $message): self;
+    public function add(
+        string $field,
+        string $message,
+    ): self;
     public function has(string $field): bool;
     public function get(string $field): array;
     public function first(string $field): ?string;
@@ -733,5 +783,8 @@ use Marko\Validation\Contracts\FlashedFormStateInterface;
 
 public function errors(): ValidationErrors;                     // empty when nothing was flashed
 public function hasErrors(): bool;
-public function old(string $key, mixed $default = null): mixed; // dot paths: 'address.city', 'items.0.sku'
+public function old(
+    string $key,
+    mixed $default = null,
+): mixed; // dot paths: 'address.city', 'items.0.sku'
 ```

@@ -146,8 +146,10 @@ class OrderPlugin
 class OrderAuditPlugin
 {
     #[After(method: 'place')]
-    public function auditPlace(OrderResult $result, Order $order): OrderResult
-    {
+    public function auditPlace(
+        OrderResult $result,
+        Order $order,
+    ): OrderResult {
         // Custom method name — `method` param maps it to OrderService::place()
         return $result;
     }

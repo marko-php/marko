@@ -131,7 +131,11 @@ Implements `LogHandlerInterface` from [`marko/log`](/docs/packages/log/).
 use Marko\Log\Contracts\LogFormatterInterface;
 use Marko\Log\LogRecord;
 
-public function __construct(mixed $stream, string $name, LogFormatterInterface $formatter);
+public function __construct(
+    mixed $stream,
+    string $name,
+    LogFormatterInterface $formatter,
+);
 public function handle(LogRecord $record): void;
 ```
 

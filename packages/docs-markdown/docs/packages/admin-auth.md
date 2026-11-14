@@ -458,7 +458,10 @@ interface AdminUserInterface extends AuthenticatableInterface
 {
     public function getEmail(): string;
     public function getName(): string;
-    public function setRoles(array $roles, array $permissionKeys = []): void;
+    public function setRoles(
+        array $roles,
+        array $permissionKeys = [],
+    ): void;
     public function getRoles(): array;
     public function getPermissionKeys(): array;
     public function hasPermission(string $key): bool;
@@ -471,10 +474,17 @@ interface AdminUserInterface extends AuthenticatableInterface
 ```php
 interface PermissionRegistryInterface
 {
-    public function register(string $key, string $label, string $group): void;
+    public function register(
+        string $key,
+        string $label,
+        string $group,
+    ): void;
     public function all(): array;
     public function getByGroup(string $group): array;
-    public function matches(string $pattern, string $permissionKey): bool;
+    public function matches(
+        string $pattern,
+        string $permissionKey,
+    ): bool;
 }
 ```
 
@@ -516,7 +526,10 @@ Targets classes and methods. A method-level attribute replaces a class-level one
 ```php
 class AdminAuthMiddleware implements MiddlewareInterface
 {
-    public function handle(Request $request, callable $next): Response;
+    public function handle(
+        Request $request,
+        callable $next,
+    ): Response;
 }
 ```
 
@@ -531,7 +544,10 @@ interface AdminUserRepositoryInterface extends RepositoryInterface
 {
     public function findByEmail(string $email): ?AdminUser;
     public function getRolesForUser(int $userId): array;
-    public function syncRoles(int $userId, array $roleIds): void;
+    public function syncRoles(
+        int $userId,
+        array $roleIds,
+    ): void;
 }
 
 interface RoleRepositoryInterface extends RepositoryInterface
@@ -540,8 +556,14 @@ interface RoleRepositoryInterface extends RepositoryInterface
     public function getPermissionsForRole(int $roleId): array;
     /** @return array<Permission> */
     public function getPermissionsForRoles(array $roleIds): array;
-    public function syncPermissions(int $roleId, array $permissionIds): void;
-    public function isSlugUnique(string $slug, ?int $excludeId = null): bool;
+    public function syncPermissions(
+        int $roleId,
+        array $permissionIds,
+    ): void;
+    public function isSlugUnique(
+        string $slug,
+        ?int $excludeId = null,
+    ): bool;
 }
 
 interface PermissionRepositoryInterface extends RepositoryInterface

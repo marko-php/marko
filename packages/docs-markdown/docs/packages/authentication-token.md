@@ -185,7 +185,10 @@ public function update(
 ): Response {
     $guard = $this->authManager->guard('api');
 
-    if (!$guard instanceof TokenGuard || !$guard->hasAbility('posts:write')) {
+    if (
+        !$guard instanceof TokenGuard
+        || !$guard->hasAbility('posts:write')
+    ) {
         return new Response('Forbidden', 403);
     }
 
@@ -287,8 +290,19 @@ use Marko\AuthenticationToken\Contracts\TokenRepositoryInterface;
 use Marko\Core\Event\EventDispatcherInterface;
 use Psr\Clock\ClockInterface;
 
-public function __construct(TokenRepositoryInterface $repository, TokenConfig $config, ClockInterface $clock, DatabaseTimezoneConfig $databaseTimezoneConfig, ?EventDispatcherInterface $eventDispatcher = null);
-public function createToken(AuthenticatableInterface $user, string $name, array $abilities = [], ?DateTimeInterface $expiresAt = null): NewAccessToken;
+public function __construct(
+    TokenRepositoryInterface $repository,
+    TokenConfig $config,
+    ClockInterface $clock,
+    DatabaseTimezoneConfig $databaseTimezoneConfig,
+    ?EventDispatcherInterface $eventDispatcher = null,
+);
+public function createToken(
+    AuthenticatableInterface $user,
+    string $name,
+    array $abilities = [],
+    ?DateTimeInterface $expiresAt = null,
+): NewAccessToken;
 public function revokeToken(int $tokenId): void;
 public function revokeAllTokens(AuthenticatableInterface $user): void;
 ```
@@ -309,7 +323,15 @@ public function expirationDays(): ?int; // positive int or null; anything else t
 Implements `StatelessGuardInterface`, `AbilityScopedGuardInterface` and `ResettableInterface`. `AuthManager::reset()` resets it between worker requests, which forgets the token it resolved last:
 
 ```php
-public function __construct(TokenRepositoryInterface $repository, CurrentRequest $currentRequest, ClockInterface $clock, DatabaseTimezoneConfig $databaseTimezoneConfig, UserProviderInterface $provider, string $name = 'token', ?EventDispatcherInterface $eventDispatcher = null);
+public function __construct(
+    TokenRepositoryInterface $repository,
+    CurrentRequest $currentRequest,
+    ClockInterface $clock,
+    DatabaseTimezoneConfig $databaseTimezoneConfig,
+    UserProviderInterface $provider,
+    string $name = 'token',
+    ?EventDispatcherInterface $eventDispatcher = null,
+);
 public function check(): bool;
 public function guest(): bool;
 public function user(): ?AuthenticatableInterface;
@@ -318,7 +340,10 @@ public function hasAbility(string $ability): bool; // [] / NULL / '*' grant ever
 public function extractToken(): ?string;
 public function getName(): string;
 public function getChallenge(): string; // 'Bearer'
-public function attempt(array $credentials, bool $remember = false): bool; // throws StatelessGuardException
+public function attempt(
+    array $credentials,
+    bool $remember = false,
+): bool; // throws StatelessGuardException
 public function login(AuthenticatableInterface $user): void; // throws StatelessGuardException
 public function loginById(int|string $id): ?AuthenticatableInterface; // throws StatelessGuardException
 public function logout(): void; // throws StatelessGuardException
@@ -330,7 +355,10 @@ public function reset(): void;
 Builds the guard for the `token` driver:
 
 ```php
-public function create(string $name, UserProviderInterface $provider): TokenGuard;
+public function create(
+    string $name,
+    UserProviderInterface $provider,
+): TokenGuard;
 ```
 
 ### CurrentRequest
@@ -357,14 +385,20 @@ public function find(int $id): ?PersonalAccessToken;
 public function findByToken(string $tokenHash): ?PersonalAccessToken;
 public function create(PersonalAccessToken $token): PersonalAccessToken;
 public function revoke(int $id): void;
-public function revokeAllForUser(string $type, int|string $id): void;
+public function revokeAllForUser(
+    string $type,
+    int|string $id,
+): void;
 ```
 
 ### HasApiTokensInterface
 
 ```php
 public function getTokens(): array;
-public function createToken(string $name, array $abilities = []): NewAccessToken;
+public function createToken(
+    string $name,
+    array $abilities = [],
+): NewAccessToken;
 ```
 
 ### Exceptions

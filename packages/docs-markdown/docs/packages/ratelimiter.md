@@ -257,8 +257,15 @@ To change who a request is limited as, bind `RateLimitKeyResolverInterface` (see
 ### RateLimiterInterface
 
 ```php
-public function attempt(string $key, int $maxAttempts, int $decaySeconds): RateLimitResult;
-public function tooManyAttempts(string $key, int $maxAttempts): bool;
+public function attempt(
+    string $key,
+    int $maxAttempts,
+    int $decaySeconds,
+): RateLimitResult;
+public function tooManyAttempts(
+    string $key,
+    int $maxAttempts,
+): bool;
 public function clear(string $key): void;
 ```
 
@@ -279,7 +286,11 @@ Targets classes and methods.
 ```php
 use Marko\RateLimiter\Attributes\RateLimit;
 
-public function __construct(?int $maxAttempts = null, ?int $decaySeconds = null, ?string $name = null);
+public function __construct(
+    ?int $maxAttempts = null,
+    ?int $decaySeconds = null,
+    ?string $name = null,
+);
 ```
 
 | Parameter | Description |
@@ -323,7 +334,10 @@ public function ipv6Prefix(): int;
 ### RateLimitMiddleware
 
 ```php
-public function handle(Request $request, callable $next): Response;
+public function handle(
+    Request $request,
+    callable $next,
+): Response;
 ```
 
 Constructor parameters (autowired; there are no scalar settings, so limits come from `#[RateLimit]` and config):

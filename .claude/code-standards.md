@@ -309,6 +309,27 @@ public function validate(): ValidationResult
 }
 ```
 
+### 16. One Check Per Line in Compound Conditions
+When `&&` or `||` joins two or more checks, put each check on its own line, with the operator leading each continuation line. This applies to `return` statements, assignments, arrow functions and `if` conditions, in source code and in documentation examples alike.
+
+```php
+// WRONG
+return $user !== null && $user->getAuthIdentifier() === $post->authorId;
+
+if ($stock === null || $stock->available < $quantity) {
+
+// CORRECT
+return $user !== null
+    && $user->getAuthIdentifier() === $post->authorId;
+
+if (
+    $stock === null
+    || $stock->available < $quantity
+) {
+```
+
+Don't fold a compound condition into a ternary. Use an `if` with early returns instead.
+
 ## Attribute Standards
 
 Attributes go on their own line above the target. Stack multiple attributes vertically:

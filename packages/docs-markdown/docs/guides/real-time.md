@@ -58,8 +58,10 @@ class CommentService
         private PublisherInterface $publisher,
     ) {}
 
-    public function addComment(int $postId, string $body): void
-    {
+    public function addComment(
+        int $postId,
+        string $body,
+    ): void {
         // ... persist the comment ...
 
         $this->publisher->publish(
@@ -140,7 +142,10 @@ use Marko\Sse\SseStream;
 use Marko\Sse\StreamingResponse;
 
 #[Get('/jobs/{jobId}/progress')]
-public function progress(Request $request, int $jobId): StreamingResponse
+public function progress(
+    Request $request,
+    int $jobId,
+): StreamingResponse
 {
     $lastEventId = $request->header('Last-Event-ID');
 

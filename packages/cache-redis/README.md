@@ -24,8 +24,10 @@ class SessionStore
         return $this->cache->get("session.$token");
     }
 
-    public function saveSession(string $token, array $data): void
-    {
+    public function saveSession(
+        string $token,
+        array $data,
+    ): void {
         $this->cache->set("session.$token", $data, ttl: 1800);
     }
 }

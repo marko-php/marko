@@ -93,7 +93,10 @@ use Marko\Sse\SseStream;
 use Marko\Sse\StreamingResponse;
 
 #[Get('/spaces/{spaceId}/stream')]
-public function stream(Request $request, int $spaceId): StreamingResponse
+public function stream(
+    Request $request,
+    int $spaceId,
+): StreamingResponse
 {
     $lastEventId = $request->header('Last-Event-ID');
 

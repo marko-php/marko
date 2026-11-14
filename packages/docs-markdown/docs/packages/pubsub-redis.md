@@ -82,8 +82,10 @@ class NotificationService
         private PublisherInterface $publisher,
     ) {}
 
-    public function notify(int $userId, string $text): void
-    {
+    public function notify(
+        int $userId,
+        string $text,
+    ): void {
         $this->publisher->publish(
             channel: "user.$userId",
             message: new Message(

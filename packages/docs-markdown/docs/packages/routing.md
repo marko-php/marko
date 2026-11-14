@@ -136,7 +136,10 @@ A `{name}` placeholder matches one path segment (anything except `/`). Two varia
 public function show(int $id): Response { /* ... */ }
 
 #[Get('/archive/{year:\d{4}}/{slug:[a-z0-9-]+}')]
-public function archived(int $year, string $slug): Response { /* ... */ }
+public function archived(
+    int $year,
+    string $slug,
+): Response { /* ... */ }
 
 #[Get('/docs/{path*}')]
 public function page(string $path): Response { /* ... */ }
@@ -170,7 +173,10 @@ use Marko\Routing\Http\FileResponse;
 use Marko\Routing\SafePath;
 
 #[Get('/assets/{path*}')]
-public function show(Request $request, string $path): FileResponse
+public function show(
+    Request $request,
+    string $path,
+): FileResponse
 {
     $file = SafePath::join('/var/www/app/public/assets', $path);
 
@@ -564,7 +570,10 @@ JSON fields bind to controller parameters marked `#[FromBody]` (or `#[FromInput]
 
 ```php
 #[Post('/api/shows')]
-public function create(#[FromBody] string $title, #[FromBody] int $count): Response
+public function create(
+    #[FromBody] string $title,
+    #[FromBody] int $count,
+): Response
 {
     // POST {"title": "Live at Five", "count": 7}
     return Response::json(['title' => $title, 'count' => $count], 201);
@@ -599,7 +608,10 @@ public function upload(Request $request): Response
 {
     $avatar = $request->file('avatar');
 
-    if ($avatar === null || !$avatar->isValid()) {
+    if (
+        $avatar === null
+        || !$avatar->isValid()
+    ) {
         return new Response('Upload an image', 422);
     }
 
@@ -645,7 +657,10 @@ use Marko\Routing\Http\Request;
 use Marko\Routing\SafePath;
 
 #[Get('/videos/{name}')]
-public function show(Request $request, string $name): FileResponse
+public function show(
+    Request $request,
+    string $name,
+): FileResponse
 {
     $source = new LocalFileSource(SafePath::join('/var/app/storage/videos', $name));
 
@@ -653,7 +668,10 @@ public function show(Request $request, string $name): FileResponse
 }
 
 #[Get('/videos/{name}/download')]
-public function download(Request $request, string $name): FileResponse
+public function download(
+    Request $request,
+    string $name,
+): FileResponse
 {
     $source = new LocalFileSource(SafePath::join('/var/app/storage/videos', $name));
 
@@ -723,7 +741,10 @@ public function __construct(
 ) {}
 
 #[Get('/videos/{name}')]
-public function show(Request $request, string $name): FileResponse
+public function show(
+    Request $request,
+    string $name,
+): FileResponse
 {
     $source = new LocalFileSource(SafePath::join('/var/app/storage/videos', $name));
 
@@ -922,7 +943,10 @@ class SubscriptionExpiredResponder implements HttpExceptionResponderInterface
         HttpExceptionInterface $exception,
         Request $request,
     ): ?Response {
-        if (!$exception instanceof SubscriptionExpiredException || $request->wantsJson()) {
+        if (
+            !$exception instanceof SubscriptionExpiredException
+            || $request->wantsJson()
+        ) {
             return null;
         }
 
@@ -1024,7 +1048,11 @@ marko route:list --method=GET --path=blog
 interface UrlGeneratorInterface
 {
     /** @throws UrlGenerationException */
-    public function route(string $name, array $parameters = [], bool $absolute = false): string;
+    public function route(
+        string $name,
+        array $parameters = [],
+        bool $absolute = false,
+    ): string;
 }
 ```
 
@@ -1035,8 +1063,16 @@ Bound to `UrlGenerator` as a singleton.
 ```php
 interface UrlSignerInterface
 {
-    public function signedRoute(string $name, array $parameters = [], ?DateTimeImmutable $expiresAt = null, bool $absolute = true): string;
-    public function sign(string $url, ?DateTimeImmutable $expiresAt = null): string;
+    public function signedRoute(
+        string $name,
+        array $parameters = [],
+        ?DateTimeImmutable $expiresAt = null,
+        bool $absolute = true,
+    ): string;
+    public function sign(
+        string $url,
+        ?DateTimeImmutable $expiresAt = null,
+    ): string;
     public function hasValidSignature(Request $request): bool;
     /** @throws InvalidSignatureException */
     public function assertValidSignature(Request $request): void;
@@ -1063,14 +1099,23 @@ class RouteCollection
 Each route is a `readonly` value object. Every constructor argument is a string or a list of strings (`method`, `path`, `controller`, `action`, `middleware`, `name`, `withoutMiddleware`). The path already includes any prefix. Everything else (`parameters`, `constraints`, `catchAll`, `regex`) is derived from the path.
 
 ```php
-public function satisfiesConstraint(string $parameter, string $value): bool;
-public function acceptsValue(string $parameter, string $value): bool; // the decoded-value rules the matcher and URL generator apply
+public function satisfiesConstraint(
+    string $parameter,
+    string $value,
+): bool;
+public function acceptsValue(
+    string $parameter,
+    string $value,
+): bool; // the decoded-value rules the matcher and URL generator apply
 ```
 
 ### SafePath
 
 ```php
-public static function join(string $base, string $relative): string; // throws UnsafePathException (404) on an absolute path, NUL byte or escape
+public static function join(
+    string $base,
+    string $relative,
+): string; // throws UnsafePathException (404) on an absolute path, NUL byte or escape
 ```
 
 ### Request
@@ -1080,22 +1125,43 @@ class Request
 {
     public function method(): string;
     public function path(): string;
-    public function query(?string $key = null, mixed $default = null): mixed;
-    public function post(?string $key = null, mixed $default = null): mixed;
-    public function cookie(?string $key = null, mixed $default = null): mixed;
+    public function query(
+        ?string $key = null,
+        mixed $default = null,
+    ): mixed;
+    public function post(
+        ?string $key = null,
+        mixed $default = null,
+    ): mixed;
+    public function cookie(
+        ?string $key = null,
+        mixed $default = null,
+    ): mixed;
     public function body(): string;
     public function isJson(): bool;
     public function wantsJson(): bool;
-    public function json(?string $key = null, mixed $default = null): mixed;
-    public function input(?string $key = null, mixed $default = null): mixed;
+    public function json(
+        ?string $key = null,
+        mixed $default = null,
+    ): mixed;
+    public function input(
+        ?string $key = null,
+        mixed $default = null,
+    ): mixed;
     public function file(string $key): ?UploadedFile;
     public function files(?string $key = null): array;
     public function hasFile(string $key): bool;
-    public function header(string $name, ?string $default = null): ?string;
+    public function header(
+        string $name,
+        ?string $default = null,
+    ): ?string;
     public function headers(): array;
     public function server(string $key): ?string;
     public function ip(): ?string;
-    public function withRoute(string $controller, string $action): self;
+    public function withRoute(
+        string $controller,
+        string $action,
+    ): self;
     public function controller(): ?string;
     public function action(): ?string;
     public static function fromGlobals(): self;
@@ -1174,10 +1240,22 @@ class Response
     public function cookies(): array;
     public function headerLines(): array;
     public function send(): void;
-    public static function json(mixed $data, int $statusCode = 200): self;
-    public static function html(string $html, int $statusCode = 200): self;
-    public static function redirect(string $url, int $statusCode = 302): self;
-    public function withHeader(string $name, string $value): static;
+    public static function json(
+        mixed $data,
+        int $statusCode = 200,
+    ): self;
+    public static function html(
+        string $html,
+        int $statusCode = 200,
+    ): self;
+    public static function redirect(
+        string $url,
+        int $statusCode = 302,
+    ): self;
+    public function withHeader(
+        string $name,
+        string $value,
+    ): static;
     public function withHeaders(array $headers): static;
     public function withStatus(int $statusCode): static;
     public function withCookie(Cookie $cookie): static;
@@ -1206,7 +1284,10 @@ interface StreamedResponseInterface
 
 abstract class AbstractStreamedResponse extends Response implements StreamedResponseInterface
 {
-    public function __construct(int $statusCode = 200, array $headers = []);
+    public function __construct(
+        int $statusCode = 200,
+        array $headers = [],
+    );
     public function withOutputStreamer(OutputStreamer $outputStreamer): static;
     protected function outputStreamer(): OutputStreamer;
 }
@@ -1227,7 +1308,11 @@ public function connectionAborted(): bool;
 ```php
 use Marko\Routing\Http\StreamedResponse;
 
-public function __construct(callable $callback, int $statusCode = 200, array $headers = []); // callable(OutputStreamer): void
+public function __construct(
+    callable $callback,
+    int $statusCode = 200,
+    array $headers = [],
+); // callable(OutputStreamer): void
 ```
 
 ### FileResponse and FileResponseFactory
@@ -1237,13 +1322,20 @@ use Marko\Routing\Http\FileResponse;
 use Marko\Routing\Http\FileResponseFactory;
 
 // FileResponse extends AbstractStreamedResponse
-public static function fromSource(Request $request, FileSourceInterface $fileSource, ?FileOffload $fileOffload = null): FileResponse; // throws RangeNotSatisfiableException (416)
+public static function fromSource(
+    Request $request,
+    FileSourceInterface $fileSource,
+    ?FileOffload $fileOffload = null,
+): FileResponse; // throws RangeNotSatisfiableException (416)
 public function withDisposition(ContentDisposition $contentDisposition): static;
 public function fileSource(): FileSourceInterface;
 public function byteRange(): ?ByteRange;     // the range being served, null for a full body
 
 // FileResponseFactory applies routing.file_offload
-public function fromSource(Request $request, FileSourceInterface $fileSource): FileResponse;
+public function fromSource(
+    Request $request,
+    FileSourceInterface $fileSource,
+): FileResponse;
 ```
 
 ### File Sources
@@ -1259,7 +1351,10 @@ interface FileSourceInterface
     public function lastModified(): int;
     public function mimeType(): string;
     public function filename(): string;
-    public function stream(int $offset = 0, ?int $length = null): iterable; // iterable<string>
+    public function stream(
+        int $offset = 0,
+        ?int $length = null,
+    ): iterable; // iterable<string>
 }
 
 new LocalFileSource(string $path);                                      // throws FileResponseException when missing/unreadable; path(): string
@@ -1274,17 +1369,29 @@ Both read through `Marko\Routing\File\ResourceChunkReader`, which reads a byte r
 use Marko\Routing\Http\ByteRange;
 use Marko\Routing\Http\ConditionalRequest;
 
-public static function fromHeader(?string $range, int $size): ?ByteRange; // null: no header, other unit, multi-range
+public static function fromHeader(
+    ?string $range,
+    int $size,
+): ?ByteRange; // null: no header, other unit, multi-range
 public function start(): int;
 public function end(): int;                      // inclusive
 public function length(): int;
 public function contentRange(int $size): string; // "bytes 0-99/1234"
 
 public static function fromRequest(Request $request): ConditionalRequest;
-public static function etagFor(int $size, int $lastModified): string; // W/"<size hex>-<mtime hex>"
+public static function etagFor(
+    int $size,
+    int $lastModified,
+): string; // W/"<size hex>-<mtime hex>"
 public static function httpDate(int $timestamp): string;
-public function isNotModified(string $etag, int $lastModified): bool;
-public function allowsRange(string $etag, int $lastModified): bool;
+public function isNotModified(
+    string $etag,
+    int $lastModified,
+): bool;
+public function allowsRange(
+    string $etag,
+    int $lastModified,
+): bool;
 ```
 
 ### ContentDisposition
@@ -1306,7 +1413,10 @@ public function toHeaderValue(): string;
 ```php
 use Marko\Routing\Http\FileOffload;
 
-public function __construct(string $header, array $prefixMap = []); // 'X-Sendfile' or 'X-Accel-Redirect'
+public function __construct(
+    string $header,
+    array $prefixMap = [],
+); // 'X-Sendfile' or 'X-Accel-Redirect'
 public function header(): string;
 public function headerValueFor(string $path): string;
 ```
@@ -1351,7 +1461,10 @@ public function toSetCookieString(): string;
 ```php
 interface MiddlewareInterface
 {
-    public function handle(Request $request, callable $next): Response;
+    public function handle(
+        Request $request,
+        callable $next,
+    ): Response;
 }
 ```
 
@@ -1374,9 +1487,15 @@ public static function badRequest(string $message = ''): self;
 public static function unauthorized(string $message = ''): self;
 public static function forbidden(string $message = ''): self;
 public static function notFound(string $message = ''): self;
-public static function methodNotAllowed(array $allowedMethods, string $message = ''): self;
+public static function methodNotAllowed(
+    array $allowedMethods,
+    string $message = '',
+): self;
 public static function conflict(string $message = ''): self;
-public static function tooManyRequests(?int $retryAfter = null, string $message = ''): self;
+public static function tooManyRequests(
+    ?int $retryAfter = null,
+    string $message = '',
+): self;
 ```
 
 `HttpException` implements `Marko\Core\Exceptions\HttpExceptionInterface`:
@@ -1396,10 +1515,19 @@ interface HttpExceptionInterface extends Throwable
 use Marko\Routing\Http\ExceptionRenderer;
 
 public function __construct(?HttpExceptionResponderRegistry $responders = null);
-public function render(HttpExceptionInterface $exception, Request $request): Response; // asks the responders first
+public function render(
+    HttpExceptionInterface $exception,
+    Request $request,
+): Response; // asks the responders first
 public function wantsJson(Request $request): bool;
-protected function renderJson(int $statusCode, array $data): Response;
-protected function renderHtml(int $statusCode, array $data): Response;
+protected function renderJson(
+    int $statusCode,
+    array $data,
+): Response;
+protected function renderHtml(
+    int $statusCode,
+    array $data,
+): Response;
 ```
 
 `Marko\Routing\Http\HttpStatus::reasonPhrase(int $statusCode): string` returns the standard reason phrase (`419` → `Page Expired`).
@@ -1409,7 +1537,10 @@ protected function renderHtml(int $statusCode, array $data): Response;
 ```php
 use Marko\Routing\Http\HttpExceptionResponderInterface;
 
-public function respond(HttpExceptionInterface $exception, Request $request): ?Response; // null passes
+public function respond(
+    HttpExceptionInterface $exception,
+    Request $request,
+): ?Response; // null passes
 ```
 
 Register an implementation with `#[HttpExceptionResponder(priority: 0)]` (`Marko\Routing\Attributes\HttpExceptionResponder`).
@@ -1422,7 +1553,10 @@ The discovered responders, highest priority first. `RoutingBootstrapper` registe
 use Marko\Routing\Http\HttpExceptionResponderRegistry;
 
 public function responders(): array; // list<HttpExceptionResponderInterface>
-public function respond(HttpExceptionInterface $exception, Request $request): ?Response;
+public function respond(
+    HttpExceptionInterface $exception,
+    Request $request,
+): ?Response;
 ```
 
 ### Parameter Resolution

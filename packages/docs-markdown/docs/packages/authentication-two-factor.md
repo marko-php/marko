@@ -332,12 +332,30 @@ class LowRecoveryCodesObserver
 ### TwoFactorManagerInterface
 
 ```php
-public function enable(TwoFactorAuthenticatableInterface $user, string $label, ?string $guard = null): TwoFactorSetup;
-public function confirm(TwoFactorAuthenticatableInterface $user, string $code, ?string $guard = null): bool;
-public function disable(TwoFactorAuthenticatableInterface $user, ?string $guard = null): void;
-public function regenerateRecoveryCodes(TwoFactorAuthenticatableInterface $user, ?string $guard = null): array;
+public function enable(
+    TwoFactorAuthenticatableInterface $user,
+    string $label,
+    ?string $guard = null,
+): TwoFactorSetup;
+public function confirm(
+    TwoFactorAuthenticatableInterface $user,
+    string $code,
+    ?string $guard = null,
+): bool;
+public function disable(
+    TwoFactorAuthenticatableInterface $user,
+    ?string $guard = null,
+): void;
+public function regenerateRecoveryCodes(
+    TwoFactorAuthenticatableInterface $user,
+    ?string $guard = null,
+): array;
 public function isEnabled(TwoFactorAuthenticatableInterface $user): bool;
-public function verify(TwoFactorAuthenticatableInterface $user, string $code, ?string $guard = null): bool;
+public function verify(
+    TwoFactorAuthenticatableInterface $user,
+    string $code,
+    ?string $guard = null,
+): bool;
 ```
 
 Bound to `TwoFactorManager`. `TwoFactorSetup` has the public properties `secret`, `provisioningUri` and `recoveryCodes` (plain, shown once).
@@ -346,7 +364,11 @@ Bound to `TwoFactorManager`. `TwoFactorSetup` has the public properties `secret`
 
 ```php
 public function isPending(?string $guard = null): bool;
-public function verify(string $code, ?bool $remember = null, ?string $guard = null): bool; // null: the flag attempt() was called with
+public function verify(
+    string $code,
+    ?bool $remember = null,
+    ?string $guard = null,
+): bool; // null: the flag attempt() was called with
 public function cancel(?string $guard = null): void;
 ```
 
@@ -373,8 +395,16 @@ public function setTwoFactorLastUsedStep(?int $step): void;
 
 ```php
 public function generateSecret(): string;
-public function verify(string $secret, string $code, ?int $lastUsedStep): ?int;
-public function provisioningUri(string $secret, string $label, string $issuer): string;
+public function verify(
+    string $secret,
+    string $code,
+    ?int $lastUsedStep,
+): ?int;
+public function provisioningUri(
+    string $secret,
+    string $label,
+    string $issuer,
+): string;
 ```
 
 Bound to `OtphpTotp`. `verify()` returns the accepted time step, or `null` for a wrong code, a code outside the ±1 step window, or a step at or before `$lastUsedStep`. Secrets are 160-bit base32 strings.

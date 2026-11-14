@@ -227,8 +227,10 @@ readonly class ArticleController
      */
     #[Put('/api/articles/{id}')]
     #[Middleware(AuthMiddleware::class)]
-    public function update(int $id, Request $request): Response
-    {
+    public function update(
+        int $id,
+        Request $request,
+    ): Response {
         $article = $this->articleRepository->find($id);
 
         if ($article === null) {

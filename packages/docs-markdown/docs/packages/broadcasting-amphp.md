@@ -242,7 +242,12 @@ The server is its own process and does not run inside a RoadRunner worker. On [`
 ### AmphpBroadcaster
 
 ```php
-public function broadcast(string|Channel $channel, string $event, array $data, ?string $id = null): void;
+public function broadcast(
+    string|Channel $channel,
+    string $event,
+    array $data,
+    ?string $id = null,
+): void;
 public function dispatch(BroadcastableInterface $broadcastable): void;
 ```
 
@@ -251,8 +256,14 @@ Bound to `BroadcasterInterface`. The constants `PRIVATE_PREFIX`, `CHANNEL_NAME_P
 ### AmphpSubscriberToken
 
 ```php
-public function for(array $channels, ?AuthenticatableInterface $user): string;
-public function streamUrl(array $channels, ?AuthenticatableInterface $user): string;
+public function for(
+    array $channels,
+    ?AuthenticatableInterface $user,
+): string;
+public function streamUrl(
+    array $channels,
+    ?AuthenticatableInterface $user,
+): string;
 ```
 
 `for()` signs a token listing the authorized private channels. Both methods check every channel name against `AmphpBroadcaster::CHANNEL_NAME_PATTERN` before authorizing it and throw `BroadcastException::invalidChannelName()` for anything else, including a name with a comma (the stream's channel separator). `streamUrl()` builds the `EventSource` URL and adds a token when any private channel is requested.
@@ -260,7 +271,11 @@ public function streamUrl(array $channels, ?AuthenticatableInterface $user): str
 ### AmphpSignature
 
 ```php
-public function sign(int|string|null $userId, array $channels, int $expiresAt): string;
+public function sign(
+    int|string|null $userId,
+    array $channels,
+    int $expiresAt,
+): string;
 public function verify(string $token): ?AmphpTokenClaims;
 ```
 

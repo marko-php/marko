@@ -76,7 +76,8 @@ $notifications->assertSentTo($user, OrderShippedNotification::class);
 $notifications->assertSentTo(
     $user,
     OrderShippedNotification::class,
-    fn (OrderShippedNotification $n, array $channels) => $n->trackingNumber === 'TRK-1' && in_array('mail', $channels, true),
+    fn (OrderShippedNotification $n, array $channels) => $n->trackingNumber === 'TRK-1'
+        && in_array('mail', $channels, true),
 );
 $notifications->assertQueuedTo($admin, OrderShippedNotification::class);
 $notifications->assertNotSentTo($guest, OrderShippedNotification::class);
@@ -428,7 +429,10 @@ $http->queue(new HttpResponse(201, ''), new HttpResponse(200, ''));
 $service = new OrderSync($http);
 $service->push($order);
 
-$http->assertSent(fn (RecordedRequest $r) => $r->method === 'POST' && $r->json()['id'] === 1);
+$http->assertSent(
+    fn (RecordedRequest $r) => $r->method === 'POST'
+        && $r->json()['id'] === 1,
+);
 $http->assertSentCount(1);
 $http->assertNotSent(fn (RecordedRequest $r) => str_contains($r->url, '/fail'));
 ```
@@ -947,18 +951,36 @@ public function dispatch(Event $event): void;
 public function dispatched(string $eventClass): array;
 public function assertDispatched(string $eventClass): void;
 public function assertNotDispatched(string $eventClass): void;
-public function assertDispatchedCount(string $eventClass, int $expected): void;
+public function assertDispatchedCount(
+    string $eventClass,
+    int $expected,
+): void;
 public function clear(): void;
 ```
 
 ### FakeBroadcaster
 
 ```php
-public function broadcast(string|Channel $channel, string $event, array $data, ?string $id = null): void;
+public function broadcast(
+    string|Channel $channel,
+    string $event,
+    array $data,
+    ?string $id = null,
+): void;
 public function dispatch(BroadcastableInterface $broadcastable): void;
-public function broadcastsOf(string|Channel $channel, string $event): array;
-public function assertBroadcast(string|Channel $channel, string $event, ?callable $callback = null): void;
-public function assertNotBroadcast(string|Channel $channel, string $event): void;
+public function broadcastsOf(
+    string|Channel $channel,
+    string $event,
+): array;
+public function assertBroadcast(
+    string|Channel $channel,
+    string $event,
+    ?callable $callback = null,
+): void;
+public function assertNotBroadcast(
+    string|Channel $channel,
+    string $event,
+): void;
 public function assertBroadcastCount(int $expected): void;
 public function assertNothingBroadcast(): void;
 public function clear(): void;
@@ -970,7 +992,10 @@ Recorded entries are in the public `$broadcasts` property (`channel`, `event`, `
 
 ```php
 public function send(Message $message): bool;
-public function sendRaw(string $to, string $raw): bool;
+public function sendRaw(
+    string $to,
+    string $raw,
+): bool;
 public function assertSent(?callable $callback = null): void;
 public function assertNothingSent(): void;
 public function assertSentCount(int $expected): void;
@@ -980,15 +1005,44 @@ public function clear(): void;
 ### FakeNotificationSender
 
 ```php
-public function send(NotifiableInterface|array $notifiables, NotificationInterface $notification): void;
-public function queue(NotifiableInterface|array $notifiables, NotificationInterface $notification): void;
-public function sentTo(NotifiableInterface $notifiable, string $notificationClass, ?callable $filter = null): array;
-public function queuedTo(NotifiableInterface $notifiable, string $notificationClass, ?callable $filter = null): array;
-public function assertSentTo(NotifiableInterface $notifiable, string $notificationClass, ?callable $filter = null): void;
-public function assertNotSentTo(NotifiableInterface $notifiable, string $notificationClass, ?callable $filter = null): void;
-public function assertQueuedTo(NotifiableInterface $notifiable, string $notificationClass, ?callable $filter = null): void;
+public function send(
+    NotifiableInterface|array $notifiables,
+    NotificationInterface $notification,
+): void;
+public function queue(
+    NotifiableInterface|array $notifiables,
+    NotificationInterface $notification,
+): void;
+public function sentTo(
+    NotifiableInterface $notifiable,
+    string $notificationClass,
+    ?callable $filter = null,
+): array;
+public function queuedTo(
+    NotifiableInterface $notifiable,
+    string $notificationClass,
+    ?callable $filter = null,
+): array;
+public function assertSentTo(
+    NotifiableInterface $notifiable,
+    string $notificationClass,
+    ?callable $filter = null,
+): void;
+public function assertNotSentTo(
+    NotifiableInterface $notifiable,
+    string $notificationClass,
+    ?callable $filter = null,
+): void;
+public function assertQueuedTo(
+    NotifiableInterface $notifiable,
+    string $notificationClass,
+    ?callable $filter = null,
+): void;
 public function assertNothingSent(): void;
-public function assertSentTimes(string $notificationClass, int $expected): void;
+public function assertSentTimes(
+    string $notificationClass,
+    int $expected,
+): void;
 public function clear(): void;
 ```
 
@@ -997,17 +1051,36 @@ Filters receive `(NotificationInterface $notification, array $channels)` and ret
 ### FakeQueue
 
 ```php
-public function push(JobInterface $job, ?string $queue = null): PushResult;
-public function later(int $delay, JobInterface $job, ?string $queue = null): PushResult;
-public function pop(?string $queue = null, bool $block = false): ?JobInterface; // $block is ignored
+public function push(
+    JobInterface $job,
+    ?string $queue = null,
+): PushResult;
+public function later(
+    int $delay,
+    JobInterface $job,
+    ?string $queue = null,
+): PushResult;
+public function pop(
+    ?string $queue = null,
+    bool $block = false,
+): ?JobInterface; // $block is ignored
 public function size(?string $queue = null): int;
 public function clear(?string $queue = null): int;
 public function delete(string $jobId): bool;
-public function release(JobInterface $job, int $delay = 0): bool; // stores the given job and delay on its pushed entry
+public function release(
+    JobInterface $job,
+    int $delay = 0,
+): bool; // stores the given job and delay on its pushed entry
 public static function withLockFactory(LockFactoryInterface $lockFactory): FakeQueue; // needed only to push unique jobs
-public function assertPushed(string $jobClass, ?callable $callback = null): void;
+public function assertPushed(
+    string $jobClass,
+    ?callable $callback = null,
+): void;
 public function assertPushedOnce(string $jobClass): void; // exactly one pushed; skipped duplicates don't count
-public function assertSkipped(string $jobClass, ?callable $callback = null): void;
+public function assertSkipped(
+    string $jobClass,
+    ?callable $callback = null,
+): void;
 public function assertNotPushed(string $jobClass): void;
 public function assertPushedCount(int $expected): void;
 public function assertNothingPushed(): void;
@@ -1021,8 +1094,14 @@ public function assertNothingPushed(): void;
 public function start(): void;
 public function arm(): void;         // sets $armed; the next data access starts the session
 public function isAvailable(): bool; // started or armed
-public function get(string $key, mixed $default = null): mixed;
-public function set(string $key, mixed $value): void;
+public function get(
+    string $key,
+    mixed $default = null,
+): mixed;
+public function set(
+    string $key,
+    mixed $value,
+): void;
 public function has(string $key): bool;
 public function remove(string $key): void;
 public function clear(): void;
@@ -1041,24 +1120,59 @@ public function discard(): void;    // sets $discarded, never $saved
 
 ```php
 public function get(string $name): ?string;
-public function set(string $name, string $value, int $minutes = 0): void;
+public function set(
+    string $name,
+    string $value,
+    int $minutes = 0,
+): void;
 public function delete(string $name): void;
 ```
 
 ### FakeLogger
 
 ```php
-public function emergency(string $message, array $context = []): void;
-public function alert(string $message, array $context = []): void;
-public function critical(string $message, array $context = []): void;
-public function error(string $message, array $context = []): void;
-public function warning(string $message, array $context = []): void;
-public function notice(string $message, array $context = []): void;
-public function info(string $message, array $context = []): void;
-public function debug(string $message, array $context = []): void;
-public function log(LogLevel $level, string $message, array $context = []): void;
+public function emergency(
+    string $message,
+    array $context = [],
+): void;
+public function alert(
+    string $message,
+    array $context = [],
+): void;
+public function critical(
+    string $message,
+    array $context = [],
+): void;
+public function error(
+    string $message,
+    array $context = [],
+): void;
+public function warning(
+    string $message,
+    array $context = [],
+): void;
+public function notice(
+    string $message,
+    array $context = [],
+): void;
+public function info(
+    string $message,
+    array $context = [],
+): void;
+public function debug(
+    string $message,
+    array $context = [],
+): void;
+public function log(
+    LogLevel $level,
+    string $message,
+    array $context = [],
+): void;
 public function entriesForLevel(LogLevel $level): array;
-public function assertLogged(string $message, ?LogLevel $level = null): void;
+public function assertLogged(
+    string $message,
+    ?LogLevel $level = null,
+): void;
 public function assertNothingLogged(): void;
 public function clear(): void;
 ```
@@ -1066,23 +1180,57 @@ public function clear(): void;
 ### FakeConfigRepository
 
 ```php
-public function __construct(array $config = [], ?string $defaultScope = null);
-public function get(string $key, ?string $scope = null): mixed;
-public function has(string $key, ?string $scope = null): bool;
-public function getString(string $key, ?string $scope = null): string;
-public function getInt(string $key, ?string $scope = null): int;
-public function getBool(string $key, ?string $scope = null): bool;
-public function getFloat(string $key, ?string $scope = null): float;
-public function getArray(string $key, ?string $scope = null): array;
+public function __construct(
+    array $config = [],
+    ?string $defaultScope = null,
+);
+public function get(
+    string $key,
+    ?string $scope = null,
+): mixed;
+public function has(
+    string $key,
+    ?string $scope = null,
+): bool;
+public function getString(
+    string $key,
+    ?string $scope = null,
+): string;
+public function getInt(
+    string $key,
+    ?string $scope = null,
+): int;
+public function getBool(
+    string $key,
+    ?string $scope = null,
+): bool;
+public function getFloat(
+    string $key,
+    ?string $scope = null,
+): float;
+public function getArray(
+    string $key,
+    ?string $scope = null,
+): array;
 public function all(?string $scope = null): array;
 public function withScope(string $scope): ConfigRepositoryInterface;
-public function set(string $key, mixed $value): void;
+public function set(
+    string $key,
+    mixed $value,
+): void;
 ```
 
 ### FakeAuthenticatable
 
 ```php
-public function __construct(int|string $id = 1, string $password = 'hashed-password', ?string $rememberToken = null, string $identifierName = 'id', string $rememberTokenName = 'remember_token', ?DateTimeImmutable $rememberTokenExpiresAt = null);
+public function __construct(
+    int|string $id = 1,
+    string $password = 'hashed-password',
+    ?string $rememberToken = null,
+    string $identifierName = 'id',
+    string $rememberTokenName = 'remember_token',
+    ?DateTimeImmutable $rememberTokenExpiresAt = null,
+);
 public function getAuthIdentifier(): int|string;
 public function getAuthIdentifierName(): string;
 public function getAuthPassword(): string;
@@ -1096,13 +1244,29 @@ public function getRememberTokenName(): string;
 ### FakeUserProvider
 
 ```php
-public function __construct(array $users = [], ?callable $credentialValidator = null);
+public function __construct(
+    array $users = [],
+    ?callable $credentialValidator = null,
+);
 public function retrieveById(int|string $identifier): ?AuthenticatableInterface;
 public function retrieveByCredentials(array $credentials): ?AuthenticatableInterface;
-public function validateCredentials(AuthenticatableInterface $user, array $credentials): bool;
-public function rehashPasswordIfNeeded(AuthenticatableInterface $user, array $credentials): void;
-public function retrieveByRememberToken(int|string $identifier, string $token): ?AuthenticatableInterface;
-public function updateRememberToken(AuthenticatableInterface $user, ?string $token, ?DateTimeImmutable $expiresAt): void;
+public function validateCredentials(
+    AuthenticatableInterface $user,
+    array $credentials,
+): bool;
+public function rehashPasswordIfNeeded(
+    AuthenticatableInterface $user,
+    array $credentials,
+): void;
+public function retrieveByRememberToken(
+    int|string $identifier,
+    string $token,
+): ?AuthenticatableInterface;
+public function updateRememberToken(
+    AuthenticatableInterface $user,
+    ?string $token,
+    ?DateTimeImmutable $expiresAt,
+): void;
 ```
 
 `rehashPasswordIfNeeded()` stores no hash; it appends each call to the public `rehashChecks` array (`['user' => ..., 'credentials' => ...]`), so a test can assert `SessionGuard::attempt()` asked for a rehash.
@@ -1124,12 +1288,18 @@ public static function describe(AuthenticatableInterface $user): string;
 ### FakeGuard
 
 ```php
-public function __construct(string $name = 'test', bool $attemptResult = true);
+public function __construct(
+    string $name = 'test',
+    bool $attemptResult = true,
+);
 public function check(): bool;
 public function guest(): bool;
 public function user(): ?AuthenticatableInterface;
 public function id(): int|string|null;
-public function attempt(array $credentials, bool $remember = false): bool;
+public function attempt(
+    array $credentials,
+    bool $remember = false,
+): bool;
 public function login(AuthenticatableInterface $user): void;
 public function loginById(int|string $id): ?AuthenticatableInterface;
 public function logout(): void;
@@ -1148,15 +1318,37 @@ public function clear(): void;
 
 ```php
 public array $requests; // array<RecordedRequest>, read-only from outside
-public function stub(string $urlPattern, HttpResponse|HttpException $response): self;
+public function stub(
+    string $urlPattern,
+    HttpResponse|HttpException $response,
+): self;
 public function queue(HttpResponse|HttpException ...$responses): self;
 public function preventStrayRequests(bool $prevent = true): self;
-public function request(string $method, string $url, array $options = []): HttpResponse;
-public function get(string $url, array $options = []): HttpResponse;
-public function post(string $url, array $options = []): HttpResponse;
-public function put(string $url, array $options = []): HttpResponse;
-public function patch(string $url, array $options = []): HttpResponse;
-public function delete(string $url, array $options = []): HttpResponse;
+public function request(
+    string $method,
+    string $url,
+    array $options = [],
+): HttpResponse;
+public function get(
+    string $url,
+    array $options = [],
+): HttpResponse;
+public function post(
+    string $url,
+    array $options = [],
+): HttpResponse;
+public function put(
+    string $url,
+    array $options = [],
+): HttpResponse;
+public function patch(
+    string $url,
+    array $options = [],
+): HttpResponse;
+public function delete(
+    string $url,
+    array $options = [],
+): HttpResponse;
 public function assertSent(?callable $callback = null): void;
 public function assertNotSent(callable $callback): void;
 public function assertSentCount(int $expected): void;
@@ -1167,7 +1359,11 @@ public function clear(): void;
 ### RecordedRequest
 
 ```php
-public function __construct(string $method, string $url, array $options = []);
+public function __construct(
+    string $method,
+    string $url,
+    array $options = [],
+);
 public function header(string $name): ?string;
 public function json(): mixed;
 public function body(): string;
@@ -1178,10 +1374,22 @@ public function body(): string;
 ```php
 public private(set) array $encrypted; // list<array{value: string, aad: string, encrypted: string}>
 public private(set) array $decrypted; // list<array{encrypted: string, aad: string, value: string}>
-public function encrypt(string $value, string $aad = ''): string;
-public function decrypt(string $encrypted, string $aad = ''): string; // throws DecryptionException on an AAD mismatch
-public function assertEncrypted(?string $value = null, ?string $aad = null): void;
-public function assertDecrypted(?string $value = null, ?string $aad = null): void;
+public function encrypt(
+    string $value,
+    string $aad = '',
+): string;
+public function decrypt(
+    string $encrypted,
+    string $aad = '',
+): string; // throws DecryptionException on an AAD mismatch
+public function assertEncrypted(
+    ?string $value = null,
+    ?string $aad = null,
+): void;
+public function assertDecrypted(
+    ?string $value = null,
+    ?string $aad = null,
+): void;
 public function assertNothingEncrypted(): void;
 public function assertNothingDecrypted(): void;
 public function clear(): void;
@@ -1203,10 +1411,16 @@ public function assertNowIs(DateTimeImmutable|string $expected): void;
 Implements every `FilesystemInterface` method, plus:
 
 ```php
-public function __construct(ClockInterface $clock, bool $public);
+public function __construct(
+    ClockInterface $clock,
+    bool $public,
+);
 public function assertExists(string $path): void;
 public function assertMissing(string $path): void;
-public function assertContent(string $path, string $expected): void;
+public function assertContent(
+    string $path,
+    string $expected,
+): void;
 public function assertDirectoryEmpty(string $path): void;
 public function assertWrittenCount(int $expected): void;
 public function clear(): void;
@@ -1228,9 +1442,15 @@ public function assertNotSlept(): void;
 
 ```php
 public private(set) array $asked; // list<string>
-public function __construct(array $answers = [], bool $interactive = true);
+public function __construct(
+    array $answers = [],
+    bool $interactive = true,
+);
 public function isInteractive(): bool;
-public function confirm(string $question, bool $default = false): bool;
+public function confirm(
+    string $question,
+    bool $default = false,
+): bool;
 public function assertAsked(string $question): void;
 public function assertNothingAsked(): void;
 ```
@@ -1242,37 +1462,119 @@ public static function boot(string $basePath): self;
 public static function forApplication(Application $application): self;
 public function application(): Application;
 public function withHeaders(array $headers): static;
-public function withHeader(string $name, string $value): static;
+public function withHeader(
+    string $name,
+    string $value,
+): static;
 public function withServerVariables(array $variables): static;
-public function withCookie(string $name, string $value, string $path = '/', ?string $domain = null, bool $secure = false): static;
+public function withCookie(
+    string $name,
+    string $value,
+    string $path = '/',
+    ?string $domain = null,
+    bool $secure = false,
+): static;
 public function withCookies(array $cookies): static;
 public function withoutCookies(): static;
 public function cookies(): array;
 public function cookieJar(): array; // list<JarCookie>
-public function withFile(string $field, string $path, ?string $clientFilename = null, ?string $clientMediaType = null): static;
-public function withFiles(string $field, array $paths): static;
-public function actingAs(AuthenticatableInterface $user, ?string $guard = null): static;
+public function withFile(
+    string $field,
+    string $path,
+    ?string $clientFilename = null,
+    ?string $clientMediaType = null,
+): static;
+public function withFiles(
+    string $field,
+    array $paths,
+): static;
+public function actingAs(
+    AuthenticatableInterface $user,
+    ?string $guard = null,
+): static;
 public function withoutResetting(ResettableInterface ...$services): static;
 public function resetRequestState(): void;              // the reset run before each request
 public function requestCount(): int;                     // requests sent so far
 public function lastRequestCookie(string $name): ?string; // the jar cookie a repeat of the last request would carry
 public function assertAuthenticated(?string $guard = null): static;
 public function assertGuest(?string $guard = null): static;
-public function assertAuthenticatedAs(AuthenticatableInterface $user, ?string $guard = null): static;
-public function get(string $uri, array $query = [], array $headers = []): TestResponse;
-public function head(string $uri, array $query = [], array $headers = []): TestResponse;
-public function post(string $uri, array $data = [], array $headers = []): TestResponse;
-public function put(string $uri, array $data = [], array $headers = []): TestResponse;
-public function patch(string $uri, array $data = [], array $headers = []): TestResponse;
-public function delete(string $uri, array $data = [], array $headers = []): TestResponse;
-public function options(string $uri, array $data = [], array $headers = []): TestResponse;
-public function getJson(string $uri, array $query = [], array $headers = []): TestResponse;
-public function postJson(string $uri, array $data = [], array $headers = []): TestResponse;
-public function putJson(string $uri, array $data = [], array $headers = []): TestResponse;
-public function patchJson(string $uri, array $data = [], array $headers = []): TestResponse;
-public function deleteJson(string $uri, array $data = [], array $headers = []): TestResponse;
-public function json(string $method, string $uri, array $data = [], array $headers = []): TestResponse;
-public function call(string $method, string $uri, array $data = [], array $headers = [], ?string $body = null): TestResponse;
+public function assertAuthenticatedAs(
+    AuthenticatableInterface $user,
+    ?string $guard = null,
+): static;
+public function get(
+    string $uri,
+    array $query = [],
+    array $headers = [],
+): TestResponse;
+public function head(
+    string $uri,
+    array $query = [],
+    array $headers = [],
+): TestResponse;
+public function post(
+    string $uri,
+    array $data = [],
+    array $headers = [],
+): TestResponse;
+public function put(
+    string $uri,
+    array $data = [],
+    array $headers = [],
+): TestResponse;
+public function patch(
+    string $uri,
+    array $data = [],
+    array $headers = [],
+): TestResponse;
+public function delete(
+    string $uri,
+    array $data = [],
+    array $headers = [],
+): TestResponse;
+public function options(
+    string $uri,
+    array $data = [],
+    array $headers = [],
+): TestResponse;
+public function getJson(
+    string $uri,
+    array $query = [],
+    array $headers = [],
+): TestResponse;
+public function postJson(
+    string $uri,
+    array $data = [],
+    array $headers = [],
+): TestResponse;
+public function putJson(
+    string $uri,
+    array $data = [],
+    array $headers = [],
+): TestResponse;
+public function patchJson(
+    string $uri,
+    array $data = [],
+    array $headers = [],
+): TestResponse;
+public function deleteJson(
+    string $uri,
+    array $data = [],
+    array $headers = [],
+): TestResponse;
+public function json(
+    string $method,
+    string $uri,
+    array $data = [],
+    array $headers = [],
+): TestResponse;
+public function call(
+    string $method,
+    string $uri,
+    array $data = [],
+    array $headers = [],
+    ?string $body = null,
+): TestResponse;
 ```
 
 ### SessionProbe
@@ -1296,7 +1598,11 @@ public bool $secure;
 public bool $hostOnly;  // set without a Domain attribute: sent to $domain exactly, not its subdomains
 public ?int $expiresAt; // Unix timestamp from Max-Age (preferred) or Expires; null for a session cookie
 public ?string $sameSite; // Strict, Lax or None as the response sent it; null is treated like None
-public function matches(string $host, string $path, bool $secure): bool;
+public function matches(
+    string $host,
+    string $path,
+    bool $secure,
+): bool;
 public function isExpired(int $now): bool;
 public function allowsCrossSite(string $method): bool; // false for Strict, GET only for Lax
 ```
@@ -1326,41 +1632,68 @@ public function assertForbidden(): static;
 public function assertNotFound(): static;
 public function assertUnprocessable(): static;
 public function assertRedirect(?string $to = null): static;
-public function assertHeader(string $name, ?string $value = null): static;
+public function assertHeader(
+    string $name,
+    ?string $value = null,
+): static;
 public function assertHeaderMissing(string $name): static;
-public function assertCookie(string $name, ?string $value = null): static;
+public function assertCookie(
+    string $name,
+    ?string $value = null,
+): static;
 public function assertCookieMissing(string $name): static;
 public function assertSee(string $text): static;
 public function assertDontSee(string $text): static;
 public function assertJson(array $subset): static;
 public function assertExactJson(array $data): static;
-public function assertJsonPath(string $path, mixed $expected): static;
-public function assertJsonCount(int $count, ?string $path = null): static;
+public function assertJsonPath(
+    string $path,
+    mixed $expected,
+): static;
+public function assertJsonCount(
+    int $count,
+    ?string $path = null,
+): static;
 public function assertJsonMissingPath(string $path): static;
 public function assertJsonValidationErrors(array|string $fields): static;
 public function assertJsonMissingValidationErrors(array|string $fields = []): static;
 public function assertDownload(?string $filename = null): static;
-public function assertSessionHas(string $key, mixed $value = null): static;
+public function assertSessionHas(
+    string $key,
+    mixed $value = null,
+): static;
 public function assertSessionMissing(string $key): static;
-public function assertSessionHasFlash(string $type, ?string $message = null): static;
+public function assertSessionHasFlash(
+    string $type,
+    ?string $message = null,
+): static;
 public function assertSessionHasErrors(array|string $fields = []): static;
 public function assertSessionHasNoErrors(): static;
 public function assertSessionDoesntHaveErrors(array|string $fields): static;
-public function assertSessionHasInput(string $field, mixed $value = null): static;
+public function assertSessionHasInput(
+    string $field,
+    mixed $value = null,
+): static;
 public function assertSessionMissingInput(string $field): static;
 ```
 
 ### TestDatabase
 
 ```php
-public static function boot(string $basePath, bool $fresh = false): self;
+public static function boot(
+    string $basePath,
+    bool $fresh = false,
+): self;
 public function application(): Application;
 public function connection(): ConnectionInterface;
 public function transaction(): TransactionInterface;
 public function environment(): AppEnvironment;
 public function appliedMigrations(): array;
 public function client(): TestClient;
-public function seedTable(string $tableName, array $rows): void;
+public function seedTable(
+    string $tableName,
+    array $rows,
+): void;
 public function getTableRowCount(string $tableName): int;
 public function assertNotProduction(): void;
 public function assertDisposable(string $operation): void;
@@ -1394,7 +1727,10 @@ public function tables(): array;
 ### KnownDriversValidator
 
 ```php
-public static function assertSkeletonSuggestContainsAll(string $knownDriversPath, string $skeletonComposerPath): void;
+public static function assertSkeletonSuggestContainsAll(
+    string $knownDriversPath,
+    string $skeletonComposerPath,
+): void;
 public static function assertDocsUrlsResolveToValidPattern(string $knownDriversPath): void;
 ```
 
@@ -1403,12 +1739,33 @@ public static function assertDocsUrlsResolveToValidPattern(string $knownDriversP
 ```php
 public static function expectedDispatched(string $eventClass): self;
 public static function unexpectedDispatched(string $eventClass): self;
-public static function expectedCount(string $type, int $expected, int $actual): self;
-public static function expectedContains(string $type, string $needle): self;
-public static function unexpectedContains(string $type, string $needle): self;
+public static function expectedCount(
+    string $type,
+    int $expected,
+    int $actual,
+): self;
+public static function expectedContains(
+    string $type,
+    string $needle,
+): self;
+public static function unexpectedContains(
+    string $type,
+    string $needle,
+): self;
 public static function expectedEmpty(string $type): self;
 public static function unexpectedEmpty(string $type): self;
-public static function strayRequest(string $method, string $url): self;
-public static function responseAssertion(string $expectation, int $status, string $body): self;
-public static function invalidJsonResponse(int $status, string $body, string $error): self;
+public static function strayRequest(
+    string $method,
+    string $url,
+): self;
+public static function responseAssertion(
+    string $expectation,
+    int $status,
+    string $body,
+): self;
+public static function invalidJsonResponse(
+    int $status,
+    string $body,
+    string $error,
+): self;
 ```

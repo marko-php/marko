@@ -250,7 +250,10 @@ abstract class JsonResource implements ResourceInterface
     abstract public function toArray(): array;
     public function resolve(): array;
     public function toResponse(): Response;
-    protected function when(bool $condition, mixed $value): ConditionalValue;
+    protected function when(
+        bool $condition,
+        mixed $value,
+    ): ConditionalValue;
     protected function missing(): MissingValue;
     protected function filterArray(array $array): array;
 }
@@ -265,7 +268,10 @@ use Marko\Routing\Http\Response;
 
 class ResourceCollection implements ResourceCollectionInterface
 {
-    public function __construct(array $items, string $resourceClass);
+    public function __construct(
+        array $items,
+        string $resourceClass,
+    );
     public function toArray(): array;
     public function toResponse(): Response;
     public function withPagination(PaginatorInterface $paginator): static;
@@ -304,7 +310,10 @@ interface ResourceCollectionInterface
 ```php
 readonly class ConditionalValue implements JsonSerializable
 {
-    public function __construct(public bool $condition, public mixed $value);
+    public function __construct(
+        public bool $condition,
+        public mixed $value,
+    );
     public function resolve(): mixed;
     public function jsonSerialize(): never; // throws ApiResourceException
 }

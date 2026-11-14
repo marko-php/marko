@@ -286,8 +286,10 @@ class RequestScopedCache implements ResettableInterface
 {
     private array $entries = [];
 
-    public function remember(string $key, mixed $value): void
-    {
+    public function remember(
+        string $key,
+        mixed $value,
+    ): void {
         $this->entries[$key] = $value;
     }
 
@@ -329,8 +331,10 @@ use Marko\Core\Command\Output;
 #[Command(name: 'billing:refund', description: 'Refund an order', flags: ['force'], options: ['reason'])]
 class RefundCommand implements CommandInterface
 {
-    public function execute(Input $input, Output $output): int
-    {
+    public function execute(
+        Input $input,
+        Output $output,
+    ): int {
         $orderId = $input->getArgument(0);           // positional --- options are never included
         $reason = $input->getOption('reason');       // --reason "late" or --reason=late
         $force = $input->hasOption('force');         // declared flag
@@ -368,8 +372,10 @@ class PurgeCommand implements CommandInterface
         private ConfirmationPrompterInterface $confirmationPrompter,
     ) {}
 
-    public function execute(Input $input, Output $output): int
-    {
+    public function execute(
+        Input $input,
+        Output $output,
+    ): int {
         if (!$input->hasOption('force')) {
             if (!$this->confirmationPrompter->isInteractive()) {
                 $output->writeLine('Error: Refusing to purge without confirmation. Re-run with --force.');
@@ -703,7 +709,10 @@ interface ContainerInterface extends PsrContainerInterface
     public function get(string $id): mixed;
     public function has(string $id): bool;
     public function singleton(string $id): void;
-    public function instance(string $id, object $instance): void;
+    public function instance(
+        string $id,
+        object $instance,
+    ): void;
     public function call(Closure $callable): mixed;
 }
 ```
@@ -718,7 +727,10 @@ The concrete `Container` class additionally provides `resolvedInstances(?string 
 interface ConfirmationPrompterInterface
 {
     public function isInteractive(): bool;
-    public function confirm(string $question, bool $default = false): bool;
+    public function confirm(
+        string $question,
+        bool $default = false,
+    ): bool;
 }
 
 readonly class Input

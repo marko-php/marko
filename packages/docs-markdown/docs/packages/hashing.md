@@ -76,7 +76,10 @@ The limit is in bytes, not characters: a password of multibyte UTF-8 characters 
 ```php
 use Marko\Hashing\Hash\BcryptHasher;
 
-if (strlen($password) > BcryptHasher::MAX_VALUE_BYTES || str_contains($password, "\0")) {
+if (
+    strlen($password) > BcryptHasher::MAX_VALUE_BYTES
+    || str_contains($password, "\0")
+) {
     // Reject with a validation error
 }
 ```
@@ -134,7 +137,10 @@ class MyHashManager extends HashManager
 use Marko\Hashing\HashManager;
 
 public function hash(string $value): string;
-public function verify(string $value, string $hash): bool;
+public function verify(
+    string $value,
+    string $hash,
+): bool;
 public function needsRehash(string $hash): bool;
 public function hasher(?string $name = null): HasherInterface;
 public function has(string $name): bool;
@@ -148,7 +154,10 @@ use Marko\Hashing\Contracts\HasherInterface;
 interface HasherInterface
 {
     public function hash(string $value): string;
-    public function verify(string $value, string $hash): bool;
+    public function verify(
+        string $value,
+        string $hash,
+    ): bool;
     public function needsRehash(string $hash): bool;
     public function algorithm(): string;
 }

@@ -66,8 +66,10 @@ readonly class DocumentService
         private FilesystemInterface $filesystem,
     ) {}
 
-    public function save(string $name, string $contents): void
-    {
+    public function save(
+        string $name,
+        string $contents,
+    ): void {
         $this->filesystem->write("documents/$name", $contents);
     }
 
@@ -234,8 +236,10 @@ readonly class MediaService
         private FilesystemManagerInterface $filesystemManager,
     ) {}
 
-    public function upload(string $path, string $contents): void
-    {
+    public function upload(
+        string $path,
+        string $contents,
+    ): void {
         $this->filesystemManager->disk('s3')->write($path, $contents);
     }
 

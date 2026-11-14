@@ -177,7 +177,10 @@ use Marko\Log\File\Rotation\RotationStrategyInterface;
 
 interface RotationStrategyInterface
 {
-    public function getCurrentPath(string $basePath, string $channel): string;
+    public function getCurrentPath(
+        string $basePath,
+        string $channel,
+    ): string;
     public function needsRotation(string $filePath): bool;
 }
 ```

@@ -19,8 +19,10 @@ use Marko\Core\Command\Output;
 #[Command(name: 'greet', description: 'Say hello')]
 class GreetCommand implements CommandInterface
 {
-    public function execute(Input $input, Output $output): int
-    {
+    public function execute(
+        Input $input,
+        Output $output,
+    ): int {
         $output->writeLine('Hello, World!');
 
         return 0;

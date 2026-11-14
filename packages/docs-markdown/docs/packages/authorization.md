@@ -81,14 +81,16 @@ class PostPolicy
         ?AuthorizableInterface $user,
         Post $post,
     ): bool {
-        return $user !== null && $user->getAuthIdentifier() === $post->authorId;
+        return $user !== null
+            && $user->getAuthIdentifier() === $post->authorId;
     }
 
     public function delete(
         ?AuthorizableInterface $user,
         Post $post,
     ): bool {
-        return $user !== null && $user->getAuthIdentifier() === $post->authorId;
+        return $user !== null
+            && $user->getAuthIdentifier() === $post->authorId;
     }
 }
 ```
@@ -138,7 +140,14 @@ class AdminBypass implements GateHookInterface
         array $arguments,
     ): ?bool {
         // null means "no opinion": the next hook, closure or policy decides
-        return $user instanceof User && $user->isAdmin() ? true : null;
+        if (
+            $user instanceof User
+            && $user->isAdmin()
+        ) {
+            return true;
+        }
+
+        return null;
     }
 }
 ```
@@ -174,14 +183,22 @@ class SoundPolicy implements PolicyBeforeInterface
         array $arguments,
     ): ?bool {
         // Default-library sounds are never editable here
-        return $arguments[0] instanceof Sound && $arguments[0]->isDefaultLibrary ? false : null;
+        if (
+            $arguments[0] instanceof Sound
+            && $arguments[0]->isDefaultLibrary
+        ) {
+            return false;
+        }
+
+        return null;
     }
 
     public function update(
         ?AuthorizableInterface $user,
         Sound $sound,
     ): bool {
-        return $user !== null && $user->getAuthIdentifier() === $sound->ownerId;
+        return $user !== null
+            && $user->getAuthIdentifier() === $sound->ownerId;
     }
 }
 ```
@@ -437,11 +454,26 @@ class User implements AuthorizableInterface
 ```php
 interface GateInterface
 {
-    public function define(string $ability, callable $callback): void;
-    public function allows(string $ability, mixed ...$arguments): bool;
-    public function denies(string $ability, mixed ...$arguments): bool;
-    public function authorize(string $ability, mixed ...$arguments): bool;
-    public function policy(string $entityClass, string $policyClass): void;
+    public function define(
+        string $ability,
+        callable $callback,
+    ): void;
+    public function allows(
+        string $ability,
+        mixed ...$arguments,
+    ): bool;
+    public function denies(
+        string $ability,
+        mixed ...$arguments,
+    ): bool;
+    public function authorize(
+        string $ability,
+        mixed ...$arguments,
+    ): bool;
+    public function policy(
+        string $entityClass,
+        string $policyClass,
+    ): void;
 }
 ```
 
@@ -452,7 +484,11 @@ interface GateInterface
 
 interface GateHookInterface
 {
-    public function before(?AuthorizableInterface $user, string $ability, array $arguments): ?bool;
+    public function before(
+        ?AuthorizableInterface $user,
+        string $ability,
+        array $arguments,
+    ): ?bool;
 }
 ```
 
@@ -463,7 +499,11 @@ interface GateHookInterface
 ```php
 interface PolicyBeforeInterface
 {
-    public function before(?AuthorizableInterface $user, string $ability, array $arguments): ?bool;
+    public function before(
+        ?AuthorizableInterface $user,
+        string $ability,
+        array $arguments,
+    ): ?bool;
 }
 ```
 
@@ -496,7 +536,10 @@ enum AbilityDecisionSource: string
 ```php
 interface AuthorizableInterface extends AuthenticatableInterface
 {
-    public function can(string $ability, mixed ...$arguments): bool;
+    public function can(
+        string $ability,
+        mixed ...$arguments,
+    ): bool;
 }
 ```
 
@@ -525,7 +568,10 @@ class AuthorizationMiddleware implements MiddlewareInterface
         Closure $guard,
         CanAttributeReader $canAttributeReader = new CanAttributeReader(),
     );
-    public function handle(Request $request, callable $next): Response;
+    public function handle(
+        Request $request,
+        callable $next,
+    ): Response;
 }
 ```
 
@@ -553,7 +599,10 @@ class AuthorizationException extends MarkoException implements HttpExceptionInte
     public function getHeaders(): array;           // []
     public function getResponseData(): array;      // ['message' => 'Forbidden.']
 
-    public static function forbidden(string $ability, string $resource): self;
+    public static function forbidden(
+        string $ability,
+        string $resource,
+    ): self;
 }
 ```
 
@@ -564,8 +613,15 @@ Thrown for policy misconfiguration. It is not an HTTP exception, so it surfaces 
 ```php
 class PolicyException extends MarkoException
 {
-    public static function duplicatePolicy(string $entityClass, string $policyClass, string $existing): self;
-    public static function missingMethod(string $policyClass, string $ability): self;
+    public static function duplicatePolicy(
+        string $entityClass,
+        string $policyClass,
+        string $existing,
+    ): self;
+    public static function missingMethod(
+        string $policyClass,
+        string $ability,
+    ): self;
 }
 ```
 
@@ -577,6 +633,10 @@ Thrown at boot when routes use `#[Can]` but the guard can't be built (see [Cost 
 class AuthorizationConfigurationException extends MarkoException
 {
     /** @param array<int, string> $canRoutes "controller::action" keys */
-    public static function cannotBuildForCan(?string $guard, array $canRoutes, Throwable $previous): self;
+    public static function cannotBuildForCan(
+        ?string $guard,
+        array $canRoutes,
+        Throwable $previous,
+    ): self;
 }
 ```

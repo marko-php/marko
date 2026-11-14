@@ -100,7 +100,12 @@ class EntityRecordLookup implements RecordLookupInterface
         EntityMetadataFactory $entityMetadataFactory,
         EntityHydrator $entityHydrator,
     );
-    public function exists(string $entityClass, string $property, mixed $value, array $where = []): bool;
+    public function exists(
+        string $entityClass,
+        string $property,
+        mixed $value,
+        array $where = [],
+    ): bool;
     public function isTaken(
         string $entityClass,
         string $property,
@@ -118,9 +123,20 @@ class EntityRecordLookup implements RecordLookupInterface
 class RecordLookupException extends MarkoException
 {
     public static function unknownEntity(string $entityClass): self;
-    public static function unknownProperty(string $entityClass, string $property, array $properties): self;
-    public static function encryptedProperty(string $entityClass, string $property): self;
-    public static function caseInsensitiveNeedsText(string $entityClass, string $property, string $type): self;
+    public static function unknownProperty(
+        string $entityClass,
+        string $property,
+        array $properties,
+    ): self;
+    public static function encryptedProperty(
+        string $entityClass,
+        string $property,
+    ): self;
+    public static function caseInsensitiveNeedsText(
+        string $entityClass,
+        string $property,
+        string $type,
+    ): self;
 }
 ```
 

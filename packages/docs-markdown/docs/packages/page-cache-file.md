@@ -87,8 +87,15 @@ use Marko\PageCache\CachePolicy;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 
-public function lookup(Request $request, array $queryParams): ?Response;
-public function store(Request $request, Response $response, CachePolicy $policy): Response;
+public function lookup(
+    Request $request,
+    array $queryParams,
+): ?Response;
+public function store(
+    Request $request,
+    Response $response,
+    CachePolicy $policy,
+): Response;
 public function purgeUrl(string $url): bool;
 public function purgeTag(string $tag): bool;
 public function clear(): bool;

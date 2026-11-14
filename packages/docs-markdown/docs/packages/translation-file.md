@@ -102,8 +102,15 @@ readonly class FileTranslationLoader implements TranslationLoaderInterface
         private string $basePath,
     ) {}
 
-    public function load(string $locale, string $group, ?string $namespace = null): array;
-    public function addNamespace(string $namespace, string $path): void;
+    public function load(
+        string $locale,
+        string $group,
+        ?string $namespace = null,
+    ): array;
+    public function addNamespace(
+        string $namespace,
+        string $path,
+    ): void;
 }
 ```
 

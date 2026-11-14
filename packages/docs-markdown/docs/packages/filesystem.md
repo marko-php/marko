@@ -234,19 +234,39 @@ public function isDirectory(string $path): bool;
 public function info(string $path): FileInfo;
 public function read(string $path): string;
 public function readStream(string $path): mixed;
-public function write(string $path, string $contents, array $options = []): bool;
-public function writeStream(string $path, mixed $resource, array $options = []): bool;
-public function append(string $path, string $contents): bool;
+public function write(
+    string $path,
+    string $contents,
+    array $options = [],
+): bool;
+public function writeStream(
+    string $path,
+    mixed $resource,
+    array $options = [],
+): bool;
+public function append(
+    string $path,
+    string $contents,
+): bool;
 public function delete(string $path): bool;
-public function copy(string $source, string $destination): bool;
-public function move(string $source, string $destination): bool;
+public function copy(
+    string $source,
+    string $destination,
+): bool;
+public function move(
+    string $source,
+    string $destination,
+): bool;
 public function size(string $path): int;
 public function lastModified(string $path): int;
 public function mimeType(string $path): string;
 public function listDirectory(string $path = '/'): DirectoryListingInterface;
 public function makeDirectory(string $path): bool;
 public function deleteDirectory(string $path): bool;
-public function setVisibility(string $path, string $visibility): bool;
+public function setVisibility(
+    string $path,
+    string $visibility,
+): bool;
 public function visibility(string $path): string;
 ```
 
@@ -259,7 +279,10 @@ use Marko\Filesystem\Contracts\FilesystemManagerInterface;
 use Marko\Filesystem\Contracts\FilesystemInterface;
 
 public function disk(?string $name = null): FilesystemInterface;
-public function useDisk(?string $name, FilesystemInterface $disk): void;
+public function useDisk(
+    ?string $name,
+    FilesystemInterface $disk,
+): void;
 ```
 
 ### PathNormalizer

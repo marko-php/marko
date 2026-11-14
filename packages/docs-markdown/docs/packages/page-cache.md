@@ -156,8 +156,10 @@ class ProductController
 
 final class ProductTagProvider implements CacheTagProviderInterface
 {
-    public function tags(Request $request, Cacheable $attribute): array
-    {
+    public function tags(
+        Request $request,
+        Cacheable $attribute,
+    ): array {
         $id = $request->routeParam('id');
 
         return ["product-{$id}"];
@@ -255,8 +257,15 @@ use Marko\PageCache\CachePolicy;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 
-public function lookup(Request $request, array $queryParams): ?Response;
-public function store(Request $request, Response $response, CachePolicy $policy): Response;
+public function lookup(
+    Request $request,
+    array $queryParams,
+): ?Response;
+public function store(
+    Request $request,
+    Response $response,
+    CachePolicy $policy,
+): Response;
 public function purgeUrl(string $url): bool;
 public function purgeTag(string $tag): bool;
 public function clear(): bool;
@@ -292,7 +301,10 @@ use Marko\PageCache\Contracts\CacheTagProviderInterface;
 use Marko\PageCache\Attributes\Cacheable;
 use Marko\Routing\Http\Request;
 
-public function tags(Request $request, Cacheable $attribute): array;
+public function tags(
+    Request $request,
+    Cacheable $attribute,
+): array;
 ```
 
 ### IdentityInterface
@@ -311,11 +323,23 @@ public function getIdentities(): array;
 use Marko\PageCache\CacheKey;
 use Marko\Routing\Http\Request;
 
-public function __construct(string $method, string $scheme, string $host, string $path, string $query);
-public static function fromRequest(Request $request, array $queryParams): self;
+public function __construct(
+    string $method,
+    string $scheme,
+    string $host,
+    string $path,
+    string $query,
+);
+public static function fromRequest(
+    Request $request,
+    array $queryParams,
+): self;
 public static function schemeFromRequest(Request $request): string;
 public static function hostnameFromRequest(Request $request): string;
-public static function normalizeHost(string $host, string $scheme): string;
+public static function normalizeHost(
+    string $host,
+    string $scheme,
+): string;
 public static function normalizeQuery(string $rawQuery): string;
 public function hash(): string;
 ```
@@ -329,7 +353,11 @@ public function hash(): string;
 ```php
 use Marko\PageCache\CachePolicy;
 
-public function __construct(public int $ttl, public array $tags, public array $queryParams = []) {}
+public function __construct(
+    public int $ttl,
+    public array $tags,
+    public array $queryParams = [],
+) {}
 ```
 
 ### PageCacheConfig

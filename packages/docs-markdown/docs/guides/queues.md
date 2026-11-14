@@ -56,8 +56,10 @@ readonly class RegistrationService
         private QueueInterface $queue,
     ) {}
 
-    public function register(string $email, string $name): void
-    {
+    public function register(
+        string $email,
+        string $name,
+    ): void {
         // ... create user
 
         $this->queue->push(new SendWelcomeEmail(

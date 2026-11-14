@@ -195,7 +195,12 @@ Implements `BroadcasterInterface`.
 ```php
 use Marko\Broadcasting\Pusher\Driver\PusherBroadcaster;
 
-public function broadcast(string|Channel $channel, string $event, array $data, ?string $id = null): void;
+public function broadcast(
+    string|Channel $channel,
+    string $event,
+    array $data,
+    ?string $id = null,
+): void;
 public function dispatch(BroadcastableInterface $broadcastable): void;
 ```
 
@@ -207,15 +212,31 @@ Each request is signed with `auth_timestamp` read from the injected PSR-20 [`Clo
 use Marko\Broadcasting\Pusher\Auth\PusherSignature;
 
 /** @param array<string, string> $query */
-public function sign(string $method, string $path, array $query): string;
+public function sign(
+    string $method,
+    string $path,
+    array $query,
+): string;
 
 /** @return array<string, string> auth_key, auth_timestamp, auth_version, body_md5, auth_signature */
-public function signedQuery(string $method, string $path, string $body, int $timestamp): array;
+public function signedQuery(
+    string $method,
+    string $path,
+    string $body,
+    int $timestamp,
+): array;
 
-public function channelAuth(string $socketId, string $channelName): string;
+public function channelAuth(
+    string $socketId,
+    string $channelName,
+): string;
 
 /** $channelData is the already-encoded JSON string returned to the client as channel_data */
-public function presenceChannelAuth(string $socketId, string $channelName, string $channelData): string;
+public function presenceChannelAuth(
+    string $socketId,
+    string $channelName,
+    string $channelData,
+): string;
 ```
 
 ### PusherAuthController

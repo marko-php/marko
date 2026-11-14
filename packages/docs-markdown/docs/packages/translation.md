@@ -136,8 +136,17 @@ class MyTranslator extends Translator
 ```php
 use Marko\Translation\Contracts\TranslatorInterface;
 
-public function get(string $key, array $replacements = [], ?string $locale = null): string;
-public function choice(string $key, int $count, array $replacements = [], ?string $locale = null): string;
+public function get(
+    string $key,
+    array $replacements = [],
+    ?string $locale = null,
+): string;
+public function choice(
+    string $key,
+    int $count,
+    array $replacements = [],
+    ?string $locale = null,
+): string;
 public function setLocale(string $locale): void;
 public function getLocale(): string;
 ```
@@ -149,7 +158,11 @@ Both `get()` and `choice()` throw `MissingTranslationException` when a key canno
 ```php
 use Marko\Translation\Contracts\TranslationLoaderInterface;
 
-public function load(string $locale, string $group, ?string $namespace = null): array;
+public function load(
+    string $locale,
+    string $group,
+    ?string $namespace = null,
+): array;
 ```
 
 ### TranslationConfig

@@ -314,8 +314,14 @@ return [
 ### PasskeyRegistration
 
 ```php
-public function creationOptions(string $userName, string $displayName): array;
-public function register(array $credential, string $name): PasskeyCredential;
+public function creationOptions(
+    string $userName,
+    string $displayName,
+): array;
+public function register(
+    array $credential,
+    string $name,
+): PasskeyCredential;
 ```
 
 ### PasskeyAuthentication
@@ -331,7 +337,10 @@ public function confirm(array $credential): void;
 ```php
 /** @return list<PasskeyCredential> */
 public function forCurrentUser(): array;
-public function rename(string $credentialId, string $name): PasskeyCredential;
+public function rename(
+    string $credentialId,
+    string $name,
+): PasskeyCredential;
 public function delete(string $credentialId): void;
 ```
 
@@ -340,7 +349,10 @@ public function delete(string $credentialId): void;
 ```php
 public function findByCredentialId(string $id): ?PasskeyCredential;
 /** @return list<PasskeyCredential> */
-public function forUser(string $provider, int|string $userId): array;
+public function forUser(
+    string $provider,
+    int|string $userId,
+): array;
 public function save(PasskeyCredential $credential): void;
 public function delete(PasskeyCredential $credential): void;
 ```
@@ -348,10 +360,24 @@ public function delete(PasskeyCredential $credential): void;
 ### PasskeyVerifierInterface
 
 ```php
-public function creationOptions(PasskeyUserEntity $user, string $challenge, array $excludeCredentials): array;
-public function verifyAttestation(AttestationResponse $response, string $challenge): VerifiedAttestation;
-public function requestOptions(string $challenge, array $allowCredentials): array;
-public function verifyAssertion(AssertionResponse $response, PasskeyCredential $credential, string $challenge): VerifiedAssertion;
+public function creationOptions(
+    PasskeyUserEntity $user,
+    string $challenge,
+    array $excludeCredentials,
+): array;
+public function verifyAttestation(
+    AttestationResponse $response,
+    string $challenge,
+): VerifiedAttestation;
+public function requestOptions(
+    string $challenge,
+    array $allowCredentials,
+): array;
+public function verifyAssertion(
+    AssertionResponse $response,
+    PasskeyCredential $credential,
+    string $challenge,
+): VerifiedAssertion;
 ```
 
 ### Exceptions

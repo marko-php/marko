@@ -269,20 +269,50 @@ Locks live alongside the cache entries, so `marko cache:clear` also frees every 
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Contracts\CacheItemInterface;
 
-public function get(string $key, mixed $default = null): mixed;
-public function set(string $key, mixed $value, ?int $ttl = null): bool;
+public function get(
+    string $key,
+    mixed $default = null,
+): mixed;
+public function set(
+    string $key,
+    mixed $value,
+    ?int $ttl = null,
+): bool;
 public function has(string $key): bool;
 public function delete(string $key): bool;
 public function clear(): bool;
 public function getItem(string $key): CacheItemInterface;
-public function getMultiple(array $keys, mixed $default = null): iterable;
-public function setMultiple(array $values, ?int $ttl = null): bool;
+public function getMultiple(
+    array $keys,
+    mixed $default = null,
+): iterable;
+public function setMultiple(
+    array $values,
+    ?int $ttl = null,
+): bool;
 public function deleteMultiple(array $keys): bool;
-public function increment(string $key, int $ttl): int;
-public function add(string $key, mixed $value, ?int $ttl = null): bool;
-public function remember(string $key, ?int $ttl, callable $callback): mixed;
-public function pull(string $key, mixed $default = null): mixed;
-public function forever(string $key, mixed $value): bool;
+public function increment(
+    string $key,
+    int $ttl,
+): int;
+public function add(
+    string $key,
+    mixed $value,
+    ?int $ttl = null,
+): bool;
+public function remember(
+    string $key,
+    ?int $ttl,
+    callable $callback,
+): mixed;
+public function pull(
+    string $key,
+    mixed $default = null,
+): mixed;
+public function forever(
+    string $key,
+    mixed $value,
+): bool;
 ```
 
 All methods that accept keys throw `InvalidKeyException` for empty or invalid keys. For every `$ttl` that stores a value (`set()`, `setMultiple()`, `add()`, `remember()`), `null` means the default TTL and `0` means no expiry.
@@ -299,9 +329,22 @@ All methods that accept keys throw `InvalidKeyException` for empty or invalid ke
 use Marko\Cache\CacheOperations;
 use Marko\Cache\Contracts\CacheInterface;
 
-public function remember(CacheInterface $cache, string $key, ?int $ttl, callable $callback): mixed;
-public function pull(CacheInterface $cache, string $key, mixed $default): mixed;
-public function forever(CacheInterface $cache, string $key, mixed $value): bool;
+public function remember(
+    CacheInterface $cache,
+    string $key,
+    ?int $ttl,
+    callable $callback,
+): mixed;
+public function pull(
+    CacheInterface $cache,
+    string $key,
+    mixed $default,
+): mixed;
+public function forever(
+    CacheInterface $cache,
+    string $key,
+    mixed $value,
+): bool;
 ```
 
 A custom driver that implements `CacheInterface` does the same: inject `CacheOperations` and delegate each method in one line, for example `return $this->operations->remember($this, $key, $ttl, $callback);`.
@@ -335,8 +378,14 @@ use Marko\Cache\Contracts\LockFactoryInterface;
 use Marko\Cache\Contracts\LockInterface;
 use Marko\Cache\Lock\LockScope;
 
-public function create(string $name, int $seconds): LockInterface;  // fresh random owner; $seconds >= 1
-public function restore(string $name, string $owner): LockInterface; // release-only lock for another process
+public function create(
+    string $name,
+    int $seconds,
+): LockInterface;  // fresh random owner; $seconds >= 1
+public function restore(
+    string $name,
+    string $owner,
+): LockInterface; // release-only lock for another process
 public function scope(): LockScope;                                  // the bound store's scope
 ```
 
@@ -365,8 +414,15 @@ The only part a driver implements. Owner tokens, expiry validation, `block()` an
 use Marko\Cache\Contracts\LockStoreInterface;
 use Marko\Cache\Lock\LockScope;
 
-public function acquire(string $name, string $owner, int $seconds): bool; // atomic set-if-absent with expiry
-public function release(string $name, string $owner): bool;               // atomic compare-and-delete
+public function acquire(
+    string $name,
+    string $owner,
+    int $seconds,
+): bool; // atomic set-if-absent with expiry
+public function release(
+    string $name,
+    string $owner,
+): bool;               // atomic compare-and-delete
 public function forceRelease(string $name): void;
 public function currentOwner(string $name): ?string;                      // null when free or expired
 public function scope(): LockScope;                                       // Process, Host or Distributed
@@ -394,9 +450,18 @@ public function scope(): LockScope;                                       // Pro
 ```php
 use Marko\Cache\Signer\CacheValueSigner;
 
-public function wrap(string $serialized, string $context): string;            // sign a payload for $context
-public function unwrap(string $envelope, string $context): ?string;           // null when unsigned, malformed, tampered or signed for another context
-public function verifyAndUnwrap(string $envelope, string $context): string;   // throws TamperedCacheValueException instead of returning null
+public function wrap(
+    string $serialized,
+    string $context,
+): string;            // sign a payload for $context
+public function unwrap(
+    string $envelope,
+    string $context,
+): ?string;           // null when unsigned, malformed, tampered or signed for another context
+public function verifyAndUnwrap(
+    string $envelope,
+    string $context,
+): string;   // throws TamperedCacheValueException instead of returning null
 ```
 
 Every method throws `TamperedCacheValueException::emptySigningKey()` when `encryption.key` is empty.

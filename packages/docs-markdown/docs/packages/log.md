@@ -263,15 +263,43 @@ The default `LineFormatter` uses the format `[{datetime}] {channel}.{level}: {me
 use Marko\Log\Contracts\LoggerInterface;
 use Marko\Log\LogLevel;
 
-public function emergency(string $message, array $context = []): void;
-public function alert(string $message, array $context = []): void;
-public function critical(string $message, array $context = []): void;
-public function error(string $message, array $context = []): void;
-public function warning(string $message, array $context = []): void;
-public function notice(string $message, array $context = []): void;
-public function info(string $message, array $context = []): void;
-public function debug(string $message, array $context = []): void;
-public function log(LogLevel $level, string $message, array $context = []): void;
+public function emergency(
+    string $message,
+    array $context = [],
+): void;
+public function alert(
+    string $message,
+    array $context = [],
+): void;
+public function critical(
+    string $message,
+    array $context = [],
+): void;
+public function error(
+    string $message,
+    array $context = [],
+): void;
+public function warning(
+    string $message,
+    array $context = [],
+): void;
+public function notice(
+    string $message,
+    array $context = [],
+): void;
+public function info(
+    string $message,
+    array $context = [],
+): void;
+public function debug(
+    string $message,
+    array $context = [],
+): void;
+public function log(
+    LogLevel $level,
+    string $message,
+    array $context = [],
+): void;
 ```
 
 ### Logger

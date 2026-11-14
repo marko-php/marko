@@ -52,8 +52,10 @@ class PostRepositoryPlugin
      * Runs after find() — receives the result, then the arguments (possibly modified by before plugins).
      */
     #[After]
-    public function find(mixed $result, int $id): mixed
-    {
+    public function find(
+        mixed $result,
+        int $id,
+    ): mixed {
         // Enrich the result
         $result['retrieved_at'] = time();
 
@@ -85,7 +87,10 @@ For `before` plugins, parameters match the original method's signature. There ar
 
 ```php
 #[Before]
-public function applyDiscount(float $price, int $quantity): null|array
+public function applyDiscount(
+    float $price,
+    int $quantity,
+): null|array
 {
     // Apply bulk discount when ordering 10 or more
     if ($quantity >= 10) {
@@ -166,8 +171,10 @@ class OrderAuditPlugin
      * Runs after processPayment() — receives result then original arguments.
      */
     #[After(method: 'processPayment')]
-    public function logPaymentOutcome(mixed $result, PaymentRequest $request): mixed
-    {
+    public function logPaymentOutcome(
+        mixed $result,
+        PaymentRequest $request,
+    ): mixed {
         // Record the outcome for auditing
         return $result;
     }

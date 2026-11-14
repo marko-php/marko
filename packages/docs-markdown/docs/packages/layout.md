@@ -163,8 +163,10 @@ Handles control which pages a component appears on:
 ```php title="app/web/src/Http/Middleware/NoStoreMiddleware.php"
 class NoStoreMiddleware implements MiddlewareInterface
 {
-    public function handle(Request $request, callable $next): Response
-    {
+    public function handle(
+        Request $request,
+        callable $next,
+    ): Response {
         // $next() returns the rendered layout for a #[Layout] route.
         return $next($request)->withHeader('Cache-Control', 'no-store');
     }

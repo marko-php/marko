@@ -307,8 +307,14 @@ public function start(): void;
 public bool $started { get; }
 public function arm(): void;          // start on first access; SessionMiddleware calls this for cookieless requests
 public function isAvailable(): bool;  // started, or armed to start on first access
-public function get(string $key, mixed $default = null): mixed;
-public function set(string $key, mixed $value): void;
+public function get(
+    string $key,
+    mixed $default = null,
+): mixed;
+public function set(
+    string $key,
+    mixed $value,
+): void;
 public function has(string $key): bool;
 public function remove(string $key): void;
 public function clear(): void;
@@ -330,10 +336,22 @@ public function discard(): void;    // close without writing to the handler
 ```php
 use Marko\Session\Flash\FlashBag;
 
-public function add(string $type, string $message): void;
-public function set(string $type, array $messages): void;
-public function get(string $type, array $default = []): array;
-public function peek(string $type, array $default = []): array;
+public function add(
+    string $type,
+    string $message,
+): void;
+public function set(
+    string $type,
+    array $messages,
+): void;
+public function get(
+    string $type,
+    array $default = [],
+): array;
+public function peek(
+    string $type,
+    array $default = [],
+): array;
 public function all(): array;
 public function has(string $type): bool;
 public function clear(): array;
@@ -344,8 +362,14 @@ public function clear(): array;
 ```php
 use Marko\Session\Contracts\FlashDataInterface;
 
-public function put(string $key, mixed $value): void;           // next request only; throws InvalidFlashDataException for objects
-public function get(string $key, mixed $default = null): mixed; // what the previous request flashed; never consumes
+public function put(
+    string $key,
+    mixed $value,
+): void;           // next request only; throws InvalidFlashDataException for objects
+public function get(
+    string $key,
+    mixed $default = null,
+): mixed; // what the previous request flashed; never consumes
 public function has(string $key): bool;
 public function keep(string ...$keys): void;                    // carry values one more request; no keys = all
 ```
@@ -359,14 +383,23 @@ Extends PHP's native `SessionHandlerInterface` and `SessionUpdateTimestampHandle
 ```php
 use Marko\Session\Contracts\SessionHandlerInterface;
 
-public function open(string $path, string $name): bool;
+public function open(
+    string $path,
+    string $name,
+): bool;
 public function close(): bool;
 public function read(string $id): string|false;
-public function write(string $id, string $data): bool;
+public function write(
+    string $id,
+    string $data,
+): bool;
 public function destroy(string $id): bool;
 public function gc(int $max_lifetime): int|false;
 public function validateId(string $id): bool;
-public function updateTimestamp(string $id, string $data): bool;
+public function updateTimestamp(
+    string $id,
+    string $data,
+): bool;
 ```
 
 ### Custom Session Handlers
@@ -392,8 +425,10 @@ class RedisSessionHandler implements SessionHandlerInterface
         return $this->redis->exists('session:' . $id) === 1;
     }
 
-    public function updateTimestamp(string $id, string $data): bool
-    {
+    public function updateTimestamp(
+        string $id,
+        string $data,
+    ): bool {
         $this->redis->expire('session:' . $id, $this->sessionConfig->lifetime() * 60, 'XX');
 
         return true;

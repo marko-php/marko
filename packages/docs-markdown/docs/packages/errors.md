@@ -157,7 +157,12 @@ interface ErrorHandlerInterface
 {
     public function handle(ErrorReport $report): void;
     public function handleException(Throwable $exception): void;
-    public function handleError(int $level, string $message, string $file, int $line): bool;
+    public function handleError(
+        int $level,
+        string $message,
+        string $file,
+        int $line,
+    ): bool;
     public function register(): void;
     public function unregister(): void;
 }
@@ -200,7 +205,11 @@ readonly class ErrorReport
     public string $suggestion;   // From MarkoException
     public ?Throwable $previous;
 
-    public static function fromThrowable(Throwable $throwable, Severity $severity, DateTimeImmutable $timestamp): self;
+    public static function fromThrowable(
+        Throwable $throwable,
+        Severity $severity,
+        DateTimeImmutable $timestamp,
+    ): self;
 }
 ```
 

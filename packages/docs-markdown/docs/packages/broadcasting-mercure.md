@@ -174,7 +174,12 @@ Implements `BroadcasterInterface`.
 ```php
 use Marko\Broadcasting\Mercure\Driver\MercureBroadcaster;
 
-public function broadcast(string|Channel $channel, string $event, array $data, ?string $id = null): void;
+public function broadcast(
+    string|Channel $channel,
+    string $event,
+    array $data,
+    ?string $id = null,
+): void;
 public function dispatch(BroadcastableInterface $broadcastable): void;
 ```
 
@@ -186,10 +191,17 @@ use Marko\Broadcasting\Mercure\Subscriber\MercureSubscriberToken;
 public const string COOKIE_NAME = 'mercureAuthorization';
 
 /** @param list<string|Channel> $channels */
-public function for(array $channels, ?AuthenticatableInterface $user): string;
+public function for(
+    array $channels,
+    ?AuthenticatableInterface $user,
+): string;
 
 /** @param list<string|Channel> $channels */
-public function withAuthorizationCookie(Response $response, array $channels, ?AuthenticatableInterface $user): Response;
+public function withAuthorizationCookie(
+    Response $response,
+    array $channels,
+    ?AuthenticatableInterface $user,
+): Response;
 
 /** @param list<string|Channel> $channels */
 public function subscribeUrl(array $channels): string;
@@ -205,7 +217,10 @@ A minimal HS256 encoder used for publisher and subscriber tokens --- no JWT libr
 use Marko\Broadcasting\Mercure\Jwt\MercureJwt;
 
 /** @param array<string, mixed> $claims */
-public function encode(array $claims, string $key): string;
+public function encode(
+    array $claims,
+    string $key,
+): string;
 ```
 
 ### MercureConfig

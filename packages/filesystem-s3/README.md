@@ -21,8 +21,10 @@ class MediaService
         private FilesystemManager $filesystemManager,
     ) {}
 
-    public function upload(string $path, string $contents): void
-    {
+    public function upload(
+        string $path,
+        string $contents,
+    ): void {
         $this->filesystemManager->disk('s3')->write($path, $contents);
     }
 }

@@ -176,9 +176,20 @@ use Marko\Routing\Http\Response;
 
 class ApiResponse
 {
-    public static function success(array $data = [], array $meta = []): Response;
-    public static function created(array $data = [], array $meta = []): Response;
-    public static function paginated(array $data, int $page, int $perPage, int $total): Response;
+    public static function success(
+        array $data = [],
+        array $meta = [],
+    ): Response;
+    public static function created(
+        array $data = [],
+        array $meta = [],
+    ): Response;
+    public static function paginated(
+        array $data,
+        int $page,
+        int $perPage,
+        int $total,
+    ): Response;
 }
 ```
 
