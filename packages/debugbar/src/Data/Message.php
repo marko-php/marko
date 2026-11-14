@@ -21,8 +21,9 @@ readonly class Message
     /**
      * @return array<string, mixed>
      */
-    public function toArray(float $startTime): array
-    {
+    public function toArray(
+        float $startTime,
+    ): array {
         return [
             'message' => $this->message,
             'level' => $this->level,

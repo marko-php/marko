@@ -6,12 +6,14 @@ use Marko\CodeIndexer\Cache\IndexCache;
 use Marko\CodeIndexer\ValueObject\ConfigKeyEntry;
 use Marko\Lsp\Features\ConfigKeyFeature;
 
-function makeIndex(array $entries): IndexCache
-{
+function makeIndex(
+    array $entries,
+): IndexCache {
     return new class ($entries) extends IndexCache
     {
-        public function __construct(private array $entries)
-        {
+        public function __construct(
+            private array $entries,
+        ) {
             // Skip parent constructor
         }
 
@@ -22,8 +24,14 @@ function makeIndex(array $entries): IndexCache
     };
 }
 
-function makeEntry(string $key, string $type = 'string', mixed $default = null, string $module = 'TestModule', string $file = '/config/test.php', int $line = 10): ConfigKeyEntry
-{
+function makeEntry(
+    string $key,
+    string $type = 'string',
+    mixed $default = null,
+    string $module = 'TestModule',
+    string $file = '/config/test.php',
+    int $line = 10,
+): ConfigKeyEntry {
     return new ConfigKeyEntry($key, $type, $default, $module, $file, $line);
 }
 

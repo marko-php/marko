@@ -140,8 +140,10 @@ use Marko\Routing\Http\Response;
 $attribute
 class $class$implementsClause
 {
-    public function respond(HttpExceptionInterface \$exception, Request \$request): ?Response
-    {
+    public function respond(
+        HttpExceptionInterface \$exception,
+        Request \$request,
+    ): ?Response {
         return $body;
     }
 }

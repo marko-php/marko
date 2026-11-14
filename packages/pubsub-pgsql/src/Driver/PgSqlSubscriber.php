@@ -17,8 +17,9 @@ readonly class PgSqlSubscriber implements SubscriberInterface
         private PubSubConfig $config,
     ) {}
 
-    public function subscribe(string ...$channels): Subscription
-    {
+    public function subscribe(
+        string ...$channels,
+    ): Subscription {
         $listeners = [];
         $conn = $this->connection->connection();
 
@@ -33,8 +34,9 @@ readonly class PgSqlSubscriber implements SubscriberInterface
     /**
      * @throws PubSubException
      */
-    public function psubscribe(string ...$patterns): Subscription
-    {
+    public function psubscribe(
+        string ...$patterns,
+    ): Subscription {
         throw PubSubException::patternSubscriptionNotSupported('pgsql');
     }
 }

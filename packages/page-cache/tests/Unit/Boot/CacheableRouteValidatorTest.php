@@ -23,16 +23,18 @@ class AccountAuthMiddleware {}
 
 class LocaleMiddleware {}
 
-function makeCacheableRouteValidator(array $patterns = ['*Auth*']): CacheableRouteValidator
-{
+function makeCacheableRouteValidator(
+    array $patterns = ['*Auth*'],
+): CacheableRouteValidator {
     return new CacheableRouteValidator(new PageCacheConfig(new FakeConfigRepository([
         'page-cache.auth_middleware_patterns' => $patterns,
         'page-cache.cacheable_methods' => ['GET', 'HEAD'],
     ])));
 }
 
-function makeValidatorRoutes(RouteDefinition ...$routes): RouteCollection
-{
+function makeValidatorRoutes(
+    RouteDefinition ...$routes,
+): RouteCollection {
     $collection = new RouteCollection();
 
     foreach ($routes as $route) {

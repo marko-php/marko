@@ -45,8 +45,9 @@ class ProductRepository extends Repository
  *
  * @param array<array<string, mixed>> $rows
  */
-function makeStubBuilder(array $rows = []): QueryBuilderInterface
-{
+function makeStubBuilder(
+    array $rows = [],
+): QueryBuilderInterface {
     return new class ($rows) implements QueryBuilderInterface
     {
         /** @var array<string> */
@@ -71,8 +72,9 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function select(string ...$columns): static
-        {
+        public function select(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -83,13 +85,15 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function whereNull(string $column): static
-        {
+        public function whereNull(
+            string $column,
+        ): static {
             return $this;
         }
 
-        public function whereNotNull(string $column): static
-        {
+        public function whereNotNull(
+            string $column,
+        ): static {
             return $this;
         }
 
@@ -100,13 +104,15 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function whereJsonExists(string $path): static
-        {
+        public function whereJsonExists(
+            string $path,
+        ): static {
             return $this;
         }
 
-        public function whereJsonMissing(string $path): static
-        {
+        public function whereJsonMissing(
+            string $path,
+        ): static {
             return $this;
         }
 
@@ -125,13 +131,15 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function whereExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
-        public function whereNotExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereNotExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
@@ -198,13 +206,15 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function limit(int $limit): static
-        {
+        public function limit(
+            int $limit,
+        ): static {
             return $this;
         }
 
-        public function offset(int $offset): static
-        {
+        public function offset(
+            int $offset,
+        ): static {
             return $this;
         }
 
@@ -213,13 +223,15 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function union(QueryBuilderInterface $other): static
-        {
+        public function union(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
-        public function unionAll(QueryBuilderInterface $other): static
-        {
+        public function unionAll(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
@@ -228,8 +240,9 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
             return 1;
         }
 
-        public function compileSubquery(array &$bindings): string
-        {
+        public function compileSubquery(
+            array &$bindings,
+        ): string {
             return '';
         }
 
@@ -250,8 +263,9 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
             return 0;
         }
 
-        public function update(array $data): int
-        {
+        public function update(
+            array $data,
+        ): int {
             return 0;
         }
 
@@ -260,8 +274,9 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
             return 0;
         }
 
-        public function count(?string $column = null): int
-        {
+        public function count(
+            ?string $column = null,
+        ): int {
             return count($this->rows);
         }
 
@@ -300,8 +315,9 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
             return count($rows);
         }
 
-        public function groupBy(string ...$columns): static
-        {
+        public function groupBy(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -312,23 +328,27 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function min(string $column): int|float|null
-        {
+        public function min(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function max(string $column): int|float|null
-        {
+        public function max(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function sum(string $column): int|float|null
-        {
+        public function sum(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function avg(string $column): int|float|null
-        {
+        public function avg(
+            string $column,
+        ): int|float|null {
             return null;
         }
     };
@@ -337,8 +357,9 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
 /**
  * Create a repository with an injected stub query builder.
  */
-function makeRepository(QueryBuilderInterface $stubBuilder): ProductRepository
-{
+function makeRepository(
+    QueryBuilderInterface $stubBuilder,
+): ProductRepository {
     $connection = new class () implements ConnectionInterface
     {
         public function connect(): void {}
@@ -364,8 +385,9 @@ function makeRepository(QueryBuilderInterface $stubBuilder): ProductRepository
             return 0;
         }
 
-        public function prepare(string $sql): StatementInterface
-        {
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
             throw new RuntimeException('Not implemented');
         }
 
@@ -419,8 +441,9 @@ describe('Repository matching()', function (): void {
 
         $activeSpec = new class () implements QuerySpecification
         {
-            public function apply(QueryBuilderInterface $builder): void
-            {
+            public function apply(
+                QueryBuilderInterface $builder,
+            ): void {
                 $builder->where('status', '=', 'active');
             }
         };
@@ -441,16 +464,18 @@ describe('Repository matching()', function (): void {
 
         $activeSpec = new class () implements QuerySpecification
         {
-            public function apply(QueryBuilderInterface $builder): void
-            {
+            public function apply(
+                QueryBuilderInterface $builder,
+            ): void {
                 $builder->where('status', '=', 'active');
             }
         };
 
         $cheapSpec = new class () implements QuerySpecification
         {
-            public function apply(QueryBuilderInterface $builder): void
-            {
+            public function apply(
+                QueryBuilderInterface $builder,
+            ): void {
                 $builder->where('price', '<', 300);
             }
         };
@@ -467,16 +492,18 @@ describe('Repository matching()', function (): void {
 
         $firstSpec = new class () implements QuerySpecification
         {
-            public function apply(QueryBuilderInterface $builder): void
-            {
+            public function apply(
+                QueryBuilderInterface $builder,
+            ): void {
                 $builder->where('status', '=', 'active');
             }
         };
 
         $secondSpec = new class () implements QuerySpecification
         {
-            public function apply(QueryBuilderInterface $builder): void
-            {
+            public function apply(
+                QueryBuilderInterface $builder,
+            ): void {
                 $builder->where('price', '>', 50);
             }
         };
@@ -492,8 +519,9 @@ describe('Repository matching()', function (): void {
 
         $spec = new class () implements QuerySpecification
         {
-            public function apply(QueryBuilderInterface $builder): void
-            {
+            public function apply(
+                QueryBuilderInterface $builder,
+            ): void {
                 $builder->where('status', '=', 'deleted');
             }
         };
@@ -531,8 +559,9 @@ describe('Repository matching()', function (): void {
                 return 0;
             }
 
-            public function prepare(string $sql): StatementInterface
-            {
+            public function prepare(
+                string $sql,
+            ): StatementInterface {
                 throw new RuntimeException('Not implemented');
             }
 
@@ -583,16 +612,18 @@ describe('Specification Composition', function (): void {
 
         $activeSpec = new class () implements QuerySpecification
         {
-            public function apply(QueryBuilderInterface $builder): void
-            {
+            public function apply(
+                QueryBuilderInterface $builder,
+            ): void {
                 $builder->where('status', '=', 'active');
             }
         };
 
         $affordableSpec = new class () implements QuerySpecification
         {
-            public function apply(QueryBuilderInterface $builder): void
-            {
+            public function apply(
+                QueryBuilderInterface $builder,
+            ): void {
                 $builder->where('price', '<', 200);
             }
         };
@@ -614,8 +645,9 @@ describe('Specification Composition', function (): void {
         {
             public function __construct(private string $status) {}
 
-            public function apply(QueryBuilderInterface $builder): void
-            {
+            public function apply(
+                QueryBuilderInterface $builder,
+            ): void {
                 $builder->where('status', '=', $this->status);
             }
         };
@@ -624,8 +656,9 @@ describe('Specification Composition', function (): void {
         {
             public function __construct(private int $minPrice) {}
 
-            public function apply(QueryBuilderInterface $builder): void
-            {
+            public function apply(
+                QueryBuilderInterface $builder,
+            ): void {
                 $builder->where('price', '>=', $this->minPrice);
             }
         };

@@ -32,8 +32,10 @@ beforeEach(function (): void {
     $_POST = ['password' => 'secret'];
 });
 
-function makeDebugbar(array $overrides = [], ?DebugbarStorage &$storage = null): Debugbar
-{
+function makeDebugbar(
+    array $overrides = [],
+    ?DebugbarStorage &$storage = null,
+): Debugbar {
     $basePath = sys_get_temp_dir().'/marko-debugbar-test-'.bin2hex(random_bytes(4));
 
     $config = array_replace_recursive([

@@ -8,8 +8,11 @@ use Marko\CodeIndexer\ValueObject\PluginEntry;
 use Marko\CodeIndexer\ValueObject\RouteEntry;
 use Marko\Lsp\Features\AttributeFeature;
 
-function makeAttributeIndex(array $observers = [], array $plugins = [], array $routes = []): IndexCache
-{
+function makeAttributeIndex(
+    array $observers = [],
+    array $plugins = [],
+    array $routes = [],
+): IndexCache {
     return new class ($observers, $plugins, $routes) extends IndexCache
     {
         public function __construct(

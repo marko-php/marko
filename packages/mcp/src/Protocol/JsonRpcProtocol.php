@@ -54,8 +54,9 @@ class JsonRpcProtocol
      *
      * @throws JsonException
      */
-    public function handleMessage(string $jsonLine): void
-    {
+    public function handleMessage(
+        string $jsonLine,
+    ): void {
         try {
             $request = json_decode($jsonLine, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
@@ -66,9 +67,14 @@ class JsonRpcProtocol
             return;
         }
 
-        if (!is_array(
-            $request,
-        ) || !isset($request['jsonrpc']) || $request['jsonrpc'] !== '2.0' || !isset($request['method'])) {
+        if (
+            !is_array(
+                $request,
+            )
+            || !isset($request['jsonrpc'])
+            || $request['jsonrpc'] !== '2.0'
+            || !isset($request['method'])
+        ) {
             $this->writeResponse(
                 ['jsonrpc' => '2.0', 'error' => ['code' => -32600, 'message' => 'Invalid Request'], 'id' => $request['id'] ?? null],
             );
@@ -119,8 +125,9 @@ class JsonRpcProtocol
      * @param array<string, mixed> $response
      * @throws JsonException
      */
-    private function writeResponse(array $response): void
-    {
+    private function writeResponse(
+        array $response,
+    ): void {
         $json = json_encode($response, JSON_THROW_ON_ERROR);
         fwrite($this->output, $json . "\n");
     }

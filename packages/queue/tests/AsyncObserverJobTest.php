@@ -16,21 +16,24 @@ function createAsyncObserverJobEnvelope(
     return new JobEnvelope(new EncryptionConfig(new FakeConfigRepository(['encryption.key' => $key])));
 }
 
-function createStubContainer(object $observer): ContainerInterface
-{
+function createStubContainer(
+    object $observer,
+): ContainerInterface {
     return new readonly class ($observer) implements ContainerInterface
     {
         public function __construct(
             private object $observer,
         ) {}
 
-        public function get(string $id): object
-        {
+        public function get(
+            string $id,
+        ): object {
             return $this->observer;
         }
 
-        public function has(string $id): bool
-        {
+        public function has(
+            string $id,
+        ): bool {
             return true;
         }
 
@@ -41,13 +44,15 @@ function createStubContainer(object $observer): ContainerInterface
             object $instance,
         ): void {}
 
-        public function call(Closure $callable): mixed
-        {
+        public function call(
+            Closure $callable,
+        ): mixed {
             return null;
         }
 
-        public function resolvedInstances(?string $interface = null): array
-        {
+        public function resolvedInstances(
+            ?string $interface = null,
+        ): array {
             return [];
         }
     };
@@ -245,8 +250,9 @@ describe('AsyncObserverJob', function (): void {
                     private object $capture,
                 ) {}
 
-                public function handle(object $event): void
-                {
+                public function handle(
+                    object $event,
+                ): void {
                     $this->capture->called = true;
                     $this->capture->event = $event;
                 }
@@ -279,8 +285,9 @@ describe('AsyncObserverJob', function (): void {
                     private object $capture,
                 ) {}
 
-                public function handle(object $event): void
-                {
+                public function handle(
+                    object $event,
+                ): void {
                     $this->capture->called = true;
                 }
             };
@@ -302,13 +309,15 @@ describe('AsyncObserverJob', function (): void {
     it('surfaces a loud error when the observer class cannot be resolved (no silent swallow)', function (): void {
         $container = new class () implements ContainerInterface
         {
-            public function get(string $id): never
-            {
+            public function get(
+                string $id,
+            ): never {
                 throw new RuntimeException("Cannot resolve: $id");
             }
 
-            public function has(string $id): bool
-            {
+            public function has(
+                string $id,
+            ): bool {
                 return false;
             }
 
@@ -319,13 +328,15 @@ describe('AsyncObserverJob', function (): void {
                 object $instance,
             ): void {}
 
-            public function call(Closure $callable): mixed
-            {
+            public function call(
+                Closure $callable,
+            ): mixed {
                 return null;
             }
 
-            public function resolvedInstances(?string $interface = null): array
-            {
+            public function resolvedInstances(
+                ?string $interface = null,
+            ): array {
                 return [];
             }
         };

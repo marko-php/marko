@@ -181,7 +181,10 @@ class SqlitePermissionConnection implements ConnectionInterface, TransactionInte
     ): int {
         $this->log[] = $sql;
 
-        if ($this->failOn !== null && str_contains($sql, $this->failOn)) {
+        if (
+            $this->failOn !== null
+            && str_contains($sql, $this->failOn)
+        ) {
             throw new RuntimeException("Simulated failure on: $sql");
         }
 
@@ -288,8 +291,9 @@ class SqlitePermissionConnection implements ConnectionInterface, TransactionInte
         return $this->level;
     }
 
-    public function afterCommit(callable $callback): void
-    {
+    public function afterCommit(
+        callable $callback,
+    ): void {
         $callback();
     }
 

@@ -53,13 +53,15 @@ class FakePageCache implements PageCacheInterface
         return $this->storeResult ?? $response;
     }
 
-    public function purgeUrl(string $url): bool
-    {
+    public function purgeUrl(
+        string $url,
+    ): bool {
         return true;
     }
 
-    public function purgeTag(string $tag): bool
-    {
+    public function purgeTag(
+        string $tag,
+    ): bool {
         return true;
     }
 
@@ -123,17 +125,20 @@ class FakeContainer implements ContainerInterface
 
     public ?string $lastGetId = null;
 
-    public function get(string $id): mixed
-    {
+    public function get(
+        string $id,
+    ): mixed {
         $this->getCalled = true;
         $this->lastGetId = $id;
 
         return $this->instances[$id] ?? new $id();
     }
 
-    public function has(string $id): bool
-    {
-        return isset($this->instances[$id]) || class_exists($id);
+    public function has(
+        string $id,
+    ): bool {
+        return isset($this->instances[$id])
+            || class_exists($id);
     }
 
     public function singleton(string $id): void {}
@@ -145,13 +150,15 @@ class FakeContainer implements ContainerInterface
         $this->instances[$id] = $instance;
     }
 
-    public function call(Closure $callable): mixed
-    {
+    public function call(
+        Closure $callable,
+    ): mixed {
         return $callable();
     }
 
-    public function resolvedInstances(?string $interface = null): array
-    {
+    public function resolvedInstances(
+        ?string $interface = null,
+    ): array {
         return $this->instances;
     }
 }
@@ -199,8 +206,9 @@ function makeNullRouteMatcher(): RouteMatcherInterface
     };
 }
 
-function makeMatcherForController(string $action): RouteMatcherInterface
-{
+function makeMatcherForController(
+    string $action,
+): RouteMatcherInterface {
     return new readonly class ($action) implements RouteMatcherInterface
     {
         public function allowedMethods(
@@ -227,13 +235,18 @@ function makeMatcherForController(string $action): RouteMatcherInterface
     };
 }
 
-function makeMiddlewareRequest(string $method = 'GET', string $uri = '/'): Request
-{
+function makeMiddlewareRequest(
+    string $method = 'GET',
+    string $uri = '/',
+): Request {
     return new Request(server: ['REQUEST_METHOD' => $method, 'REQUEST_URI' => $uri]);
 }
 
-function makeMiddlewareResponse(int $statusCode = 200, array $headers = [], string $body = 'body'): Response
-{
+function makeMiddlewareResponse(
+    int $statusCode = 200,
+    array $headers = [],
+    string $body = 'body',
+): Response {
     return new Response(body: $body, statusCode: $statusCode, headers: $headers);
 }
 

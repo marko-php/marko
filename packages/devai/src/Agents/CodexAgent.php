@@ -50,8 +50,9 @@ readonly class CodexAgent implements AgentInterface
         GuidelinesWriter::write($projectRoot . '/AGENTS.md', $content->body);
     }
 
-    private function registerMcpServer(McpRegistration $registration): void
-    {
+    private function registerMcpServer(
+        McpRegistration $registration,
+    ): void {
         $args = ['mcp', 'add', $registration->serverName, '--', $registration->command, ...$registration->args];
         $this->commandRunner->run('codex', $args);
     }

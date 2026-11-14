@@ -10,8 +10,9 @@ use Marko\Core\Module\ModuleManifest;
  *
  * @param array<string, string> $require
  */
-function createTempModuleDir(array $require): string
-{
+function createTempModuleDir(
+    array $require,
+): string {
     $tmpDir = sys_get_temp_dir() . '/marko-test-manifest-' . uniqid();
     mkdir($tmpDir, 0755, true);
     file_put_contents($tmpDir . '/composer.json', json_encode([
@@ -22,14 +23,16 @@ function createTempModuleDir(array $require): string
     return $tmpDir;
 }
 
-function removeTempModuleDir(string $tmpDir): void
-{
+function removeTempModuleDir(
+    string $tmpDir,
+): void {
     array_map('unlink', glob($tmpDir . '/*'));
     rmdir($tmpDir);
 }
 
-function parseModuleRequire(array $require): ModuleManifest
-{
+function parseModuleRequire(
+    array $require,
+): ModuleManifest {
     $tmpDir = createTempModuleDir($require);
     $manifest = (new ManifestParser())->parse($tmpDir);
     removeTempModuleDir($tmpDir);

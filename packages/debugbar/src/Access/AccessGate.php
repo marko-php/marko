@@ -36,7 +36,10 @@ class AccessGate
             return false;
         }
 
-        if ($this->environment->isProduction() && ! $this->configBool('debugbar.allow_production', false)) {
+        if (
+            $this->environment->isProduction()
+            && ! $this->configBool('debugbar.allow_production', false)
+        ) {
             return false;
         }
 
@@ -53,15 +56,19 @@ class AccessGate
      *
      * @param array<mixed> $server
      */
-    public function clientAllowed(array $server): bool
-    {
+    public function clientAllowed(
+        array $server,
+    ): bool {
         if ($this->configBool('debugbar.route.open', false)) {
             return true;
         }
 
         $remoteAddress = $server['REMOTE_ADDR'] ?? null;
 
-        if (! is_string($remoteAddress) || filter_var($remoteAddress, FILTER_VALIDATE_IP) === false) {
+        if (
+            ! is_string($remoteAddress)
+            || filter_var($remoteAddress, FILTER_VALIDATE_IP) === false
+        ) {
             return false;
         }
 
@@ -90,8 +97,9 @@ class AccessGate
     /**
      * @param array<mixed> $server
      */
-    private function hasForwardingHeaders(array $server): bool
-    {
+    private function hasForwardingHeaders(
+        array $server,
+    ): bool {
         foreach (self::FORWARDING_HEADERS as $header) {
             if (array_key_exists($header, $server)) {
                 return true;
@@ -131,7 +139,10 @@ class AccessGate
         }
 
         foreach (array_reverse($hops) as $hop) {
-            if ($hop === null || filter_var($hop, FILTER_VALIDATE_IP) === false) {
+            if (
+                $hop === null
+                || filter_var($hop, FILTER_VALIDATE_IP) === false
+            ) {
                 return null;
             }
 
@@ -146,12 +157,16 @@ class AccessGate
     /**
      * Extract the address from the `for=` parameter of one RFC 7239 `Forwarded` element.
      */
-    private function forwardedFor(string $element): ?string
-    {
+    private function forwardedFor(
+        string $element,
+    ): ?string {
         foreach (explode(';', $element) as $pair) {
             $parts = explode('=', trim($pair), 2);
 
-            if (count($parts) !== 2 || strtolower(trim($parts[0])) !== 'for') {
+            if (
+                count($parts) !== 2
+                || strtolower(trim($parts[0])) !== 'for'
+            ) {
                 continue;
             }
 
@@ -191,8 +206,9 @@ class AccessGate
         return false;
     }
 
-    private function normalize(string $ip): string
-    {
+    private function normalize(
+        string $ip,
+    ): string {
         $ip = strtolower(trim($ip));
         $packed = filter_var($ip, FILTER_VALIDATE_IP) === false ? false : inet_pton($ip);
 

@@ -71,8 +71,9 @@ class MySqlQueryBuilder extends SqlQueryBuilder
      *
      * @throws InvalidJsonPathException
      */
-    protected function compileJsonPath(string $expression): string
-    {
+    protected function compileJsonPath(
+        string $expression,
+    ): string {
         $path = JsonPathParser::parse($expression);
         $extract = sprintf(
             "JSON_EXTRACT(%s, '%s')",
@@ -90,8 +91,9 @@ class MySqlQueryBuilder extends SqlQueryBuilder
     /**
      * @throws InvalidJsonPathException
      */
-    protected function compileJsonContains(string $path): string
-    {
+    protected function compileJsonContains(
+        string $path,
+    ): string {
         if (JsonPathParser::isJsonPath($path)) {
             $parsed = JsonPathParser::parse($path);
 
@@ -108,8 +110,9 @@ class MySqlQueryBuilder extends SqlQueryBuilder
     /**
      * @throws InvalidJsonPathException
      */
-    protected function compileJsonPathExists(string $path): string
-    {
+    protected function compileJsonPathExists(
+        string $path,
+    ): string {
         $parsed = JsonPathParser::parse($path);
 
         return sprintf(
@@ -181,8 +184,9 @@ class MySqlQueryBuilder extends SqlQueryBuilder
      *
      * @param string[] $segments
      */
-    private function buildMySqlJsonPath(array $segments): string
-    {
+    private function buildMySqlJsonPath(
+        array $segments,
+    ): string {
         return '$.' . implode('.', $segments);
     }
 }

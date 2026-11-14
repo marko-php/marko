@@ -13,8 +13,9 @@ class ViewCollector implements CollectorInterface
         return 'views';
     }
 
-    public function collect(Debugbar $debugbar): array
-    {
+    public function collect(
+        Debugbar $debugbar,
+    ): array {
         $renders = [];
         $total = 0.0;
 

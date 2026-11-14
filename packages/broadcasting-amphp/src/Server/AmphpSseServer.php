@@ -157,8 +157,9 @@ class AmphpSseServer
      * Stop accepting connections, send every stream a reconnect frame, close the streams and
      * cancel all pub/sub subscriptions. Gives in-flight writes up to $timeout seconds.
      */
-    public function stop(float $timeout = 30.0): void
-    {
+    public function stop(
+        float $timeout = 30.0,
+    ): void {
         foreach ($this->timers as $timer) {
             EventLoop::cancel($timer);
         }

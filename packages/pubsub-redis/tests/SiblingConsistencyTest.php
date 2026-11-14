@@ -17,13 +17,17 @@ use Marko\PubSub\Redis\RedisPubSubConnection;
  * @param class-string $className
  * @return array<string, string>
  */
-function getPublicMethodSignatures(string $className): array
-{
+function getPublicMethodSignatures(
+    string $className,
+): array {
     $reflection = new ReflectionClass($className);
     $signatures = [];
 
     foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-        if ($method->isConstructor() || $method->isDestructor()) {
+        if (
+            $method->isConstructor()
+            || $method->isDestructor()
+        ) {
             continue;
         }
 
@@ -52,13 +56,17 @@ function getPublicMethodSignatures(string $className): array
  * @param class-string $className
  * @return array<string, string>
  */
-function getMethodVisibilityMap(string $className): array
-{
+function getMethodVisibilityMap(
+    string $className,
+): array {
     $reflection = new ReflectionClass($className);
     $map = [];
 
     foreach ($reflection->getMethods() as $method) {
-        if ($method->isConstructor() || $method->isDestructor()) {
+        if (
+            $method->isConstructor()
+            || $method->isDestructor()
+        ) {
             continue;
         }
 

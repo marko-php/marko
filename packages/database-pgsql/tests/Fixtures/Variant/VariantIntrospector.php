@@ -14,33 +14,39 @@ class VariantIntrospector implements IntrospectorInterface
         return [];
     }
 
-    public function getTable(string $name): ?Table
-    {
+    public function getTable(
+        string $name,
+    ): ?Table {
         return null;
     }
 
-    public function tableExists(string $name): bool
-    {
+    public function tableExists(
+        string $name,
+    ): bool {
         return false;
     }
 
-    public function getColumns(string $table): array
-    {
+    public function getColumns(
+        string $table,
+    ): array {
         return [];
     }
 
-    public function getIndexes(string $table): array
-    {
+    public function getIndexes(
+        string $table,
+    ): array {
         return [];
     }
 
-    public function getForeignKeys(string $table): array
-    {
+    public function getForeignKeys(
+        string $table,
+    ): array {
         return [];
     }
 
-    public function getPrimaryKey(string $table): array
-    {
+    public function getPrimaryKey(
+        string $table,
+    ): array {
         return [];
     }
 }

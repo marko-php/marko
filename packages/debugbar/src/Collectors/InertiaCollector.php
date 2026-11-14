@@ -11,8 +11,9 @@ class InertiaCollector
     /**
      * @return array<string, mixed>|null
      */
-    public function collect(string $body): ?array
-    {
+    public function collect(
+        string $body,
+    ): ?array {
         $page = $this->jsonPage($body);
         $mode = 'json';
 
@@ -46,8 +47,9 @@ class InertiaCollector
     /**
      * @return array<string, mixed>|null
      */
-    private function jsonPage(string $body): ?array
-    {
+    private function jsonPage(
+        string $body,
+    ): ?array {
         $trimmed = ltrim($body);
 
         if (! str_starts_with($trimmed, '{')) {
@@ -66,8 +68,9 @@ class InertiaCollector
     /**
      * @return array<string, mixed>|null
      */
-    private function htmlPage(string $body): ?array
-    {
+    private function htmlPage(
+        string $body,
+    ): ?array {
         if (preg_match('/<script[^>]*data-page="app"[^>]*>(.*?)<\/script>/is', $body, $matches) === 1) {
             try {
                 $decoded = json_decode(trim($matches[1]), true, flags: JSON_THROW_ON_ERROR);
@@ -100,13 +103,17 @@ class InertiaCollector
     /**
      * @return array<string, mixed>|null
      */
-    private function pageArray(mixed $value): ?array
-    {
+    private function pageArray(
+        mixed $value,
+    ): ?array {
         if (! is_array($value)) {
             return null;
         }
 
-        if (! is_string($value['component'] ?? null) || ! array_key_exists('props', $value)) {
+        if (
+            ! is_string($value['component'] ?? null)
+            || ! array_key_exists('props', $value)
+        ) {
             return null;
         }
 
@@ -121,8 +128,9 @@ class InertiaCollector
         return $result;
     }
 
-    private function serverHeader(string $name): ?string
-    {
+    private function serverHeader(
+        string $name,
+    ): ?string {
         $key = 'HTTP_'.strtoupper(str_replace('-', '_', $name));
         $value = $_SERVER[$key] ?? null;
 
@@ -137,7 +145,11 @@ class InertiaCollector
             return $value;
         }
 
-        if (is_int($value) || is_float($value) || is_bool($value)) {
+        if (
+            is_int($value)
+            || is_float($value)
+            || is_bool($value)
+        ) {
             return (string) $value;
         }
 

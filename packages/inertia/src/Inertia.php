@@ -125,8 +125,9 @@ class Inertia implements ResettableInterface
     /**
      * Create an Inertia location redirect (for external/non-Inertia URLs).
      */
-    public function location(string $url): Response
-    {
+    public function location(
+        string $url,
+    ): Response {
         return new Response(
             body: '',
             statusCode: 409,
@@ -140,8 +141,9 @@ class Inertia implements ResettableInterface
     /**
      * Check if the request is an Inertia request.
      */
-    public function isInertiaRequest(Request $request): bool
-    {
+    public function isInertiaRequest(
+        Request $request,
+    ): bool {
         return $request->header('X-Inertia') === 'true';
     }
 
@@ -163,7 +165,10 @@ class Inertia implements ResettableInterface
      */
     private function errors(): array|stdClass
     {
-        if ($this->formState === null || !$this->formState->hasErrors()) {
+        if (
+            $this->formState === null
+            || !$this->formState->hasErrors()
+        ) {
             return new stdClass();
         }
 
@@ -198,13 +203,19 @@ class Inertia implements ResettableInterface
 
         $isPartial = $partialComponent !== null
             && $partialComponent === $component
-            && ($partialData !== null || $partialExcept !== null);
+            && (
+                $partialData !== null
+                || $partialExcept !== null
+            );
 
         if ($isPartial) {
             $always = ['flash', 'errors'];
             $alwaysProps = array_intersect_key($allProps, array_flip($always));
 
-            if ($partialExcept !== null && $partialExcept !== '') {
+            if (
+                $partialExcept !== null
+                && $partialExcept !== ''
+            ) {
                 $except = $this->parsePartialKeys($partialExcept);
                 $allProps = array_diff_key($allProps, array_flip($except));
                 $allProps = array_replace($alwaysProps, $allProps);
@@ -227,8 +238,9 @@ class Inertia implements ResettableInterface
     /**
      * @return list<string>
      */
-    private function parsePartialKeys(string $header): array
-    {
+    private function parsePartialKeys(
+        string $header,
+    ): array {
         return array_values(array_filter(
             array_map('trim', explode(',', $header)),
             static fn (string $key): bool => $key !== '',
@@ -299,8 +311,9 @@ HTML;
      *
      * @throws InertiaConfigurationException
      */
-    private function trySsr(array $page): ?array
-    {
+    private function trySsr(
+        array $page,
+    ): ?array {
         if (! $this->configBool('inertia.ssr.enabled')) {
             return null;
         }
@@ -311,8 +324,9 @@ HTML;
     /**
      * @throws InertiaConfigurationException
      */
-    private function configBool(string $key): bool
-    {
+    private function configBool(
+        string $key,
+    ): bool {
         try {
             return $this->config->getBool($key);
         } catch (ConfigException $exception) {
@@ -323,8 +337,9 @@ HTML;
     /**
      * @throws InertiaConfigurationException
      */
-    private function nullableScalarConfig(string $key): ?string
-    {
+    private function nullableScalarConfig(
+        string $key,
+    ): ?string {
         try {
             $value = $this->config->get($key);
         } catch (ConfigException $exception) {
@@ -335,7 +350,11 @@ HTML;
             return null;
         }
 
-        if (is_string($value) || is_int($value) || is_float($value)) {
+        if (
+            is_string($value)
+            || is_int($value)
+            || is_float($value)
+        ) {
             return (string) $value;
         }
 

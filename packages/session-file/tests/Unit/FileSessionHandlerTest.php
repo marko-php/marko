@@ -30,19 +30,22 @@ class PartialWriteStream
         return true;
     }
 
-    public function stream_write(string $data): false
-    {
+    public function stream_write(
+        string $data,
+    ): false {
         // Simulate a failed write — return false so fwrite returns false
         return false;
     }
 
-    public function stream_truncate(int $new_size): bool
-    {
+    public function stream_truncate(
+        int $new_size,
+    ): bool {
         return true;
     }
 
-    public function stream_lock(int $operation): bool
-    {
+    public function stream_lock(
+        int $operation,
+    ): bool {
         return true;
     }
 
@@ -101,19 +104,22 @@ class FailTruncateStream
         return true;
     }
 
-    public function stream_write(string $data): int
-    {
+    public function stream_write(
+        string $data,
+    ): int {
         return strlen($data);
     }
 
-    public function stream_truncate(int $new_size): bool
-    {
+    public function stream_truncate(
+        int $new_size,
+    ): bool {
         // Simulate ftruncate failure
         return false;
     }
 
-    public function stream_lock(int $operation): bool
-    {
+    public function stream_lock(
+        int $operation,
+    ): bool {
         return true;
     }
 

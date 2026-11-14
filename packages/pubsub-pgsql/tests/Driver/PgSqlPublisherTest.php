@@ -33,8 +33,9 @@ class PublisherStubPostgresConnection implements PostgresConnection
         return new PublisherStubPostgresResult();
     }
 
-    public function listen(string $channel): PostgresListener
-    {
+    public function listen(
+        string $channel,
+    ): PostgresListener {
         throw new RuntimeException('Not implemented in stub');
     }
 
@@ -43,13 +44,15 @@ class PublisherStubPostgresConnection implements PostgresConnection
         throw new RuntimeException('Not implemented in stub');
     }
 
-    public function query(string $sql): PostgresResult
-    {
+    public function query(
+        string $sql,
+    ): PostgresResult {
         throw new RuntimeException('Not implemented in stub');
     }
 
-    public function prepare(string $sql): PostgresStatement
-    {
+    public function prepare(
+        string $sql,
+    ): PostgresStatement {
         throw new RuntimeException('Not implemented in stub');
     }
 
@@ -60,18 +63,21 @@ class PublisherStubPostgresConnection implements PostgresConnection
         throw new RuntimeException('Not implemented in stub');
     }
 
-    public function quoteLiteral(string $data): string
-    {
+    public function quoteLiteral(
+        string $data,
+    ): string {
         throw new RuntimeException('Not implemented in stub');
     }
 
-    public function quoteIdentifier(string $name): string
-    {
+    public function quoteIdentifier(
+        string $name,
+    ): string {
         throw new RuntimeException('Not implemented in stub');
     }
 
-    public function escapeByteA(string $data): string
-    {
+    public function escapeByteA(
+        string $data,
+    ): string {
         throw new RuntimeException('Not implemented in stub');
     }
 
@@ -133,8 +139,9 @@ class PublisherStubPostgresResult implements PostgresResult, IteratorAggregate
     }
 }
 
-function createPgSqlPubSubConfig(string $prefix = 'marko_'): PubSubConfig
-{
+function createPgSqlPubSubConfig(
+    string $prefix = 'marko_',
+): PubSubConfig {
     return new PubSubConfig(new FakeConfigRepository([
         'pubsub.driver' => 'pgsql',
         'pubsub.prefix' => $prefix,

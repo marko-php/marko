@@ -58,8 +58,9 @@ readonly class AmphpSignature
     /**
      * Returns the claims of a genuine, unexpired token, or null for anything else.
      */
-    public function verify(string $token): ?AmphpTokenClaims
-    {
+    public function verify(
+        string $token,
+    ): ?AmphpTokenClaims {
         if ($this->amphpBroadcastingConfig->appKey === '') {
             return null;
         }
@@ -86,12 +87,14 @@ readonly class AmphpSignature
             return null;
         }
 
-        if (!is_array($claims)
+        if (
+            !is_array($claims)
             || !is_string($claims['u'] ?? null)
             || !is_int($claims['e'] ?? null)
             || !is_array($claims['c'] ?? null)
             || !array_is_list($claims['c'])
             || !array_all($claims['c'], fn (mixed $channel): bool => is_string($channel))
+
         ) {
             return null;
         }
@@ -106,8 +109,9 @@ readonly class AmphpSignature
         return new AmphpTokenClaims($claims['u'], $channels, $claims['e']);
     }
 
-    private function mac(string $segment): string
-    {
+    private function mac(
+        string $segment,
+    ): string {
         return $this->base64UrlEncode(hash_hmac(
             'sha256',
             $segment,
@@ -116,13 +120,15 @@ readonly class AmphpSignature
         ));
     }
 
-    private function base64UrlEncode(string $value): string
-    {
+    private function base64UrlEncode(
+        string $value,
+    ): string {
         return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
     }
 
-    private function base64UrlDecode(string $value): ?string
-    {
+    private function base64UrlDecode(
+        string $value,
+    ): ?string {
         $decoded = base64_decode(strtr($value, '-_', '+/'), true);
 
         return $decoded === false ? null : $decoded;

@@ -15,8 +15,9 @@ use Marko\View\Twig\TwigViewConfig;
 use Twig\Environment;
 use Twig\Extension\EscaperExtension;
 
-function makeTwigViewConfig(array $overrides = []): TwigViewConfig
-{
+function makeTwigViewConfig(
+    array $overrides = [],
+): TwigViewConfig {
     $defaults = [
         'view.cache_directory' => '/tmp/twig-cache',
         'view.auto_refresh' => true,

@@ -40,11 +40,18 @@ readonly class CorsMiddleware implements MiddlewareInterface
     ): Response {
         $origin = $request->header('Origin');
 
-        if ($origin === null || !$this->isPathCovered($request->path()) || !$this->isOriginAllowed($origin)) {
+        if (
+            $origin === null
+            || !$this->isPathCovered($request->path())
+            || !$this->isOriginAllowed($origin)
+        ) {
             return $next($request);
         }
 
-        if ($this->corsConfig->supportsCredentials() && in_array('*', $this->corsConfig->allowedOrigins(), true)) {
+        if (
+            $this->corsConfig->supportsCredentials()
+            && in_array('*', $this->corsConfig->allowedOrigins(), true)
+        ) {
             throw CorsException::wildcardWithCredentials();
         }
 
@@ -141,8 +148,9 @@ readonly class CorsMiddleware implements MiddlewareInterface
     /**
      * @throws ConfigNotFoundException
      */
-    private function isOriginAllowed(string $origin): bool
-    {
+    private function isOriginAllowed(
+        string $origin,
+    ): bool {
         $allowedOrigins = $this->corsConfig->allowedOrigins();
 
         if (in_array('*', $allowedOrigins, true)) {

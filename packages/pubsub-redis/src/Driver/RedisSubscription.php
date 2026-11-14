@@ -82,9 +82,13 @@ readonly class RedisSubscription implements Subscription
         }
     }
 
-    private function stripPrefix(string $channel): string
-    {
-        if ($this->prefix !== '' && str_starts_with($channel, $this->prefix)) {
+    private function stripPrefix(
+        string $channel,
+    ): string {
+        if (
+            $this->prefix !== ''
+            && str_starts_with($channel, $this->prefix)
+        ) {
             return substr($channel, strlen($this->prefix));
         }
 

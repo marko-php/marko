@@ -20,8 +20,9 @@ readonly class WeightedReplicaSelector implements ReplicaSelectorInterface
      *
      * @throws RandomException
      */
-    public function select(array $replicas): ConnectionInterface
-    {
+    public function select(
+        array $replicas,
+    ): ConnectionInterface {
         $count = count($replicas);
         $activeWeights = array_slice($this->weights, 0, $count);
         $total = array_sum($activeWeights);

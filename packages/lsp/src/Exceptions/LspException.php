@@ -13,8 +13,9 @@ class LspException extends MarkoException
         return $this->getCode() !== 0 ? $this->getCode() : -32603;
     }
 
-    public static function methodNotFound(string $method): self
-    {
+    public static function methodNotFound(
+        string $method,
+    ): self {
         return new self(
             message: "Method not found: $method",
             code: -32601,

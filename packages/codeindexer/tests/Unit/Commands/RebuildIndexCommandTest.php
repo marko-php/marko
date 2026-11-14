@@ -135,8 +135,9 @@ it('invokes IndexCache::rebuild and writes to disk', function (): void {
     $invoked = false;
     $cache = new class ($invoked) extends IndexCache
     {
-        public function __construct(private bool &$invoked)
-        {
+        public function __construct(
+            private bool &$invoked,
+        ) {
             // skip parent constructor
         }
 

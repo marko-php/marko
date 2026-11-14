@@ -42,8 +42,9 @@ class PubSubException extends MarkoException
         );
     }
 
-    public static function patternSubscriptionNotSupported(string $driver): UnsupportedPubSubFeatureException
-    {
+    public static function patternSubscriptionNotSupported(
+        string $driver,
+    ): UnsupportedPubSubFeatureException {
         return new UnsupportedPubSubFeatureException(new UnsupportedFeature(
             feature: 'pattern subscriptions',
             driver: $driver,

@@ -45,8 +45,9 @@ function makeIntelephenseRunner(
             return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
         }
 
-        public function isOnPath(string $binary): bool
-        {
+        public function isOnPath(
+            string $binary,
+        ): bool {
             return match ($binary) {
                 'intelephense' => $this->intelephenseOnPath,
                 'npm' => $this->npmOnPath,

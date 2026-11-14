@@ -115,8 +115,9 @@ class CrossRepoRecordingConnection implements ConnectionInterface
  * Container built from the real marko/database module manifest, with the
  * connection supplied the way a driver module would supply it.
  */
-function buildCrossRepositoryContainer(ConnectionInterface $connection): Container
-{
+function buildCrossRepositoryContainer(
+    ConnectionInterface $connection,
+): Container {
     $moduleConfig = require dirname(__DIR__, 2) . '/module.php';
 
     $container = new Container();

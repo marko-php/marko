@@ -31,13 +31,17 @@ readonly class CacheabilityChecker
      *
      * @throws ConfigNotFoundException
      */
-    public function isRequestCacheable(Request $request): bool
-    {
+    public function isRequestCacheable(
+        Request $request,
+    ): bool {
         if (!in_array($request->method(), $this->config->cacheableMethods(), true)) {
             return false;
         }
 
-        if ($this->hasCredentials($request) || $this->hasBypassCookie($request)) {
+        if (
+            $this->hasCredentials($request)
+            || $this->hasBypassCookie($request)
+        ) {
             return false;
         }
 
@@ -47,8 +51,9 @@ readonly class CacheabilityChecker
     /**
      * @throws ConfigNotFoundException
      */
-    public function isResponseCacheable(Response $response): bool
-    {
+    public function isResponseCacheable(
+        Response $response,
+    ): bool {
         // A streamed body is written by sendBody(), never held in body(): caching it would store ''.
         if ($response instanceof StreamedResponseInterface) {
             return false;
@@ -71,7 +76,10 @@ readonly class CacheabilityChecker
         if ($cacheControl !== null) {
             $directives = $this->parseDirectives($cacheControl);
 
-            if (in_array('no-store', $directives, true) || in_array('private', $directives, true)) {
+            if (
+                in_array('no-store', $directives, true)
+                || in_array('private', $directives, true)
+            ) {
                 return false;
             }
         }
@@ -82,8 +90,9 @@ readonly class CacheabilityChecker
     /**
      * @throws PageCacheException
      */
-    public function getRouteAttribute(Request $request): ?Cacheable
-    {
+    public function getRouteAttribute(
+        Request $request,
+    ): ?Cacheable {
         $matched = $this->routeMatcher->match($request->method(), $request->path());
 
         if ($matched === null) {
@@ -104,8 +113,9 @@ readonly class CacheabilityChecker
         }
     }
 
-    private function hasCredentials(Request $request): bool
-    {
+    private function hasCredentials(
+        Request $request,
+    ): bool {
         return $request->header('Authorization') !== null
             || $request->server('REDIRECT_HTTP_AUTHORIZATION') !== null
             || $request->server('PHP_AUTH_USER') !== null
@@ -115,8 +125,9 @@ readonly class CacheabilityChecker
     /**
      * @throws ConfigNotFoundException
      */
-    private function hasBypassCookie(Request $request): bool
-    {
+    private function hasBypassCookie(
+        Request $request,
+    ): bool {
         $cookieNames = array_map(strval(...), array_keys($request->cookie()));
 
         if ($cookieNames === []) {
@@ -137,8 +148,9 @@ readonly class CacheabilityChecker
     /**
      * @throws ConfigNotFoundException
      */
-    private function isTrustedHost(Request $request): bool
-    {
+    private function isTrustedHost(
+        Request $request,
+    ): bool {
         $trustedHosts = $this->config->trustedHosts();
 
         if ($trustedHosts === []) {
@@ -147,17 +159,19 @@ readonly class CacheabilityChecker
 
         $host = CacheKey::hostnameFromRequest($request);
 
-        return $host !== '' && array_any(
-            $trustedHosts,
-            fn (string $pattern): bool => fnmatch($pattern, $host),
-        );
+        return $host !== ''
+            && array_any(
+                $trustedHosts,
+                fn (string $pattern): bool => fnmatch($pattern, $host),
+            );
     }
 
     /**
      * @return array<string>
      */
-    private function parseDirectives(string $header): array
-    {
+    private function parseDirectives(
+        string $header,
+    ): array {
         return array_map(
             fn (string $token): string => strtolower(trim(explode('=', $token)[0])),
             explode(',', $header),

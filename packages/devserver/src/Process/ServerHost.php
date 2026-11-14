@@ -27,8 +27,9 @@ readonly class ServerHost
     /**
      * @throws DevServerException If the value is not a hostname or IP address
      */
-    public static function fromString(string $host): self
-    {
+    public static function fromString(
+        string $host,
+    ): self {
         if (preg_match('/\A\[([^\[\]]*)]\z/', $host, $matches) === 1) {
             if (filter_var($matches[1], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) === false) {
                 throw DevServerException::invalidHost($host);
@@ -37,7 +38,10 @@ readonly class ServerHost
             return new self($matches[1]);
         }
 
-        if (filter_var($host, FILTER_VALIDATE_IP) !== false || preg_match(self::HOSTNAME_PATTERN, $host) === 1) {
+        if (
+            filter_var($host, FILTER_VALIDATE_IP) !== false
+            || preg_match(self::HOSTNAME_PATTERN, $host) === 1
+        ) {
             return new self($host);
         }
 
@@ -47,9 +51,12 @@ readonly class ServerHost
     /**
      * Bracket an IPv6 literal so it can be used in a URI; other hosts are returned unchanged.
      */
-    public static function formatForUri(string $host): string
-    {
-        return str_contains($host, ':') && !str_starts_with($host, '[') ? "[$host]" : $host;
+    public static function formatForUri(
+        string $host,
+    ): string {
+        return (str_contains($host, ':') && !str_starts_with($host, '['))
+            ? "[$host]"
+            : $host;
     }
 
     /**

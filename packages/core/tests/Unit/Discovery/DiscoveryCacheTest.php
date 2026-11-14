@@ -12,8 +12,9 @@ use Marko\Core\Path\ProjectPaths;
 use Marko\Core\Plugin\PluginDefinition;
 
 // Helper to create a DiscoveryCache pointed at a unique temp directory
-function makeCacheSetup(string $cacheDir): array
-{
+function makeCacheSetup(
+    string $cacheDir,
+): array {
     $cachePath = $cacheDir . '/discovery.php';
     $_ENV['DISCOVERY_CACHE_PATH'] = $cachePath;
     $paths = new ProjectPaths($cacheDir);
@@ -500,7 +501,11 @@ describe('DiscoveryCache', function (): void {
             mkdir($this->tmpDir, 0555, true);
 
             try {
-                if (function_exists('posix_geteuid') && posix_geteuid() === 0 || is_writable($this->tmpDir)) {
+                if (
+                    function_exists('posix_geteuid')
+                    && posix_geteuid() === 0
+                    || is_writable($this->tmpDir)
+                ) {
                     $this->markTestSkipped('Directory permissions are not enforced for this user (e.g. root).');
                 }
 
@@ -532,7 +537,11 @@ describe('DiscoveryCache', function (): void {
         });
 
         try {
-            if (function_exists('posix_geteuid') && posix_geteuid() === 0 || is_writable($this->tmpDir)) {
+            if (
+                function_exists('posix_geteuid')
+                && posix_geteuid() === 0
+                || is_writable($this->tmpDir)
+            ) {
                 $this->markTestSkipped('Directory permissions are not enforced for this user (e.g. root).');
             }
 

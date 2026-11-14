@@ -5,14 +5,16 @@ declare(strict_types=1);
 use Marko\Mcp\Tools\Runtime\Contracts\LogReaderInterface;
 use Marko\Mcp\Tools\Runtime\ReadLogEntriesTool;
 
-function makeLogReader(array $entries): LogReaderInterface
-{
+function makeLogReader(
+    array $entries,
+): LogReaderInterface {
     return new class ($entries) implements LogReaderInterface
     {
         public function __construct(private readonly array $entries) {}
 
-        public function readLast(int $count): array
-        {
+        public function readLast(
+            int $count,
+        ): array {
             return array_slice($this->entries, -$count);
         }
     };
@@ -51,14 +53,16 @@ it(
 /**
  * A reader that records every count it is asked for.
  */
-function makeRecordingLogReader(ArrayObject $counts): LogReaderInterface
-{
+function makeRecordingLogReader(
+    ArrayObject $counts,
+): LogReaderInterface {
     return new readonly class ($counts) implements LogReaderInterface
     {
         public function __construct(private ArrayObject $counts) {}
 
-        public function readLast(int $count): array
-        {
+        public function readLast(
+            int $count,
+        ): array {
             $this->counts->append($count);
 
             return ['line'];

@@ -9,8 +9,9 @@ use Marko\PageCache\Contracts\CacheTagProviderInterface;
 
 class PageCacheException extends MarkoException
 {
-    public static function missingEntityBridge(string $offendingClass): self
-    {
+    public static function missingEntityBridge(
+        string $offendingClass,
+    ): self {
         return new self(
             message: "Class '$offendingClass' implements IdentityInterface but marko/page-cache-entity is not installed. The page cache will not be invalidated when this entity changes.",
             context: 'Detected during marko/page-cache boot validation',
@@ -18,8 +19,9 @@ class PageCacheException extends MarkoException
         );
     }
 
-    public static function negativeTtl(int $ttl): self
-    {
+    public static function negativeTtl(
+        int $ttl,
+    ): self {
         return new self(
             message: "Invalid #[Cacheable] ttl $ttl: the ttl cannot be negative.",
             context: 'While constructing a #[Cacheable] attribute on a controller action.',
@@ -27,8 +29,9 @@ class PageCacheException extends MarkoException
         );
     }
 
-    public static function invalidQueryParam(mixed $param): self
-    {
+    public static function invalidQueryParam(
+        mixed $param,
+    ): self {
         $given = is_string($param) ? "''" : get_debug_type($param);
 
         return new self(
@@ -38,8 +41,9 @@ class PageCacheException extends MarkoException
         );
     }
 
-    public static function negativeMaxVariantsPerPath(int $max): self
-    {
+    public static function negativeMaxVariantsPerPath(
+        int $max,
+    ): self {
         return new self(
             message: "Invalid page-cache.max_variants_per_path $max: the limit cannot be negative.",
             context: 'While reading page-cache.max_variants_per_path from config/page-cache.php.',
@@ -47,8 +51,9 @@ class PageCacheException extends MarkoException
         );
     }
 
-    public static function negativeDefaultTtl(int $ttl): self
-    {
+    public static function negativeDefaultTtl(
+        int $ttl,
+    ): self {
         return new self(
             message: "Invalid page-cache.default_ttl $ttl: the default ttl cannot be negative.",
             context: 'While reading page-cache.default_ttl from config/page-cache.php.',
@@ -56,8 +61,9 @@ class PageCacheException extends MarkoException
         );
     }
 
-    public static function invalidTagProvider(string $providerClass): self
-    {
+    public static function invalidTagProvider(
+        string $providerClass,
+    ): self {
         return new self(
             message: "Class '$providerClass' does not implement CacheTagProviderInterface.",
             context: 'Resolved from the container as the tag provider for a #[Cacheable] attribute.',
@@ -78,8 +84,9 @@ class PageCacheException extends MarkoException
         );
     }
 
-    public static function purgeUrlWithoutHost(string $url): self
-    {
+    public static function purgeUrlWithoutHost(
+        string $url,
+    ): self {
         return new self(
             message: "Cannot purge '$url': page cache entries are keyed by host, and the URL has no host.",
             context: 'While purging a page cache entry by URL.',

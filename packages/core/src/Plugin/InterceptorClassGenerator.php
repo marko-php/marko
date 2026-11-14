@@ -157,16 +157,18 @@ class InterceptorClassGenerator
     /**
      * Load generated PHP code via eval.
      */
-    private function loadCode(string $code): void
-    {
+    private function loadCode(
+        string $code,
+    ): void {
         eval($code);
     }
 
     /**
      * Build a deterministic class name for the given target.
      */
-    private function buildClassName(string $targetClass): string
-    {
+    private function buildClassName(
+        string $targetClass,
+    ): string {
         $sanitized = str_replace('\\', '_', $targetClass);
         $hash = substr(md5($targetClass), 0, 8);
 
@@ -176,8 +178,9 @@ class InterceptorClassGenerator
     /**
      * Extract the class name from a generated code snippet.
      */
-    private function extractClassName(string $code): string
-    {
+    private function extractClassName(
+        string $code,
+    ): string {
         preg_match('/class (Marko_Interceptor_\S+)\s/', $code, $matches);
 
         return $matches[1];
@@ -190,8 +193,9 @@ class InterceptorClassGenerator
      *
      * @return array<ReflectionMethod>
      */
-    private function collectInterfaceMethods(ReflectionClass $reflection): array
-    {
+    private function collectInterfaceMethods(
+        ReflectionClass $reflection,
+    ): array {
         return array_filter(
             $reflection->getMethods(),
             fn (ReflectionMethod $m) => !$m->isConstructor(),
@@ -201,8 +205,9 @@ class InterceptorClassGenerator
     /**
      * Generate a single method stub for the interface wrapper strategy.
      */
-    private function generateWrapperMethod(ReflectionMethod $method): string
-    {
+    private function generateWrapperMethod(
+        ReflectionMethod $method,
+    ): string {
         $name = $method->getName();
         $params = $this->renderParameters($method);
         $returnType = $this->renderReturnType($method);
@@ -224,8 +229,9 @@ class InterceptorClassGenerator
     /**
      * Generate a single overridden method for the concrete subclass strategy.
      */
-    private function generateSubclassMethod(ReflectionMethod $method): string
-    {
+    private function generateSubclassMethod(
+        ReflectionMethod $method,
+    ): string {
         $name = $method->getName();
         $params = $this->renderParameters($method);
         $returnType = $this->renderReturnType($method);
@@ -247,8 +253,9 @@ class InterceptorClassGenerator
     /**
      * Render method parameters as a string for a method signature.
      */
-    private function renderParameters(ReflectionMethod $method): string
-    {
+    private function renderParameters(
+        ReflectionMethod $method,
+    ): string {
         return implode(', ', array_map(
             fn (ReflectionParameter $p) => $this->renderParameter($p),
             $method->getParameters(),
@@ -258,8 +265,9 @@ class InterceptorClassGenerator
     /**
      * Render a single parameter declaration.
      */
-    private function renderParameter(ReflectionParameter $param): string
-    {
+    private function renderParameter(
+        ReflectionParameter $param,
+    ): string {
         $parts = [];
 
         if ($param->hasType()) {
@@ -269,7 +277,11 @@ class InterceptorClassGenerator
         $variadicPrefix = $param->isVariadic() ? '...' : '';
         $parts[] = $variadicPrefix . '$' . $param->getName();
 
-        if (!$param->isVariadic() && $param->isOptional() && $param->isDefaultValueAvailable()) {
+        if (
+            !$param->isVariadic()
+            && $param->isOptional()
+            && $param->isDefaultValueAvailable()
+        ) {
             $parts[] = '= ' . $this->renderDefaultValue($param);
         }
 
@@ -279,8 +291,9 @@ class InterceptorClassGenerator
     /**
      * Render the return type annotation string (e.g. ": string").
      */
-    private function renderReturnType(ReflectionMethod $method): string
-    {
+    private function renderReturnType(
+        ReflectionMethod $method,
+    ): string {
         if (!$method->hasReturnType()) {
             return '';
         }
@@ -301,11 +314,18 @@ class InterceptorClassGenerator
         if ($type instanceof ReflectionNamedType) {
             $name = $type->getName();
 
-            if (!$type->isBuiltin() && $name !== 'self' && $name !== 'static' && $name !== 'parent') {
+            if (
+                !$type->isBuiltin()
+                && $name !== 'self'
+                && $name !== 'static'
+                && $name !== 'parent'
+            ) {
                 $name = '\\' . $name;
             }
 
-            return ($type->allowsNull() && $name !== 'null' && $name !== 'mixed') ? '?' . $name : $name;
+            return ($type->allowsNull() && $name !== 'null' && $name !== 'mixed')
+                ? '?' . $name
+                : $name;
         }
 
         if ($type instanceof ReflectionUnionType) {
@@ -334,8 +354,9 @@ class InterceptorClassGenerator
      *
      * @throws PluginException|ReflectionException
      */
-    private function renderDefaultValue(ReflectionParameter $param): string
-    {
+    private function renderDefaultValue(
+        ReflectionParameter $param,
+    ): string {
         return $this->renderValue($param->getDefaultValue(), $param);
     }
 
@@ -381,8 +402,9 @@ class InterceptorClassGenerator
     /**
      * Render the arguments array literal passed to interceptCall / interceptParentCall.
      */
-    private function renderArgumentsArray(ReflectionMethod $method): string
-    {
+    private function renderArgumentsArray(
+        ReflectionMethod $method,
+    ): string {
         $params = $method->getParameters();
 
         if ($params === []) {
@@ -416,15 +438,17 @@ class InterceptorClassGenerator
     /**
      * Check if a method has a void return type.
      */
-    private function isVoidReturn(ReflectionMethod $method): bool
-    {
+    private function isVoidReturn(
+        ReflectionMethod $method,
+    ): bool {
         if (!$method->hasReturnType()) {
             return false;
         }
 
         $type = $method->getReturnType();
 
-        return $type instanceof ReflectionNamedType && $type->getName() === 'void';
+        return $type instanceof ReflectionNamedType
+            && $type->getName() === 'void';
     }
 
     /**

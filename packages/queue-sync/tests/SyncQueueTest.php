@@ -74,8 +74,9 @@ class SyncFailableJob extends Job implements FailableJobInterface
         throw new RuntimeException('sync job failed');
     }
 
-    public function failed(Throwable $exception): void
-    {
+    public function failed(
+        Throwable $exception,
+    ): void {
         $this->failedWith[] = $exception;
     }
 }
@@ -106,13 +107,15 @@ class ContainerAwareCaptureJob extends Job implements ContainerAwareJobInterface
 
     public bool $hadBothWhenHandled = false;
 
-    public function setContainer(ContainerInterface $container): void
-    {
+    public function setContainer(
+        ContainerInterface $container,
+    ): void {
         $this->receivedContainer = $container;
     }
 
-    public function setJobEnvelope(JobEnvelope $jobEnvelope): void
-    {
+    public function setJobEnvelope(
+        JobEnvelope $jobEnvelope,
+    ): void {
         $this->receivedJobEnvelope = $jobEnvelope;
     }
 
@@ -127,7 +130,8 @@ class ContainerAwareCaptureJob extends Job implements ContainerAwareJobInterface
 
     public function handle(): void
     {
-        $this->hadBothWhenHandled = $this->receivedContainer !== null && $this->receivedJobEnvelope !== null
+        $this->hadBothWhenHandled = $this->receivedContainer !== null
+            && $this->receivedJobEnvelope !== null
             && $this->releaseCount === 0;
 
         if ($this->throwOnHandle) {
@@ -452,8 +456,9 @@ class SyncUnwritableFailedJobRepository extends NullFailedJobRepository
         private readonly Throwable $error,
     ) {}
 
-    public function store(FailedJob $failedJob): void
-    {
+    public function store(
+        FailedJob $failedJob,
+    ): void {
         throw $this->error;
     }
 }

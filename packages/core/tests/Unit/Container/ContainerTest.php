@@ -648,8 +648,9 @@ describe('plugin interception', function (): void {
 // Fixtures for end-to-end plugin interception tests
 class E2eService
 {
-    public function greet(string $name): string
-    {
+    public function greet(
+        string $name,
+    ): string {
         return "Hello, $name";
     }
 
@@ -662,8 +663,9 @@ class E2eService
 class E2eBeforePlugin
 {
     /** @noinspection PhpUnused - Invoked via reflection */
-    public function beforeGreet(string $name): ?array
-    {
+    public function beforeGreet(
+        string $name,
+    ): ?array {
         return ['MODIFIED'];
     }
 }
@@ -684,8 +686,9 @@ class E2eTrackingPlugin
 class E2eAfterPlugin
 {
     /** @noinspection PhpUnused - Invoked via reflection */
-    public function afterGetValue(string $result): string
-    {
+    public function afterGetValue(
+        string $result,
+    ): string {
         return strtoupper($result);
     }
 }
@@ -703,8 +706,9 @@ class E2eConcreteService implements E2eServiceInterface
 class E2eConcretePlugin
 {
     /** @noinspection PhpUnused - Invoked via reflection */
-    public function afterCompute(string $result): string
-    {
+    public function afterCompute(
+        string $result,
+    ): string {
         return $result . '-plugged';
     }
 }

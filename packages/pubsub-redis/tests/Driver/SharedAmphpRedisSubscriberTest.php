@@ -13,15 +13,17 @@ class RecordingAmphpRedisSubscriber implements AmphpRedisSubscriberInterface
     /** @var array<int, string> */
     public array $calls = [];
 
-    public function subscribe(string $channel): AmphpRedisSubscription
-    {
+    public function subscribe(
+        string $channel,
+    ): AmphpRedisSubscription {
         $this->calls[] = "subscribe:$channel";
 
         return makeSharedSubscriberTestSubscription();
     }
 
-    public function subscribeToPattern(string $pattern): AmphpRedisSubscription
-    {
+    public function subscribeToPattern(
+        string $pattern,
+    ): AmphpRedisSubscription {
         $this->calls[] = "psubscribe:$pattern";
 
         return makeSharedSubscriberTestSubscription();

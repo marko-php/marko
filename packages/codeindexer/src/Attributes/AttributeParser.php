@@ -37,8 +37,9 @@ class AttributeParser
     }
 
     /** @return list<ObserverEntry> */
-    public function observers(ModuleInfo $module): array
-    {
+    public function observers(
+        ModuleInfo $module,
+    ): array {
         $entries = [];
 
         foreach ($this->phpFiles($module) as $file) {
@@ -72,8 +73,9 @@ class AttributeParser
     }
 
     /** @return list<PluginEntry> */
-    public function plugins(ModuleInfo $module): array
-    {
+    public function plugins(
+        ModuleInfo $module,
+    ): array {
         $entries = [];
 
         foreach ($this->phpFiles($module) as $file) {
@@ -133,8 +135,9 @@ class AttributeParser
     }
 
     /** @return list<PreferenceEntry> */
-    public function preferences(ModuleInfo $module): array
-    {
+    public function preferences(
+        ModuleInfo $module,
+    ): array {
         $entries = [];
 
         foreach ($this->phpFiles($module) as $file) {
@@ -166,8 +169,9 @@ class AttributeParser
     }
 
     /** @return list<CommandEntry> */
-    public function commands(ModuleInfo $module): array
-    {
+    public function commands(
+        ModuleInfo $module,
+    ): array {
         $entries = [];
 
         foreach ($this->phpFiles($module) as $file) {
@@ -200,8 +204,9 @@ class AttributeParser
     }
 
     /** @return list<RouteEntry> */
-    public function routes(ModuleInfo $module): array
-    {
+    public function routes(
+        ModuleInfo $module,
+    ): array {
         $entries = [];
 
         $httpMethods = [
@@ -279,8 +284,9 @@ class AttributeParser
     // -------------------------------------------------------------------------
 
     /** @return list<string> */
-    private function phpFiles(ModuleInfo $module): array
-    {
+    private function phpFiles(
+        ModuleInfo $module,
+    ): array {
         $srcDir = $module->path . '/src';
         if (!is_dir($srcDir)) {
             return [];
@@ -302,8 +308,9 @@ class AttributeParser
     }
 
     /** @return list<Node>|null */
-    private function parse(string $file): ?array
-    {
+    private function parse(
+        string $file,
+    ): ?array {
         try {
             $code = file_get_contents($file);
             $ast = $this->parser->parse($code);
@@ -326,11 +333,15 @@ class AttributeParser
      * @param list<Node> $ast
      * @return list<Class_>
      */
-    private function findClasses(array $ast): array
-    {
+    private function findClasses(
+        array $ast,
+    ): array {
         $classes = [];
         $this->walkNodes($ast, static function (Node $node) use (&$classes): void {
-            if ($node instanceof Class_ && $node->name !== null) {
+            if (
+                $node instanceof Class_
+                && $node->name !== null
+            ) {
                 $classes[] = $node;
             }
         });
@@ -361,8 +372,9 @@ class AttributeParser
         }
     }
 
-    private function resolveClassName(Class_ $class): string
-    {
+    private function resolveClassName(
+        Class_ $class,
+    ): string {
         if ($class->namespacedName !== null) {
             return $class->namespacedName->toString();
         }
@@ -381,8 +393,9 @@ class AttributeParser
     }
 
     /** @return list<Attribute> */
-    private function classAttributes(Class_ $class): array
-    {
+    private function classAttributes(
+        Class_ $class,
+    ): array {
         $attrs = [];
         foreach ($class->attrGroups as $group) {
             foreach ($group->attrs as $attr) {
@@ -394,8 +407,9 @@ class AttributeParser
     }
 
     /** @return list<Attribute> */
-    private function methodAttributes(Node\Stmt\ClassMethod $method): array
-    {
+    private function methodAttributes(
+        Node\Stmt\ClassMethod $method,
+    ): array {
         $attrs = [];
         foreach ($method->attrGroups as $group) {
             foreach ($group->attrs as $attr) {
@@ -411,7 +425,10 @@ class AttributeParser
         string $fqn,
     ): bool {
         $name = $attr->name;
-        if ($name instanceof Node\Name\FullyQualified || $name instanceof Node\Name) {
+        if (
+            $name instanceof Node\Name\FullyQualified
+            || $name instanceof Node\Name
+        ) {
             return ltrim($name->toString(), '\\') === ltrim($fqn, '\\');
         }
 
@@ -475,7 +492,10 @@ class AttributeParser
     ): ?Node\Expr {
         // Try named arg first
         foreach ($args as $arg) {
-            if ($arg->name !== null && $arg->name->toString() === $namedKey) {
+            if (
+                $arg->name !== null
+                && $arg->name->toString() === $namedKey
+            ) {
                 return $arg->value;
             }
         }

@@ -18,8 +18,9 @@ class DuplicateComponentException extends LayoutException
         );
     }
 
-    public static function duplicate(string $className): self
-    {
+    public static function duplicate(
+        string $className,
+    ): self {
         return new self(
             message: "Component '$className' is already registered.",
             context: "Attempted to add '$className' but it already exists in the collection.",

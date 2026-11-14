@@ -7,8 +7,9 @@ use Marko\RateLimiter\Exceptions\ClientIpException;
 use Marko\Routing\Http\Request;
 use Marko\Testing\Fake\FakeConfigRepository;
 
-function createResolver(array $trustedProxies = []): ClientIpResolver
-{
+function createResolver(
+    array $trustedProxies = [],
+): ClientIpResolver {
     $config = new FakeConfigRepository([
         'ratelimiter.trusted_proxies' => $trustedProxies,
     ]);

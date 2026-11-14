@@ -13,13 +13,15 @@ final class Helpers
     {
         return new class () implements ContainerInterface
         {
-            public function get(string $id): object
-            {
+            public function get(
+                string $id,
+            ): object {
                 return new $id();
             }
 
-            public function has(string $id): bool
-            {
+            public function has(
+                string $id,
+            ): bool {
                 return class_exists($id);
             }
 
@@ -30,13 +32,15 @@ final class Helpers
                 object $instance,
             ): void {}
 
-            public function call(Closure $callable): mixed
-            {
+            public function call(
+                Closure $callable,
+            ): mixed {
                 return $callable();
             }
 
-            public function resolvedInstances(?string $interface = null): array
-            {
+            public function resolvedInstances(
+                ?string $interface = null,
+            ): array {
                 return [];
             }
         };

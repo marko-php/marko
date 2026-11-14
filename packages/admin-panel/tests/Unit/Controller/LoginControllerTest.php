@@ -98,8 +98,9 @@ readonly class LoginStubCsrfTokenManager implements CsrfTokenManagerInterface
         return $this->storedToken;
     }
 
-    public function validate(string $token): bool
-    {
+    public function validate(
+        string $token,
+    ): bool {
         return hash_equals($this->storedToken, $token);
     }
 

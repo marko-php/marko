@@ -82,7 +82,10 @@ readonly class AmphpBroadcaster implements BroadcasterInterface
             'id' => $id,
         ], $event);
 
-        if ($this->publisher instanceof PgSqlPublisher && strlen($payload) > self::PGSQL_PAYLOAD_LIMIT) {
+        if (
+            $this->publisher instanceof PgSqlPublisher
+            && strlen($payload) > self::PGSQL_PAYLOAD_LIMIT
+        ) {
             throw AmphpBroadcastException::payloadTooLarge(
                 $channel->name,
                 strlen($payload),
@@ -121,8 +124,9 @@ readonly class AmphpBroadcaster implements BroadcasterInterface
     /**
      * @throws BroadcastException|AmphpBroadcastException
      */
-    private function channelName(Channel $channel): string
-    {
+    private function channelName(
+        Channel $channel,
+    ): string {
         if (preg_match(self::CHANNEL_NAME_PATTERN, $channel->name) !== 1) {
             throw BroadcastException::invalidChannelName(
                 self::DRIVER,

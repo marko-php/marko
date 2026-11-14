@@ -19,16 +19,18 @@ class SseFrame
     /**
      * Sent instead of a replay when the client's Last-Event-ID cannot be replayed; refetch state.
      */
-    public static function reset(string $reason): string
-    {
+    public static function reset(
+        string $reason,
+    ): string {
         return "event: reset\ndata: {\"reason\":\"$reason\"}\n\n";
     }
 
     /**
      * Sent before the server closes streams on shutdown; the browser reconnects after $retryMs.
      */
-    public static function reconnect(int $retryMs): string
-    {
+    public static function reconnect(
+        int $retryMs,
+    ): string {
         return "retry: $retryMs\nevent: reconnect\ndata: {}\n\n";
     }
 }

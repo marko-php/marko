@@ -34,30 +34,39 @@ class ResponseCollector
         ];
     }
 
-    private function bodyType(string $body): string
-    {
+    private function bodyType(
+        string $body,
+    ): string {
         $trimmed = ltrim($body);
 
         if ($trimmed === '') {
             return 'empty';
         }
 
-        if (str_starts_with($trimmed, '{') || str_starts_with($trimmed, '[')) {
+        if (
+            str_starts_with($trimmed, '{')
+            || str_starts_with($trimmed, '[')
+        ) {
             return 'json';
         }
 
-        if (stripos($body, '<html') !== false || stripos($body, '<body') !== false || stripos(
-            $body,
-            '<!doctype html',
-        ) !== false) {
+        if (
+            stripos($body, '<html') !== false
+            || stripos($body, '<body') !== false
+            || stripos(
+                $body,
+                '<!doctype html',
+            ) !== false
+        ) {
             return 'html';
         }
 
         return 'text';
     }
 
-    private function preview(string $body): string
-    {
+    private function preview(
+        string $body,
+    ): string {
         $body = trim($body);
 
         if (strlen($body) <= 4000) {

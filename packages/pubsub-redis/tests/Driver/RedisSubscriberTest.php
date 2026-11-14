@@ -14,12 +14,6 @@ use Marko\Testing\Fake\FakeConfigRepository;
 
 class SpyAmphpRedisSubscriber implements AmphpRedisSubscriberInterface
 {
-    /** @var array<string, AmphpRedisSubscription> */
-    private array $channelSubscriptions;
-
-    /** @var array<string, AmphpRedisSubscription> */
-    private array $patternSubscriptions;
-
     /** @var array<int, string> */
     public array $subscribedChannels = [];
 
@@ -33,22 +27,21 @@ class SpyAmphpRedisSubscriber implements AmphpRedisSubscriberInterface
      * @param array<string, AmphpRedisSubscription> $patternSubscriptions
      */
     public function __construct(
-        array $channelSubscriptions = [],
-        array $patternSubscriptions = [],
-    ) {
-        $this->channelSubscriptions = $channelSubscriptions;
-        $this->patternSubscriptions = $patternSubscriptions;
-    }
+        private array $channelSubscriptions = [],
+        private array $patternSubscriptions = [],
+    ) {}
 
-    public function subscribe(string $channel): AmphpRedisSubscription
-    {
+    public function subscribe(
+        string $channel,
+    ): AmphpRedisSubscription {
         $this->subscribedChannels[] = $channel;
 
         return $this->channelSubscriptions[$channel] ?? makeSubscriberTestEmptySubscription();
     }
 
-    public function subscribeToPattern(string $pattern): AmphpRedisSubscription
-    {
+    public function subscribeToPattern(
+        string $pattern,
+    ): AmphpRedisSubscription {
         $this->subscribedPatterns[] = $pattern;
 
         return $this->patternSubscriptions[$pattern] ?? makeSubscriberTestEmptySubscription();
@@ -57,15 +50,12 @@ class SpyAmphpRedisSubscriber implements AmphpRedisSubscriberInterface
 
 readonly class TestableRedisSubscriber extends RedisSubscriber
 {
-    public SpyAmphpRedisSubscriber $spy;
-
     public function __construct(
         RedisPubSubConnection $connection,
         PubSubConfig $config,
-        SpyAmphpRedisSubscriber $spy,
+        public SpyAmphpRedisSubscriber $spy,
     ) {
         parent::__construct($connection, $config);
-        $this->spy = $spy;
     }
 
     protected function createAmphpSubscriber(): AmphpRedisSubscriberInterface
@@ -76,8 +66,9 @@ readonly class TestableRedisSubscriber extends RedisSubscriber
     }
 }
 
-function createSubscriberPubSubConfig(string $prefix = 'marko:'): PubSubConfig
-{
+function createSubscriberPubSubConfig(
+    string $prefix = 'marko:',
+): PubSubConfig {
     return new PubSubConfig(new FakeConfigRepository([
         'pubsub.driver' => 'redis',
         'pubsub.prefix' => $prefix,

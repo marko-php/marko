@@ -32,49 +32,57 @@ function makeNullIndexCache(): IndexCache
     };
     $emptyAttributeParser = new class () extends AttributeParser
     {
-        public function observers(ModuleInfo $m): array
-        {
+        public function observers(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function plugins(ModuleInfo $m): array
-        {
+        public function plugins(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function preferences(ModuleInfo $m): array
-        {
+        public function preferences(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function commands(ModuleInfo $m): array
-        {
+        public function commands(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function routes(ModuleInfo $m): array
-        {
+        public function routes(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $emptyConfigScanner = new class () extends ConfigScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $emptyTemplateScanner = new class () extends TemplateScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $emptyTranslationScanner = new class () extends TranslationScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
@@ -105,8 +113,9 @@ beforeEach(function () {
     );
 });
 
-function readResponse($out): array
-{
+function readResponse(
+    $out,
+): array {
     rewind($out);
     $raw = (string) stream_get_contents($out);
     $body = substr($raw, strpos($raw, "\r\n\r\n") + 4);

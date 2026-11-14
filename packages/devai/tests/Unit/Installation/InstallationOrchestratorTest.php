@@ -16,8 +16,9 @@ use Marko\DevAi\Writing\GuidelinesWriter;
 /**
  * An AgentInterface spy: records the context and root it was installed with.
  */
-function makeInstallSpyAgent(bool $installed = false): AgentInterface
-{
+function makeInstallSpyAgent(
+    bool $installed = false,
+): AgentInterface {
     return new class ($installed) implements AgentInterface
     {
         public ?InstallationContext $installedCtx = null;
@@ -55,8 +56,9 @@ function makeInstallSpyAgent(bool $installed = false): AgentInterface
 }
 
 /** @param array<string, AgentInterface> $agents */
-function makeInstallRegistry(array $agents): AgentRegistry
-{
+function makeInstallRegistry(
+    array $agents,
+): AgentRegistry {
     return new class (devaiRunner(), $agents) extends AgentRegistry
     {
         /** @param array<string, AgentInterface> $agentMap */
@@ -67,8 +69,9 @@ function makeInstallRegistry(array $agents): AgentRegistry
             parent::__construct($runner);
         }
 
-        public function all(string $projectRoot): array
-        {
+        public function all(
+            string $projectRoot,
+        ): array {
             return $this->agentMap;
         }
     };
@@ -91,8 +94,9 @@ function makeRecordingRunner(): CommandRunnerInterface
             return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
         }
 
-        public function isOnPath(string $binary): bool
-        {
+        public function isOnPath(
+            string $binary,
+        ): bool {
             return false;
         }
     };
@@ -364,8 +368,9 @@ it('records a helpful log line when the docs index build fails', function (): vo
             return ['exitCode' => 1, 'stdout' => '', 'stderr' => 'permission denied writing index'];
         }
 
-        public function isOnPath(string $binary): bool
-        {
+        public function isOnPath(
+            string $binary,
+        ): bool {
             return false;
         }
     };
@@ -483,8 +488,9 @@ it('records a helpful log line when the docs index build fails for the resolved 
             return ['exitCode' => 1, 'stdout' => '', 'stderr' => 'disk full'];
         }
 
-        public function isOnPath(string $binary): bool
-        {
+        public function isOnPath(
+            string $binary,
+        ): bool {
             return false;
         }
     };
@@ -528,8 +534,9 @@ it('still returns installed status when indexer:rebuild is unavailable', functio
             return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
         }
 
-        public function isOnPath(string $binary): bool
-        {
+        public function isOnPath(
+            string $binary,
+        ): bool {
             return false;
         }
     };
@@ -554,8 +561,9 @@ it('still returns installed status when a warm-up command fails', function (): v
             return ['exitCode' => 1, 'stdout' => '', 'stderr' => 'something went wrong'];
         }
 
-        public function isOnPath(string $binary): bool
-        {
+        public function isOnPath(
+            string $binary,
+        ): bool {
             return false;
         }
     };
@@ -577,8 +585,9 @@ it('records a helpful log line when a warm-up command fails', function (): void 
             return ['exitCode' => 1, 'stdout' => '', 'stderr' => 'command not found: discovery'];
         }
 
-        public function isOnPath(string $binary): bool
-        {
+        public function isOnPath(
+            string $binary,
+        ): bool {
             return false;
         }
     };

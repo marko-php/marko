@@ -73,8 +73,9 @@ function createTestDatabaseConfig(
  *
  * @return array<int, mixed>
  */
-function connectAndCapturePdoOptions(DatabaseConfig $config): array
-{
+function connectAndCapturePdoOptions(
+    DatabaseConfig $config,
+): array {
     $capturedOptions = [];
 
     $connection = new class ($config, $capturedOptions) extends MySqlConnection

@@ -30,8 +30,9 @@ function makeTempDir(): string
     return $dir;
 }
 
-function makeModule(string $path): ModuleInfo
-{
+function makeModule(
+    string $path,
+): ModuleInfo {
     return new ModuleInfo(
         name: 'test/module',
         path: $path,
@@ -197,28 +198,33 @@ it('it builds a fresh index by running all scanners and walkers', function () us
             private readonly RouteEntry $route,
         ) {}
 
-        public function observers(ModuleInfo $m): array
-        {
+        public function observers(
+            ModuleInfo $m,
+        ): array {
             return [$this->observer];
         }
 
-        public function plugins(ModuleInfo $m): array
-        {
+        public function plugins(
+            ModuleInfo $m,
+        ): array {
             return [$this->plugin];
         }
 
-        public function preferences(ModuleInfo $m): array
-        {
+        public function preferences(
+            ModuleInfo $m,
+        ): array {
             return [$this->preference];
         }
 
-        public function commands(ModuleInfo $m): array
-        {
+        public function commands(
+            ModuleInfo $m,
+        ): array {
             return [$this->command];
         }
 
-        public function routes(ModuleInfo $m): array
-        {
+        public function routes(
+            ModuleInfo $m,
+        ): array {
             return [$this->route];
         }
     };
@@ -227,8 +233,9 @@ it('it builds a fresh index by running all scanners and walkers', function () us
     {
         public function __construct(private readonly ConfigKeyEntry $key) {}
 
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [$this->key];
         }
     };
@@ -237,8 +244,9 @@ it('it builds a fresh index by running all scanners and walkers', function () us
     {
         public function __construct(private readonly TemplateEntry $entry) {}
 
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [$this->entry];
         }
     };
@@ -247,8 +255,9 @@ it('it builds a fresh index by running all scanners and walkers', function () us
     {
         public function __construct(private readonly TranslationEntry $entry) {}
 
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [$this->entry];
         }
     };
@@ -289,49 +298,57 @@ it('it writes serialized cache to .marko/index.cache', function () use (&$tmpDir
     };
     $attributeParser = new class () extends AttributeParser
     {
-        public function observers(ModuleInfo $m): array
-        {
+        public function observers(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function plugins(ModuleInfo $m): array
-        {
+        public function plugins(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function preferences(ModuleInfo $m): array
-        {
+        public function preferences(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function commands(ModuleInfo $m): array
-        {
+        public function commands(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function routes(ModuleInfo $m): array
-        {
+        public function routes(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $configScanner = new class () extends ConfigScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $templateScanner = new class () extends TemplateScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $translationScanner = new class () extends TranslationScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
@@ -382,51 +399,59 @@ it('it loads cache from disk without re-scanning when cache is fresh', function 
     {
         public function __construct(private int &$count) {}
 
-        public function observers(ModuleInfo $m): array
-        {
+        public function observers(
+            ModuleInfo $m,
+        ): array {
             $this->count++;
 
             return [];
         }
 
-        public function plugins(ModuleInfo $m): array
-        {
+        public function plugins(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function preferences(ModuleInfo $m): array
-        {
+        public function preferences(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function commands(ModuleInfo $m): array
-        {
+        public function commands(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function routes(ModuleInfo $m): array
-        {
+        public function routes(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $configScanner = new class () extends ConfigScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $templateScanner = new class () extends TemplateScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $translationScanner = new class () extends TranslationScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
@@ -479,49 +504,57 @@ it('it invalidates cache when any source file mtime exceeds cache mtime', functi
     };
     $attributeParser = new class () extends AttributeParser
     {
-        public function observers(ModuleInfo $m): array
-        {
+        public function observers(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function plugins(ModuleInfo $m): array
-        {
+        public function plugins(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function preferences(ModuleInfo $m): array
-        {
+        public function preferences(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function commands(ModuleInfo $m): array
-        {
+        public function commands(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function routes(ModuleInfo $m): array
-        {
+        public function routes(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $configScanner = new class () extends ConfigScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $templateScanner = new class () extends TemplateScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $translationScanner = new class () extends TranslationScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
@@ -592,28 +625,33 @@ it(
                 private readonly RouteEntry $route,
             ) {}
 
-            public function observers(ModuleInfo $m): array
-            {
+            public function observers(
+                ModuleInfo $m,
+            ): array {
                 return [$this->observer];
             }
 
-            public function plugins(ModuleInfo $m): array
-            {
+            public function plugins(
+                ModuleInfo $m,
+            ): array {
                 return [$this->plugin];
             }
 
-            public function preferences(ModuleInfo $m): array
-            {
+            public function preferences(
+                ModuleInfo $m,
+            ): array {
                 return [$this->preference];
             }
 
-            public function commands(ModuleInfo $m): array
-            {
+            public function commands(
+                ModuleInfo $m,
+            ): array {
                 return [$this->command];
             }
 
-            public function routes(ModuleInfo $m): array
-            {
+            public function routes(
+                ModuleInfo $m,
+            ): array {
                 return [$this->route];
             }
         };
@@ -621,8 +659,9 @@ it(
         {
             public function __construct(private readonly ConfigKeyEntry $key) {}
 
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [$this->key];
             }
         };
@@ -630,8 +669,9 @@ it(
         {
             public function __construct(private readonly TemplateEntry $entry) {}
 
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [$this->entry];
             }
         };
@@ -639,8 +679,9 @@ it(
         {
             public function __construct(private readonly TranslationEntry $entry) {}
 
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [$this->entry];
             }
         };
@@ -711,49 +752,57 @@ it(
                 private readonly PluginEntry $plug2,
             ) {}
 
-            public function observers(ModuleInfo $m): array
-            {
+            public function observers(
+                ModuleInfo $m,
+            ): array {
                 return [$this->obs1, $this->obs2];
             }
 
-            public function plugins(ModuleInfo $m): array
-            {
+            public function plugins(
+                ModuleInfo $m,
+            ): array {
                 return [$this->plug1, $this->plug2];
             }
 
-            public function preferences(ModuleInfo $m): array
-            {
+            public function preferences(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function commands(ModuleInfo $m): array
-            {
+            public function commands(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function routes(ModuleInfo $m): array
-            {
+            public function routes(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $configScanner = new class () extends ConfigScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $templateScanner = new class () extends TemplateScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $translationScanner = new class () extends TranslationScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
@@ -786,8 +835,9 @@ it(
 
 // ── helpers for stub cache creation ──────────────────────────────────────────
 
-function makeEmptyStubs(string $rootPath): IndexCache
-{
+function makeEmptyStubs(
+    string $rootPath,
+): IndexCache {
     $walker = new class () extends ModuleWalker
     {
         public function __construct() {}
@@ -799,49 +849,57 @@ function makeEmptyStubs(string $rootPath): IndexCache
     };
     $attributeParser = new class () extends AttributeParser
     {
-        public function observers(ModuleInfo $m): array
-        {
+        public function observers(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function plugins(ModuleInfo $m): array
-        {
+        public function plugins(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function preferences(ModuleInfo $m): array
-        {
+        public function preferences(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function commands(ModuleInfo $m): array
-        {
+        public function commands(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function routes(ModuleInfo $m): array
-        {
+        public function routes(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $configScanner = new class () extends ConfigScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $templateScanner = new class () extends TemplateScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $translationScanner = new class () extends TranslationScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
@@ -849,8 +907,10 @@ function makeEmptyStubs(string $rootPath): IndexCache
     return makeIndexCache($rootPath, $walker, $attributeParser, $configScanner, $templateScanner, $translationScanner);
 }
 
-function makeOneModuleStubs(string $rootPath, ModuleInfo $module): IndexCache
-{
+function makeOneModuleStubs(
+    string $rootPath,
+    ModuleInfo $module,
+): IndexCache {
     $walker = new class ($module) extends ModuleWalker
     {
         public function __construct(private readonly ModuleInfo $module) {}
@@ -862,49 +922,57 @@ function makeOneModuleStubs(string $rootPath, ModuleInfo $module): IndexCache
     };
     $attributeParser = new class () extends AttributeParser
     {
-        public function observers(ModuleInfo $m): array
-        {
+        public function observers(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function plugins(ModuleInfo $m): array
-        {
+        public function plugins(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function preferences(ModuleInfo $m): array
-        {
+        public function preferences(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function commands(ModuleInfo $m): array
-        {
+        public function commands(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function routes(ModuleInfo $m): array
-        {
+        public function routes(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $configScanner = new class () extends ConfigScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $templateScanner = new class () extends TemplateScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $translationScanner = new class () extends TranslationScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
@@ -1016,49 +1084,57 @@ it('it loads a valid cache file and reports its contents', function () use (&$tm
     {
         public function __construct(private readonly ObserverEntry $observer) {}
 
-        public function observers(ModuleInfo $m): array
-        {
+        public function observers(
+            ModuleInfo $m,
+        ): array {
             return [$this->observer];
         }
 
-        public function plugins(ModuleInfo $m): array
-        {
+        public function plugins(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function preferences(ModuleInfo $m): array
-        {
+        public function preferences(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function commands(ModuleInfo $m): array
-        {
+        public function commands(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function routes(ModuleInfo $m): array
-        {
+        public function routes(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $configScanner = new class () extends ConfigScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $templateScanner = new class () extends TemplateScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $translationScanner = new class () extends TranslationScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
@@ -1122,49 +1198,57 @@ it(
         };
         $attributeParser = new class () extends AttributeParser
         {
-            public function observers(ModuleInfo $m): array
-            {
+            public function observers(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function plugins(ModuleInfo $m): array
-            {
+            public function plugins(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function preferences(ModuleInfo $m): array
-            {
+            public function preferences(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function commands(ModuleInfo $m): array
-            {
+            public function commands(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function routes(ModuleInfo $m): array
-            {
+            public function routes(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $configScanner = new class () extends ConfigScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $templateScanner = new class () extends TemplateScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $translationScanner = new class () extends TranslationScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
@@ -1231,7 +1315,11 @@ it(
         chmod($markoDir, 0555);
 
         try {
-            if (function_exists('posix_geteuid') && posix_geteuid() === 0 || is_writable($markoDir)) {
+            if (
+                function_exists('posix_geteuid')
+                && posix_geteuid() === 0
+                || is_writable($markoDir)
+            ) {
                 $this->markTestSkipped('Directory permissions are not enforced for this user (e.g. root).');
             }
 
@@ -1282,49 +1370,57 @@ it(
 
         $attributeParser = new class () extends AttributeParser
         {
-            public function observers(ModuleInfo $m): array
-            {
+            public function observers(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function plugins(ModuleInfo $m): array
-            {
+            public function plugins(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function preferences(ModuleInfo $m): array
-            {
+            public function preferences(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function commands(ModuleInfo $m): array
-            {
+            public function commands(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function routes(ModuleInfo $m): array
-            {
+            public function routes(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $configScanner = new class () extends ConfigScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $templateScanner = new class () extends TemplateScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $translationScanner = new class () extends TranslationScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
@@ -1386,49 +1482,57 @@ it(
             /** @param list<RouteEntry> $routes */
             public function __construct(private array &$routes) {}
 
-            public function observers(ModuleInfo $m): array
-            {
+            public function observers(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function plugins(ModuleInfo $m): array
-            {
+            public function plugins(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function preferences(ModuleInfo $m): array
-            {
+            public function preferences(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function commands(ModuleInfo $m): array
-            {
+            public function commands(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function routes(ModuleInfo $m): array
-            {
+            public function routes(
+                ModuleInfo $m,
+            ): array {
                 return $this->routes;
             }
         };
         $configScanner = new class () extends ConfigScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $templateScanner = new class () extends TemplateScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $translationScanner = new class () extends TranslationScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
@@ -1488,49 +1592,57 @@ it(
             /** @param list<RouteEntry> $routes */
             public function __construct(private array &$routes) {}
 
-            public function observers(ModuleInfo $m): array
-            {
+            public function observers(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function plugins(ModuleInfo $m): array
-            {
+            public function plugins(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function preferences(ModuleInfo $m): array
-            {
+            public function preferences(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function commands(ModuleInfo $m): array
-            {
+            public function commands(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function routes(ModuleInfo $m): array
-            {
+            public function routes(
+                ModuleInfo $m,
+            ): array {
                 return $this->routes;
             }
         };
         $configScanner = new class () extends ConfigScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $templateScanner = new class () extends TemplateScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $translationScanner = new class () extends TranslationScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
@@ -1586,49 +1698,57 @@ it(
         };
         $attributeParser = new class () extends AttributeParser
         {
-            public function observers(ModuleInfo $m): array
-            {
+            public function observers(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function plugins(ModuleInfo $m): array
-            {
+            public function plugins(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function preferences(ModuleInfo $m): array
-            {
+            public function preferences(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function commands(ModuleInfo $m): array
-            {
+            public function commands(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function routes(ModuleInfo $m): array
-            {
+            public function routes(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $configScanner = new class () extends ConfigScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $templateScanner = new class () extends TemplateScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $translationScanner = new class () extends TranslationScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
@@ -1684,51 +1804,59 @@ it('it does not rebuild when no tracked file under app or modules changed', func
     {
         public function __construct(private int &$scanCount) {}
 
-        public function observers(ModuleInfo $m): array
-        {
+        public function observers(
+            ModuleInfo $m,
+        ): array {
             $this->scanCount++;
 
             return [];
         }
 
-        public function plugins(ModuleInfo $m): array
-        {
+        public function plugins(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function preferences(ModuleInfo $m): array
-        {
+        public function preferences(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function commands(ModuleInfo $m): array
-        {
+        public function commands(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
 
-        public function routes(ModuleInfo $m): array
-        {
+        public function routes(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $configScanner = new class () extends ConfigScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $templateScanner = new class () extends TemplateScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
     $translationScanner = new class () extends TranslationScanner
     {
-        public function scan(ModuleInfo $m): array
-        {
+        public function scan(
+            ModuleInfo $m,
+        ): array {
             return [];
         }
     };
@@ -1794,51 +1922,59 @@ it(
         {
             public function __construct(private int &$scanCount) {}
 
-            public function observers(ModuleInfo $m): array
-            {
+            public function observers(
+                ModuleInfo $m,
+            ): array {
                 $this->scanCount++;
 
                 return [];
             }
 
-            public function plugins(ModuleInfo $m): array
-            {
+            public function plugins(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function preferences(ModuleInfo $m): array
-            {
+            public function preferences(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function commands(ModuleInfo $m): array
-            {
+            public function commands(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function routes(ModuleInfo $m): array
-            {
+            public function routes(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $configScanner = new class () extends ConfigScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $templateScanner = new class () extends TemplateScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $translationScanner = new class () extends TranslationScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
@@ -1897,51 +2033,59 @@ it(
         {
             public function __construct(private int &$scanCount) {}
 
-            public function observers(ModuleInfo $m): array
-            {
+            public function observers(
+                ModuleInfo $m,
+            ): array {
                 $this->scanCount++;
 
                 return [];
             }
 
-            public function plugins(ModuleInfo $m): array
-            {
+            public function plugins(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function preferences(ModuleInfo $m): array
-            {
+            public function preferences(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function commands(ModuleInfo $m): array
-            {
+            public function commands(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function routes(ModuleInfo $m): array
-            {
+            public function routes(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $configScanner = new class () extends ConfigScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $templateScanner = new class () extends TemplateScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $translationScanner = new class () extends TranslationScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
@@ -2002,49 +2146,57 @@ it(
         };
         $attributeParser = new class () extends AttributeParser
         {
-            public function observers(ModuleInfo $m): array
-            {
+            public function observers(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function plugins(ModuleInfo $m): array
-            {
+            public function plugins(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function preferences(ModuleInfo $m): array
-            {
+            public function preferences(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function commands(ModuleInfo $m): array
-            {
+            public function commands(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function routes(ModuleInfo $m): array
-            {
+            public function routes(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $configScanner = new class () extends ConfigScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $templateScanner = new class () extends TemplateScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $translationScanner = new class () extends TranslationScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
@@ -2104,49 +2256,57 @@ it(
         };
         $attributeParser = new class () extends AttributeParser
         {
-            public function observers(ModuleInfo $m): array
-            {
+            public function observers(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function plugins(ModuleInfo $m): array
-            {
+            public function plugins(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function preferences(ModuleInfo $m): array
-            {
+            public function preferences(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function commands(ModuleInfo $m): array
-            {
+            public function commands(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function routes(ModuleInfo $m): array
-            {
+            public function routes(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $configScanner = new class () extends ConfigScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $templateScanner = new class () extends TemplateScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $translationScanner = new class () extends TranslationScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
@@ -2211,51 +2371,59 @@ it(
         {
             public function __construct(private int &$count) {}
 
-            public function observers(ModuleInfo $m): array
-            {
+            public function observers(
+                ModuleInfo $m,
+            ): array {
                 $this->count++;
 
                 return [];
             }
 
-            public function plugins(ModuleInfo $m): array
-            {
+            public function plugins(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function preferences(ModuleInfo $m): array
-            {
+            public function preferences(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function commands(ModuleInfo $m): array
-            {
+            public function commands(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
 
-            public function routes(ModuleInfo $m): array
-            {
+            public function routes(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $configScanner = new class () extends ConfigScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $templateScanner = new class () extends TemplateScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };
         $translationScanner = new class () extends TranslationScanner
         {
-            public function scan(ModuleInfo $m): array
-            {
+            public function scan(
+                ModuleInfo $m,
+            ): array {
                 return [];
             }
         };

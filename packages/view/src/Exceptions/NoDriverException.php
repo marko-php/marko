@@ -36,8 +36,9 @@ class NoDriverException extends ViewException
     /**
      * @param array<string, string> $drivers
      */
-    private static function formatDriverList(array $drivers): string
-    {
+    private static function formatDriverList(
+        array $drivers,
+    ): string {
         $lines = [];
         foreach ($drivers as $package => $description) {
             $docsUrl = self::docsUrl($package);
@@ -49,8 +50,9 @@ class NoDriverException extends ViewException
         return implode("\n", $lines);
     }
 
-    private static function docsUrl(string $package): string
-    {
+    private static function docsUrl(
+        string $package,
+    ): string {
         $basename = substr($package, strlen('marko/'));
 
         return "https://marko.build/docs/packages/$basename/";

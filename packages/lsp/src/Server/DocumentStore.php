@@ -23,13 +23,15 @@ class DocumentStore
         $this->documents[$uri] = $text;
     }
 
-    public function close(string $uri): void
-    {
+    public function close(
+        string $uri,
+    ): void {
         unset($this->documents[$uri]);
     }
 
-    public function get(string $uri): ?string
-    {
+    public function get(
+        string $uri,
+    ): ?string {
         return $this->documents[$uri] ?? null;
     }
 
@@ -62,7 +64,11 @@ class DocumentStore
     ): ?string {
         $lineText = $this->lineAt($uri, $line);
 
-        if ($lineText === '' || $col < 0 || $col > strlen($lineText)) {
+        if (
+            $lineText === ''
+            || $col < 0
+            || $col > strlen($lineText)
+        ) {
             return null;
         }
 

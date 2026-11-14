@@ -40,7 +40,10 @@ class InstallationOrchestrator
     ): array {
         $progress = $onProgress ?? static function (string $message): void {};
         $marker = $projectRoot . '/.marko/devai.json';
-        if (is_file($marker) && !$ctx->force) {
+        if (
+            is_file($marker)
+            && !$ctx->force
+        ) {
             return [
                 'status' => 'skipped',
                 'message' => 'Prior install detected at .marko/devai.json. Use `marko devai:update` to update, or pass --force to re-run.',
@@ -187,13 +190,18 @@ class InstallationOrchestrator
      *
      * @return list<string>
      */
-    private function readPreviouslyShipped(string $markerPath): array
-    {
+    private function readPreviouslyShipped(
+        string $markerPath,
+    ): array {
         if (!is_file($markerPath)) {
             return [];
         }
         $decoded = json_decode((string) file_get_contents($markerPath), true);
-        if (!is_array($decoded) || !isset($decoded['shippedSkills']) || !is_array($decoded['shippedSkills'])) {
+        if (
+            !is_array($decoded)
+            || !isset($decoded['shippedSkills'])
+            || !is_array($decoded['shippedSkills'])
+        ) {
             return [];
         }
 
@@ -230,8 +238,9 @@ class InstallationOrchestrator
      * @param list<SkillBundle> $bundles
      * @return list<string>
      */
-    private function extractSkillNames(array $bundles): array
-    {
+    private function extractSkillNames(
+        array $bundles,
+    ): array {
         $names = [];
         foreach ($bundles as $bundle) {
             foreach (array_keys($bundle->skills) as $relativePath) {
@@ -250,13 +259,15 @@ class InstallationOrchestrator
      * has no `marko` file (the binary lives in `vendor/bin/marko`). Registering
      * an absolute path makes the spawn reliable regardless of cwd or PATH.
      */
-    private function resolveMarkoBin(string $projectRoot): string
-    {
+    private function resolveMarkoBin(
+        string $projectRoot,
+    ): string {
         return $projectRoot . '/vendor/bin/marko';
     }
 
-    private function updateGitignore(string $projectRoot): void
-    {
+    private function updateGitignore(
+        string $projectRoot,
+    ): void {
         $path = $projectRoot . '/.gitignore';
         $existing = is_file($path) ? (string) file_get_contents($path) : '';
         $lines = ['# marko/devai generated files', '.marko/'];
@@ -268,7 +279,9 @@ class InstallationOrchestrator
             $additions .= $l . "\n";
         }
         if ($additions !== '') {
-            $separator = ($existing !== '' && !str_ends_with($existing, "\n")) ? "\n" : '';
+            $separator = ($existing !== '' && !str_ends_with($existing, "\n"))
+                ? "\n"
+                : '';
             file_put_contents($path, $existing . $separator . $additions);
         }
     }

@@ -5,13 +5,17 @@ declare(strict_types=1);
 use Marko\DevServer\Process\PidFile;
 use Marko\DevServer\Process\ProcessEntry;
 
-function removeDir(string $dir): void
-{
+function removeDir(
+    string $dir,
+): void {
     if (!is_dir($dir)) {
         return;
     }
     foreach (scandir($dir) as $file) {
-        if ($file === '.' || $file === '..') {
+        if (
+            $file === '.'
+            || $file === '..'
+        ) {
             continue;
         }
         $path = $dir . '/' . $file;
@@ -131,7 +135,10 @@ it('removes the PID file via clear method', function (): void {
 });
 
 it('detects a process group as running when parent died but child lives', function (): void {
-    if (!function_exists('pcntl_fork') || !function_exists('posix_setsid')) {
+    if (
+        !function_exists('pcntl_fork')
+        || !function_exists('posix_setsid')
+    ) {
         test()->markTestSkipped('pcntl and posix are required to build a detached process group');
     }
 

@@ -29,8 +29,9 @@ class ReadWriteConfigException extends MarkoException
         );
     }
 
-    public static function invalidWeight(mixed $weight): self
-    {
+    public static function invalidWeight(
+        mixed $weight,
+    ): self {
         $type = gettype($weight);
 
         return new self(
@@ -40,8 +41,9 @@ class ReadWriteConfigException extends MarkoException
         );
     }
 
-    public static function unknownReadStrategy(string $strategy): self
-    {
+    public static function unknownReadStrategy(
+        string $strategy,
+    ): self {
         return new self(
             message: "Unknown read_strategy '$strategy'; supported strategies are 'random' and 'weighted'",
             context: 'While validating read/write connection configuration',

@@ -42,11 +42,16 @@ readonly class CacheKey
      *
      * Forwarded headers (X-Forwarded-Proto) are client-controlled and deliberately ignored.
      */
-    public static function schemeFromRequest(Request $request): string
-    {
+    public static function schemeFromRequest(
+        Request $request,
+    ): string {
         $https = $request->server('HTTPS');
 
-        if ($https !== null && $https !== '' && strtolower($https) !== 'off') {
+        if (
+            $https !== null
+            && $https !== ''
+            && strtolower($https) !== 'off'
+        ) {
             return 'https';
         }
 
@@ -58,8 +63,9 @@ readonly class CacheKey
     /**
      * The request host name without its port, lowercased; an empty string when the request carries none.
      */
-    public static function hostnameFromRequest(Request $request): string
-    {
+    public static function hostnameFromRequest(
+        Request $request,
+    ): string {
         $host = self::normalizeHost(self::rawHostFromRequest($request), 'http');
 
         return preg_replace('/:\d+$/', '', $host) ?? $host;
@@ -82,8 +88,9 @@ readonly class CacheKey
         return $host;
     }
 
-    public static function normalizeQuery(string $rawQuery): string
-    {
+    public static function normalizeQuery(
+        string $rawQuery,
+    ): string {
         if ($rawQuery === '') {
             return '';
         }
@@ -93,16 +100,18 @@ readonly class CacheKey
         return self::buildQuery($queryArray);
     }
 
-    private static function rawHostFromRequest(Request $request): string
-    {
+    private static function rawHostFromRequest(
+        Request $request,
+    ): string {
         return $request->server('HTTP_HOST') ?? $request->server('SERVER_NAME') ?? '';
     }
 
     /**
      * @param array<string, mixed> $queryArray
      */
-    private static function buildQuery(array $queryArray): string
-    {
+    private static function buildQuery(
+        array $queryArray,
+    ): string {
         ksort($queryArray);
 
         return http_build_query($queryArray, '', '&', PHP_QUERY_RFC3986);

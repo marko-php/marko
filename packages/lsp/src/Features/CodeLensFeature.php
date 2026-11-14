@@ -16,8 +16,9 @@ readonly class CodeLensFeature
      *
      * @return list<array{range: array, command: array}>
      */
-    public function lenses(string $documentText): array
-    {
+    public function lenses(
+        string $documentText,
+    ): array {
         $lenses = [];
         $lines = explode("\n", $documentText);
         $namespace = '';
@@ -70,8 +71,9 @@ readonly class CodeLensFeature
      *
      * @return list<array{uri: string, range: array, label: string}>
      */
-    public function resolveObservers(string $eventClass): array
-    {
+    public function resolveObservers(
+        string $eventClass,
+    ): array {
         $locations = [];
 
         foreach ($this->index->findObserversForEvent($eventClass) as $o) {
@@ -88,8 +90,9 @@ readonly class CodeLensFeature
     /**
      * @return list<array{uri: string, range: array, label: string}>
      */
-    public function resolvePlugins(string $targetClass): array
-    {
+    public function resolvePlugins(
+        string $targetClass,
+    ): array {
         $locations = [];
 
         foreach ($this->index->findPluginsForTarget($targetClass) as $p) {

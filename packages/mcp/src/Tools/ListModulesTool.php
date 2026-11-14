@@ -11,8 +11,9 @@ readonly class ListModulesTool implements ToolHandlerInterface
 {
     public function __construct(private IndexCache $index) {}
 
-    public static function definition(IndexCache $index): ToolDefinition
-    {
+    public static function definition(
+        IndexCache $index,
+    ): ToolDefinition {
         return new ToolDefinition(
             name: 'list_modules',
             description: 'List all Marko modules discovered in the project',
@@ -24,8 +25,9 @@ readonly class ListModulesTool implements ToolHandlerInterface
         );
     }
 
-    public function handle(array $arguments): array
-    {
+    public function handle(
+        array $arguments,
+    ): array {
         $filter = isset($arguments['filter']) ? (string) $arguments['filter'] : '';
         $modules = $this->index->getModules();
 

@@ -99,8 +99,9 @@ class WithUserRepository extends Repository
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function makeWithStubBuilder(array $rows = []): QueryBuilderInterface
-{
+function makeWithStubBuilder(
+    array $rows = [],
+): QueryBuilderInterface {
     return new class ($rows) implements QueryBuilderInterface
     {
         public function __construct(private readonly array $rows) {}
@@ -112,8 +113,9 @@ function makeWithStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function select(string ...$columns): static
-        {
+        public function select(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -132,13 +134,15 @@ function makeWithStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function whereNull(string $column): static
-        {
+        public function whereNull(
+            string $column,
+        ): static {
             return $this;
         }
 
-        public function whereNotNull(string $column): static
-        {
+        public function whereNotNull(
+            string $column,
+        ): static {
             return $this;
         }
 
@@ -149,13 +153,15 @@ function makeWithStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function whereJsonExists(string $path): static
-        {
+        public function whereJsonExists(
+            string $path,
+        ): static {
             return $this;
         }
 
-        public function whereJsonMissing(string $path): static
-        {
+        public function whereJsonMissing(
+            string $path,
+        ): static {
             return $this;
         }
 
@@ -174,13 +180,15 @@ function makeWithStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function whereExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
-        public function whereNotExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereNotExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
@@ -247,13 +255,15 @@ function makeWithStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function limit(int $limit): static
-        {
+        public function limit(
+            int $limit,
+        ): static {
             return $this;
         }
 
-        public function offset(int $offset): static
-        {
+        public function offset(
+            int $offset,
+        ): static {
             return $this;
         }
 
@@ -262,13 +272,15 @@ function makeWithStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function union(QueryBuilderInterface $other): static
-        {
+        public function union(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
-        public function unionAll(QueryBuilderInterface $other): static
-        {
+        public function unionAll(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
@@ -277,8 +289,9 @@ function makeWithStubBuilder(array $rows = []): QueryBuilderInterface
             return 1;
         }
 
-        public function compileSubquery(array &$bindings): string
-        {
+        public function compileSubquery(
+            array &$bindings,
+        ): string {
             return '';
         }
 
@@ -299,8 +312,9 @@ function makeWithStubBuilder(array $rows = []): QueryBuilderInterface
             return 0;
         }
 
-        public function update(array $data): int
-        {
+        public function update(
+            array $data,
+        ): int {
             return 0;
         }
 
@@ -309,8 +323,9 @@ function makeWithStubBuilder(array $rows = []): QueryBuilderInterface
             return 0;
         }
 
-        public function count(?string $column = null): int
-        {
+        public function count(
+            ?string $column = null,
+        ): int {
             return count($this->rows);
         }
 
@@ -349,8 +364,9 @@ function makeWithStubBuilder(array $rows = []): QueryBuilderInterface
             return count($rows);
         }
 
-        public function groupBy(string ...$columns): static
-        {
+        public function groupBy(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -361,30 +377,35 @@ function makeWithStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function min(string $column): int|float|null
-        {
+        public function min(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function max(string $column): int|float|null
-        {
+        public function max(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function sum(string $column): int|float|null
-        {
+        public function sum(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function avg(string $column): int|float|null
-        {
+        public function avg(
+            string $column,
+        ): int|float|null {
             return null;
         }
     };
 }
 
-function makeWithConnection(array $rows = []): ConnectionInterface
-{
+function makeWithConnection(
+    array $rows = [],
+): ConnectionInterface {
     return new class ($rows) implements ConnectionInterface
     {
         public function __construct(private readonly array $rows) {}
@@ -412,8 +433,9 @@ function makeWithConnection(array $rows = []): ConnectionInterface
             return 0;
         }
 
-        public function prepare(string $sql): StatementInterface
-        {
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
             throw new RuntimeException('Not implemented');
         }
 
@@ -440,8 +462,9 @@ function makeWithConnection(array $rows = []): ConnectionInterface
     };
 }
 
-function makeWithQbFactory(array $relatedRows = []): QueryBuilderFactoryInterface
-{
+function makeWithQbFactory(
+    array $relatedRows = [],
+): QueryBuilderFactoryInterface {
     $stub = makeWithStubBuilder($relatedRows);
 
     return new class ($stub) implements QueryBuilderFactoryInterface
@@ -455,8 +478,9 @@ function makeWithQbFactory(array $relatedRows = []): QueryBuilderFactoryInterfac
     };
 }
 
-function makeWithLoader(array $relatedRows = []): RelationshipLoader
-{
+function makeWithLoader(
+    array $relatedRows = [],
+): RelationshipLoader {
     $factory = makeWithQbFactory($relatedRows);
 
     return new RelationshipLoader(
@@ -655,8 +679,9 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function select(string ...$columns): static
-            {
+            public function select(
+                string ...$columns,
+            ): static {
                 return $this;
             }
 
@@ -677,13 +702,15 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function whereNull(string $column): static
-            {
+            public function whereNull(
+                string $column,
+            ): static {
                 return $this;
             }
 
-            public function whereNotNull(string $column): static
-            {
+            public function whereNotNull(
+                string $column,
+            ): static {
                 return $this;
             }
 
@@ -694,13 +721,15 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function whereJsonExists(string $path): static
-            {
+            public function whereJsonExists(
+                string $path,
+            ): static {
                 return $this;
             }
 
-            public function whereJsonMissing(string $path): static
-            {
+            public function whereJsonMissing(
+                string $path,
+            ): static {
                 return $this;
             }
 
@@ -719,13 +748,15 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function whereExists(callable|QueryBuilderInterface $subquery): static
-            {
+            public function whereExists(
+                callable|QueryBuilderInterface $subquery,
+            ): static {
                 return $this;
             }
 
-            public function whereNotExists(callable|QueryBuilderInterface $subquery): static
-            {
+            public function whereNotExists(
+                callable|QueryBuilderInterface $subquery,
+            ): static {
                 return $this;
             }
 
@@ -792,13 +823,15 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function limit(int $limit): static
-            {
+            public function limit(
+                int $limit,
+            ): static {
                 return $this;
             }
 
-            public function offset(int $offset): static
-            {
+            public function offset(
+                int $offset,
+            ): static {
                 return $this;
             }
 
@@ -807,13 +840,15 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function union(QueryBuilderInterface $other): static
-            {
+            public function union(
+                QueryBuilderInterface $other,
+            ): static {
                 return $this;
             }
 
-            public function unionAll(QueryBuilderInterface $other): static
-            {
+            public function unionAll(
+                QueryBuilderInterface $other,
+            ): static {
                 return $this;
             }
 
@@ -822,8 +857,9 @@ describe('Eager Loading Integration', function (): void {
                 return 1;
             }
 
-            public function compileSubquery(array &$bindings): string
-            {
+            public function compileSubquery(
+                array &$bindings,
+            ): string {
                 return '';
             }
 
@@ -844,8 +880,9 @@ describe('Eager Loading Integration', function (): void {
                 return 0;
             }
 
-            public function update(array $data): int
-            {
+            public function update(
+                array $data,
+            ): int {
                 return 0;
             }
 
@@ -854,8 +891,9 @@ describe('Eager Loading Integration', function (): void {
                 return 0;
             }
 
-            public function count(?string $column = null): int
-            {
+            public function count(
+                ?string $column = null,
+            ): int {
                 return 0;
             }
 
@@ -894,8 +932,9 @@ describe('Eager Loading Integration', function (): void {
                 return count($rows);
             }
 
-            public function groupBy(string ...$columns): static
-            {
+            public function groupBy(
+                string ...$columns,
+            ): static {
                 return $this;
             }
 
@@ -906,23 +945,27 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function min(string $column): int|float|null
-            {
+            public function min(
+                string $column,
+            ): int|float|null {
                 return null;
             }
 
-            public function max(string $column): int|float|null
-            {
+            public function max(
+                string $column,
+            ): int|float|null {
                 return null;
             }
 
-            public function sum(string $column): int|float|null
-            {
+            public function sum(
+                string $column,
+            ): int|float|null {
                 return null;
             }
 
-            public function avg(string $column): int|float|null
-            {
+            public function avg(
+                string $column,
+            ): int|float|null {
                 return null;
             }
         };
@@ -979,8 +1022,9 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function select(string ...$columns): static
-            {
+            public function select(
+                string ...$columns,
+            ): static {
                 return $this;
             }
 
@@ -1001,13 +1045,15 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function whereNull(string $column): static
-            {
+            public function whereNull(
+                string $column,
+            ): static {
                 return $this;
             }
 
-            public function whereNotNull(string $column): static
-            {
+            public function whereNotNull(
+                string $column,
+            ): static {
                 return $this;
             }
 
@@ -1018,13 +1064,15 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function whereJsonExists(string $path): static
-            {
+            public function whereJsonExists(
+                string $path,
+            ): static {
                 return $this;
             }
 
-            public function whereJsonMissing(string $path): static
-            {
+            public function whereJsonMissing(
+                string $path,
+            ): static {
                 return $this;
             }
 
@@ -1043,13 +1091,15 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function whereExists(callable|QueryBuilderInterface $subquery): static
-            {
+            public function whereExists(
+                callable|QueryBuilderInterface $subquery,
+            ): static {
                 return $this;
             }
 
-            public function whereNotExists(callable|QueryBuilderInterface $subquery): static
-            {
+            public function whereNotExists(
+                callable|QueryBuilderInterface $subquery,
+            ): static {
                 return $this;
             }
 
@@ -1116,13 +1166,15 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function limit(int $limit): static
-            {
+            public function limit(
+                int $limit,
+            ): static {
                 return $this;
             }
 
-            public function offset(int $offset): static
-            {
+            public function offset(
+                int $offset,
+            ): static {
                 return $this;
             }
 
@@ -1131,13 +1183,15 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function union(QueryBuilderInterface $other): static
-            {
+            public function union(
+                QueryBuilderInterface $other,
+            ): static {
                 return $this;
             }
 
-            public function unionAll(QueryBuilderInterface $other): static
-            {
+            public function unionAll(
+                QueryBuilderInterface $other,
+            ): static {
                 return $this;
             }
 
@@ -1146,8 +1200,9 @@ describe('Eager Loading Integration', function (): void {
                 return 1;
             }
 
-            public function compileSubquery(array &$bindings): string
-            {
+            public function compileSubquery(
+                array &$bindings,
+            ): string {
                 return '';
             }
 
@@ -1168,8 +1223,9 @@ describe('Eager Loading Integration', function (): void {
                 return 0;
             }
 
-            public function update(array $data): int
-            {
+            public function update(
+                array $data,
+            ): int {
                 return 0;
             }
 
@@ -1178,8 +1234,9 @@ describe('Eager Loading Integration', function (): void {
                 return 0;
             }
 
-            public function count(?string $column = null): int
-            {
+            public function count(
+                ?string $column = null,
+            ): int {
                 return 0;
             }
 
@@ -1218,8 +1275,9 @@ describe('Eager Loading Integration', function (): void {
                 return count($rows);
             }
 
-            public function groupBy(string ...$columns): static
-            {
+            public function groupBy(
+                string ...$columns,
+            ): static {
                 return $this;
             }
 
@@ -1230,23 +1288,27 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function min(string $column): int|float|null
-            {
+            public function min(
+                string $column,
+            ): int|float|null {
                 return null;
             }
 
-            public function max(string $column): int|float|null
-            {
+            public function max(
+                string $column,
+            ): int|float|null {
                 return null;
             }
 
-            public function sum(string $column): int|float|null
-            {
+            public function sum(
+                string $column,
+            ): int|float|null {
                 return null;
             }
 
-            public function avg(string $column): int|float|null
-            {
+            public function avg(
+                string $column,
+            ): int|float|null {
                 return null;
             }
         };
@@ -1296,8 +1358,9 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function select(string ...$columns): static
-            {
+            public function select(
+                string ...$columns,
+            ): static {
                 return $this;
             }
 
@@ -1318,13 +1381,15 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function whereNull(string $column): static
-            {
+            public function whereNull(
+                string $column,
+            ): static {
                 return $this;
             }
 
-            public function whereNotNull(string $column): static
-            {
+            public function whereNotNull(
+                string $column,
+            ): static {
                 return $this;
             }
 
@@ -1335,13 +1400,15 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function whereJsonExists(string $path): static
-            {
+            public function whereJsonExists(
+                string $path,
+            ): static {
                 return $this;
             }
 
-            public function whereJsonMissing(string $path): static
-            {
+            public function whereJsonMissing(
+                string $path,
+            ): static {
                 return $this;
             }
 
@@ -1360,13 +1427,15 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function whereExists(callable|QueryBuilderInterface $subquery): static
-            {
+            public function whereExists(
+                callable|QueryBuilderInterface $subquery,
+            ): static {
                 return $this;
             }
 
-            public function whereNotExists(callable|QueryBuilderInterface $subquery): static
-            {
+            public function whereNotExists(
+                callable|QueryBuilderInterface $subquery,
+            ): static {
                 return $this;
             }
 
@@ -1433,13 +1502,15 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function limit(int $limit): static
-            {
+            public function limit(
+                int $limit,
+            ): static {
                 return $this;
             }
 
-            public function offset(int $offset): static
-            {
+            public function offset(
+                int $offset,
+            ): static {
                 return $this;
             }
 
@@ -1448,13 +1519,15 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function union(QueryBuilderInterface $other): static
-            {
+            public function union(
+                QueryBuilderInterface $other,
+            ): static {
                 return $this;
             }
 
-            public function unionAll(QueryBuilderInterface $other): static
-            {
+            public function unionAll(
+                QueryBuilderInterface $other,
+            ): static {
                 return $this;
             }
 
@@ -1463,8 +1536,9 @@ describe('Eager Loading Integration', function (): void {
                 return 1;
             }
 
-            public function compileSubquery(array &$bindings): string
-            {
+            public function compileSubquery(
+                array &$bindings,
+            ): string {
                 return '';
             }
 
@@ -1485,8 +1559,9 @@ describe('Eager Loading Integration', function (): void {
                 return 0;
             }
 
-            public function update(array $data): int
-            {
+            public function update(
+                array $data,
+            ): int {
                 return 0;
             }
 
@@ -1495,8 +1570,9 @@ describe('Eager Loading Integration', function (): void {
                 return 0;
             }
 
-            public function count(?string $column = null): int
-            {
+            public function count(
+                ?string $column = null,
+            ): int {
                 return 0;
             }
 
@@ -1535,8 +1611,9 @@ describe('Eager Loading Integration', function (): void {
                 return count($rows);
             }
 
-            public function groupBy(string ...$columns): static
-            {
+            public function groupBy(
+                string ...$columns,
+            ): static {
                 return $this;
             }
 
@@ -1547,23 +1624,27 @@ describe('Eager Loading Integration', function (): void {
                 return $this;
             }
 
-            public function min(string $column): int|float|null
-            {
+            public function min(
+                string $column,
+            ): int|float|null {
                 return null;
             }
 
-            public function max(string $column): int|float|null
-            {
+            public function max(
+                string $column,
+            ): int|float|null {
                 return null;
             }
 
-            public function sum(string $column): int|float|null
-            {
+            public function sum(
+                string $column,
+            ): int|float|null {
                 return null;
             }
 
-            public function avg(string $column): int|float|null
-            {
+            public function avg(
+                string $column,
+            ): int|float|null {
                 return null;
             }
         };

@@ -8,8 +8,10 @@ use Marko\Inertia\Ssr\SsrClient;
 use Marko\Inertia\Ssr\SsrTransportInterface;
 use Marko\Testing\Fake\FakeConfigRepository;
 
-function createSsrClient(SsrTransportInterface $transport, array $config = []): SsrClient
-{
+function createSsrClient(
+    SsrTransportInterface $transport,
+    array $config = [],
+): SsrClient {
     return new SsrClient(new FakeConfigRepository(array_merge([
         'inertia.ssr.url' => 'http://localhost:13714/render',
     ], $config)), $transport);

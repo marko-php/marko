@@ -10,8 +10,11 @@ use Marko\Mcp\Tools\ListCommandsTool;
 use Marko\Mcp\Tools\ListModulesTool;
 use Marko\Mcp\Tools\ListRoutesTool;
 
-function makeMcpStubCache(array $modules = [], array $commands = [], array $routes = []): IndexCache
-{
+function makeMcpStubCache(
+    array $modules = [],
+    array $commands = [],
+    array $routes = [],
+): IndexCache {
     return new class ($modules, $commands, $routes) extends IndexCache
     {
         public function __construct(

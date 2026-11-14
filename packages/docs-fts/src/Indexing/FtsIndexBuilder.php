@@ -15,8 +15,9 @@ class FtsIndexBuilder
     ) {}
 
     /** @throws DocsException */
-    public function build(string $outputPath): void
-    {
+    public function build(
+        string $outputPath,
+    ): void {
         $pages = $this->repository->listAllPages();
 
         if ($pages === []) {
@@ -94,13 +95,15 @@ class FtsIndexBuilder
         return basename($fallback);
     }
 
-    private function stripFrontmatter(string $markdown): string
-    {
+    private function stripFrontmatter(
+        string $markdown,
+    ): string {
         return preg_replace('/^---\s*\n.*?\n---\s*\n/s', '', $markdown, 1) ?? $markdown;
     }
 
-    private function extractSection(string $pageId): string
-    {
+    private function extractSection(
+        string $pageId,
+    ): string {
         $pos = strpos($pageId, '/');
 
         return $pos !== false ? substr($pageId, 0, $pos) : 'root';

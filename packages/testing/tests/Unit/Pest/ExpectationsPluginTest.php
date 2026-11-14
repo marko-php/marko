@@ -30,8 +30,9 @@ const MARKO_TESTING_EXPECTATIONS = [
  *
  * @return array<int, string>
  */
-function registeredMarkoExpectationsAfter(Closure $register): array
-{
+function registeredMarkoExpectationsAfter(
+    Closure $register,
+): array {
     $extends = new ReflectionProperty(Expectation::class, 'extends');
     $original = $extends->getValue();
     $extends->setValue(null, []);

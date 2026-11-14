@@ -38,8 +38,9 @@ readonly class TranslationFeature
      *
      * @return list<array{label: string, kind: int, detail: string, documentation: string, insertText: string}>
      */
-    public function complete(string $partial): array
-    {
+    public function complete(
+        string $partial,
+    ): array {
         $items = [];
 
         foreach ($this->index->getTranslationKeys() as $entry) {
@@ -51,7 +52,10 @@ readonly class TranslationFeature
                 ? $entry->namespace . '::' . $entry->group . '.' . $entry->key
                 : $entry->group . '.' . $entry->key;
 
-            if ($partial !== '' && !str_starts_with($fullKey, $partial)) {
+            if (
+                $partial !== ''
+                && !str_starts_with($fullKey, $partial)
+            ) {
                 continue;
             }
 
@@ -70,8 +74,9 @@ readonly class TranslationFeature
     /**
      * @return ?array{uri: string, range: array}
      */
-    public function gotoDefinition(string $key): ?array
-    {
+    public function gotoDefinition(
+        string $key,
+    ): ?array {
         foreach ($this->index->getTranslationKeys() as $entry) {
             $fullKey = $entry->namespace !== null
                 ? $entry->namespace . '::' . $entry->group . '.' . $entry->key
@@ -95,8 +100,9 @@ readonly class TranslationFeature
      * Markdown hover content for a translation key, or null if unknown.
      * Lists every locale that defines the key.
      */
-    public function hover(string $key): ?string
-    {
+    public function hover(
+        string $key,
+    ): ?string {
         $matches = [];
 
         foreach ($this->index->getTranslationKeys() as $entry) {
@@ -127,8 +133,9 @@ readonly class TranslationFeature
      *
      * @return list<array{range: array, severity: int, message: string, code: string}>
      */
-    public function diagnostics(string $documentText): array
-    {
+    public function diagnostics(
+        string $documentText,
+    ): array {
         $known = [];
 
         foreach ($this->index->getTranslationKeys() as $entry) {

@@ -40,7 +40,8 @@ function pusherAuthController(
                 throw ChannelAuthorizationException::unknownChannel($channelName);
             }
 
-            return $channelName === 'foobar' && $user !== null;
+            return $channelName === 'foobar'
+                && $user !== null;
         }
 
         public function authorizePresence(
@@ -52,7 +53,8 @@ function pusherAuthController(
             }
 
             return match (true) {
-                $channelName === 'foobar' && $user !== null => new PresenceMember(10, ['name' => 'Mr. Channels']),
+                $channelName === 'foobar'
+                    && $user !== null => new PresenceMember(10, ['name' => 'Mr. Channels']),
                 $channelName === 'bare' => new PresenceMember('7'),
                 default => null,
             };
@@ -76,8 +78,9 @@ function pusherAuthController(
 /**
  * @param array<string, string> $post
  */
-function pusherAuthRequest(array $post): Request
-{
+function pusherAuthRequest(
+    array $post,
+): Request {
     return new Request(server: ['REQUEST_METHOD' => 'POST'], post: $post);
 }
 

@@ -14,33 +14,39 @@ it('checks filesystem writability via FilesystemHealthCheck', function () {
     {
         public function __construct(private array &$written) {}
 
-        public function exists(string $path): bool
-        {
+        public function exists(
+            string $path,
+        ): bool {
             return isset($this->written[$path]);
         }
 
-        public function isFile(string $path): bool
-        {
+        public function isFile(
+            string $path,
+        ): bool {
             return false;
         }
 
-        public function isDirectory(string $path): bool
-        {
+        public function isDirectory(
+            string $path,
+        ): bool {
             return false;
         }
 
-        public function info(string $path): FileInfo
-        {
+        public function info(
+            string $path,
+        ): FileInfo {
             throw new RuntimeException('Not implemented');
         }
 
-        public function read(string $path): string
-        {
+        public function read(
+            string $path,
+        ): string {
             return $this->written[$path] ?? '';
         }
 
-        public function readStream(string $path): mixed
-        {
+        public function readStream(
+            string $path,
+        ): mixed {
             throw new RuntimeException('Not implemented');
         }
 
@@ -69,8 +75,9 @@ it('checks filesystem writability via FilesystemHealthCheck', function () {
             return true;
         }
 
-        public function delete(string $path): bool
-        {
+        public function delete(
+            string $path,
+        ): bool {
             unset($this->written[$path]);
 
             return true;
@@ -90,33 +97,39 @@ it('checks filesystem writability via FilesystemHealthCheck', function () {
             return true;
         }
 
-        public function size(string $path): int
-        {
+        public function size(
+            string $path,
+        ): int {
             return 0;
         }
 
-        public function lastModified(string $path): int
-        {
+        public function lastModified(
+            string $path,
+        ): int {
             return 0;
         }
 
-        public function mimeType(string $path): string
-        {
+        public function mimeType(
+            string $path,
+        ): string {
             return 'text/plain';
         }
 
-        public function listDirectory(string $path = '/'): DirectoryListingInterface
-        {
+        public function listDirectory(
+            string $path = '/',
+        ): DirectoryListingInterface {
             throw new RuntimeException('Not implemented');
         }
 
-        public function makeDirectory(string $path): bool
-        {
+        public function makeDirectory(
+            string $path,
+        ): bool {
             return true;
         }
 
-        public function deleteDirectory(string $path): bool
-        {
+        public function deleteDirectory(
+            string $path,
+        ): bool {
             return true;
         }
 
@@ -127,8 +140,9 @@ it('checks filesystem writability via FilesystemHealthCheck', function () {
             return true;
         }
 
-        public function visibility(string $path): string
-        {
+        public function visibility(
+            string $path,
+        ): string {
             return 'public';
         }
     };
@@ -146,33 +160,39 @@ it('checks filesystem writability via FilesystemHealthCheck', function () {
 it('returns unhealthy status when filesystem write fails', function () {
     $filesystem = new class () implements FilesystemInterface
     {
-        public function exists(string $path): bool
-        {
+        public function exists(
+            string $path,
+        ): bool {
             return false;
         }
 
-        public function isFile(string $path): bool
-        {
+        public function isFile(
+            string $path,
+        ): bool {
             return false;
         }
 
-        public function isDirectory(string $path): bool
-        {
+        public function isDirectory(
+            string $path,
+        ): bool {
             return false;
         }
 
-        public function info(string $path): FileInfo
-        {
+        public function info(
+            string $path,
+        ): FileInfo {
             throw new RuntimeException('Not implemented');
         }
 
-        public function read(string $path): string
-        {
+        public function read(
+            string $path,
+        ): string {
             return '';
         }
 
-        public function readStream(string $path): mixed
-        {
+        public function readStream(
+            string $path,
+        ): mixed {
             throw new RuntimeException('Not implemented');
         }
 
@@ -199,8 +219,9 @@ it('returns unhealthy status when filesystem write fails', function () {
             return false;
         }
 
-        public function delete(string $path): bool
-        {
+        public function delete(
+            string $path,
+        ): bool {
             return false;
         }
 
@@ -218,33 +239,39 @@ it('returns unhealthy status when filesystem write fails', function () {
             return false;
         }
 
-        public function size(string $path): int
-        {
+        public function size(
+            string $path,
+        ): int {
             return 0;
         }
 
-        public function lastModified(string $path): int
-        {
+        public function lastModified(
+            string $path,
+        ): int {
             return 0;
         }
 
-        public function mimeType(string $path): string
-        {
+        public function mimeType(
+            string $path,
+        ): string {
             return 'text/plain';
         }
 
-        public function listDirectory(string $path = '/'): DirectoryListingInterface
-        {
+        public function listDirectory(
+            string $path = '/',
+        ): DirectoryListingInterface {
             throw new RuntimeException('Not implemented');
         }
 
-        public function makeDirectory(string $path): bool
-        {
+        public function makeDirectory(
+            string $path,
+        ): bool {
             return false;
         }
 
-        public function deleteDirectory(string $path): bool
-        {
+        public function deleteDirectory(
+            string $path,
+        ): bool {
             return false;
         }
 
@@ -255,8 +282,9 @@ it('returns unhealthy status when filesystem write fails', function () {
             return false;
         }
 
-        public function visibility(string $path): string
-        {
+        public function visibility(
+            string $path,
+        ): string {
             return 'public';
         }
     };

@@ -17,8 +17,10 @@ use Twig\Loader\ArrayLoader;
 /**
  * @param array<string, string> $templates
  */
-function makeSlotTwig(array $templates, bool $strictVariables = false): Environment
-{
+function makeSlotTwig(
+    array $templates,
+    bool $strictVariables = false,
+): Environment {
     $environment = new Environment(new ArrayLoader($templates), [
         'autoescape' => 'html',
         'strict_variables' => $strictVariables,

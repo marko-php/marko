@@ -16,8 +16,9 @@ readonly class PgSqlConnectionFactory implements ConnectionFactoryInterface
         private TransactionBackoff $transactionBackoff = new TransactionBackoff(),
     ) {}
 
-    public function make(DatabaseConfig $config): ConnectionInterface
-    {
+    public function make(
+        DatabaseConfig $config,
+    ): ConnectionInterface {
         return new PgSqlConnection(
             config: $config,
             charset: $this->charset,

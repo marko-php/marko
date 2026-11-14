@@ -23,8 +23,9 @@ afterEach(function (): void {
     }
 });
 
-function makeDiscoveryClearSetup(string $cacheDir): array
-{
+function makeDiscoveryClearSetup(
+    string $cacheDir,
+): array {
     $cachePath = $cacheDir . '/discovery.php';
     $_ENV['DISCOVERY_CACHE_PATH'] = $cachePath;
     $paths = new ProjectPaths($cacheDir);

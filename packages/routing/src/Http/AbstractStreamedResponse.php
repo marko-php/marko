@@ -27,8 +27,9 @@ abstract class AbstractStreamedResponse extends Response implements StreamedResp
     }
 
     #[NoDiscard]
-    public function withOutputStreamer(OutputStreamer $outputStreamer): static
-    {
+    public function withOutputStreamer(
+        OutputStreamer $outputStreamer,
+    ): static {
         $clone = clone $this;
         $clone->outputStreamer = $outputStreamer;
 

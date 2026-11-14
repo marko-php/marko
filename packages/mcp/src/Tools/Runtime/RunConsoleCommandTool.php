@@ -54,8 +54,9 @@ readonly class RunConsoleCommandTool implements ToolHandlerInterface
         );
     }
 
-    public function handle(array $arguments): array
-    {
+    public function handle(
+        array $arguments,
+    ): array {
         $command = (string) ($arguments['command'] ?? '');
         $args = (array) ($arguments['args'] ?? []);
 
@@ -100,7 +101,11 @@ readonly class RunConsoleCommandTool implements ToolHandlerInterface
                 . "mcp.console.allowed_commands config key. Allowed: $allowed";
         }
 
-        if ($definition !== null && $definition->destructive && ! $this->allowDestructive) {
+        if (
+            $definition !== null
+            && $definition->destructive
+            && ! $this->allowDestructive
+        ) {
             return "Command '$command' is destructive (#[Command(destructive: true)]) and is disabled. The server "
                 . 'operator must set the mcp.console.allow_destructive config key to true (MCP_ALLOW_DESTRUCTIVE=true) '
                 . 'to run it; passing --force cannot enable it.';

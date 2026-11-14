@@ -114,8 +114,9 @@ function createMatchingRouter(
             private UnmatchedStampingMiddleware $unmatchedMiddleware,
         ) {}
 
-        public function get(string $id): object
-        {
+        public function get(
+            string $id,
+        ): object {
             return match ($id) {
                 MatchingTestController::class => $this->controller,
                 StampingMiddleware::class => $this->middleware,
@@ -123,8 +124,9 @@ function createMatchingRouter(
             };
         }
 
-        public function has(string $id): bool
-        {
+        public function has(
+            string $id,
+        ): bool {
             return in_array(
                 $id,
                 [MatchingTestController::class, StampingMiddleware::class, UnmatchedStampingMiddleware::class],
@@ -139,13 +141,15 @@ function createMatchingRouter(
             object $instance,
         ): void {}
 
-        public function call(Closure $callable): mixed
-        {
+        public function call(
+            Closure $callable,
+        ): mixed {
             return $callable();
         }
 
-        public function resolvedInstances(?string $interface = null): array
-        {
+        public function resolvedInstances(
+            ?string $interface = null,
+        ): array {
             return [];
         }
     };

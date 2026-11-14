@@ -16,8 +16,9 @@ class KnownDriversValidator
      *
      * @throws InvalidArgumentException
      */
-    private static function readKnownDrivers(string $knownDriversPath): array
-    {
+    private static function readKnownDrivers(
+        string $knownDriversPath,
+    ): array {
         if (! file_exists($knownDriversPath)) {
             throw new InvalidArgumentException(
                 "known-drivers.php not found at: $knownDriversPath",
@@ -31,8 +32,9 @@ class KnownDriversValidator
     /**
      * @throws InvalidArgumentException|ExpectationFailedException
      */
-    public static function assertDocsUrlsResolveToValidPattern(string $knownDriversPath): void
-    {
+    public static function assertDocsUrlsResolveToValidPattern(
+        string $knownDriversPath,
+    ): void {
         $drivers = self::readKnownDrivers($knownDriversPath);
 
         foreach (array_keys($drivers) as $packageName) {

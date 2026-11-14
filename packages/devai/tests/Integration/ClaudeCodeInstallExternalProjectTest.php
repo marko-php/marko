@@ -43,10 +43,18 @@ function integExternalRunnerWithLsp(
             array $args = [],
         ): array {
             $this->calls[] = [$cmd, $args];
-            if ($cmd === 'claude' && ($args[0] ?? '') === 'mcp' && ($args[1] ?? '') === 'list') {
+            if (
+                $cmd === 'claude'
+                && ($args[0] ?? '') === 'mcp'
+                && ($args[1] ?? '') === 'list'
+            ) {
                 return ['exitCode' => 0, 'stdout' => $this->listOutput, 'stderr' => ''];
             }
-            if ($cmd === 'claude' && ($args[0] ?? '') === 'plugin' && ($args[1] ?? '') === 'list') {
+            if (
+                $cmd === 'claude'
+                && ($args[0] ?? '') === 'plugin'
+                && ($args[1] ?? '') === 'list'
+            ) {
                 return ['exitCode' => 0, 'stdout' => integExternalPluginListJson(), 'stderr' => ''];
             }
             if ($cmd === 'npm') {
@@ -56,8 +64,9 @@ function integExternalRunnerWithLsp(
             return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
         }
 
-        public function isOnPath(string $binary): bool
-        {
+        public function isOnPath(
+            string $binary,
+        ): bool {
             return match ($binary) {
                 'claude' => true,
                 'intelephense' => $this->intelephenseOnPath,
@@ -80,8 +89,9 @@ function integExternalTempDir(): string
     return $dir;
 }
 
-function integRemoveTempDir(string $dir): void
-{
+function integRemoveTempDir(
+    string $dir,
+): void {
     if (!is_dir($dir)) {
         return;
     }
@@ -135,18 +145,27 @@ function integExternalRunner(
             array $args = [],
         ): array {
             $this->calls[] = [$cmd, $args];
-            if ($cmd === 'claude' && ($args[0] ?? '') === 'mcp' && ($args[1] ?? '') === 'list') {
+            if (
+                $cmd === 'claude'
+                && ($args[0] ?? '') === 'mcp'
+                && ($args[1] ?? '') === 'list'
+            ) {
                 return ['exitCode' => 0, 'stdout' => $this->listOutput, 'stderr' => ''];
             }
-            if ($cmd === 'claude' && ($args[0] ?? '') === 'plugin' && ($args[1] ?? '') === 'list') {
+            if (
+                $cmd === 'claude'
+                && ($args[0] ?? '') === 'plugin'
+                && ($args[1] ?? '') === 'list'
+            ) {
                 return ['exitCode' => 0, 'stdout' => $this->pluginListJson, 'stderr' => ''];
             }
 
             return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
         }
 
-        public function isOnPath(string $binary): bool
-        {
+        public function isOnPath(
+            string $binary,
+        ): bool {
             // Report claude and intelephense as present so existing tests don't
             // trigger the npm-required exception path (they don't test LSP deps).
             return match ($binary) {
@@ -175,8 +194,9 @@ function integExternalWalker(): ModuleWalker
 /**
  * Build a fully-wired InstallationOrchestrator with real classes, fake I/O deps.
  */
-function integExternalOrchestrator(CommandRunnerInterface $runner): InstallationOrchestrator
-{
+function integExternalOrchestrator(
+    CommandRunnerInterface $runner,
+): InstallationOrchestrator {
     $walker = integExternalWalker();
 
     return new InstallationOrchestrator(
@@ -694,7 +714,8 @@ describe('claude code plugin install (external project)', function (): void {
 
         $pluginCalls = array_values(array_map(
             fn ($call) => $call[1],
-            array_filter($runner->calls, fn ($call) => $call[0] === 'claude' && ($call[1][0] ?? '') === 'plugin'),
+            array_filter($runner->calls, fn ($call) => $call[0] === 'claude'
+                && ($call[1][0] ?? '') === 'plugin'),
         ));
         expect($result['status'])->toBe('installed')
             ->and($pluginCalls[0])->toBe(['plugin', 'marketplace', 'add', $pluginCalls[0][3], '--scope', 'project'])

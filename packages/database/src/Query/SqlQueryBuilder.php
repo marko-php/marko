@@ -440,10 +440,13 @@ abstract class SqlQueryBuilder implements QueryBuilderInterface
         string ...$columns,
     ): static {
         foreach ($columns as $column) {
-            if (!IdentifierValidator::isValidIdentifier($column) && !preg_match(
-                '/^[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*$/',
-                $column,
-            )) {
+            if (
+                !IdentifierValidator::isValidIdentifier($column)
+                && !preg_match(
+                    '/^[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*$/',
+                    $column,
+                )
+            ) {
                 throw InvalidColumnException::invalidColumn($column);
             }
         }
@@ -718,8 +721,9 @@ abstract class SqlQueryBuilder implements QueryBuilderInterface
     /**
      * @throws InvalidColumnException|LockException
      */
-    public function count(?string $column = null): int
-    {
+    public function count(
+        ?string $column = null,
+    ): int {
         $this->assertNotLocked('count()');
 
         if ($column !== null) {
@@ -736,8 +740,9 @@ abstract class SqlQueryBuilder implements QueryBuilderInterface
     /**
      * @throws InvalidColumnException|LockException
      */
-    public function min(string $column): int|float|null
-    {
+    public function min(
+        string $column,
+    ): int|float|null {
         $this->assertNotLocked('min()');
 
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -750,8 +755,9 @@ abstract class SqlQueryBuilder implements QueryBuilderInterface
     /**
      * @throws InvalidColumnException|LockException
      */
-    public function max(string $column): int|float|null
-    {
+    public function max(
+        string $column,
+    ): int|float|null {
         $this->assertNotLocked('max()');
 
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -764,8 +770,9 @@ abstract class SqlQueryBuilder implements QueryBuilderInterface
     /**
      * @throws InvalidColumnException|LockException
      */
-    public function sum(string $column): int|float|null
-    {
+    public function sum(
+        string $column,
+    ): int|float|null {
         $this->assertNotLocked('sum()');
 
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -778,8 +785,9 @@ abstract class SqlQueryBuilder implements QueryBuilderInterface
     /**
      * @throws InvalidColumnException|LockException
      */
-    public function avg(string $column): int|float|null
-    {
+    public function avg(
+        string $column,
+    ): int|float|null {
         $this->assertNotLocked('avg()');
 
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -975,8 +983,9 @@ abstract class SqlQueryBuilder implements QueryBuilderInterface
      *
      * @return int|float|null
      */
-    private function runAggregate(string $aggregateExpr): int|float|null
-    {
+    private function runAggregate(
+        string $aggregateExpr,
+    ): int|float|null {
         $this->bindings = [];
 
         $sql = sprintf(
@@ -1001,8 +1010,9 @@ abstract class SqlQueryBuilder implements QueryBuilderInterface
      * Wrap one SELECT of a UNION so its own ORDER BY / LIMIT stay scoped to it. A dialect whose compound
      * SELECT rejects parenthesised operands overrides this.
      */
-    protected function wrapUnionPart(string $sql): string
-    {
+    protected function wrapUnionPart(
+        string $sql,
+    ): string {
         return '(' . $sql . ')';
     }
 
@@ -1188,7 +1198,10 @@ abstract class SqlQueryBuilder implements QueryBuilderInterface
 
             $condition = sprintf('%s %s ?', $columnExpr, $where['operator']);
 
-            if ($index === 0 && empty($conditions)) {
+            if (
+                $index === 0
+                && empty($conditions)
+            ) {
                 $conditions[] = $condition;
             } else {
                 $conditions[] = $where['boolean'] . ' ' . $condition;
@@ -1391,15 +1404,24 @@ abstract class SqlQueryBuilder implements QueryBuilderInterface
      */
     private function buildLockModifier(): string
     {
-        if ($this->skipLocked && $this->noWait) {
+        if (
+            $this->skipLocked
+            && $this->noWait
+        ) {
             throw LockException::conflictingModifiers();
         }
 
-        if ($this->lockMode === null && $this->skipLocked) {
+        if (
+            $this->lockMode === null
+            && $this->skipLocked
+        ) {
             throw LockException::modifierWithoutLock('skipLocked');
         }
 
-        if ($this->lockMode === null && $this->noWait) {
+        if (
+            $this->lockMode === null
+            && $this->noWait
+        ) {
             throw LockException::modifierWithoutLock('noWait');
         }
 
@@ -1418,7 +1440,10 @@ abstract class SqlQueryBuilder implements QueryBuilderInterface
      */
     private function assertLockInTransaction(): void
     {
-        if (!$this->connection instanceof TransactionInterface || !$this->connection->inTransaction()) {
+        if (
+            !$this->connection instanceof TransactionInterface
+            || !$this->connection->inTransaction()
+        ) {
             throw LockException::outsideTransaction($this->table);
         }
     }

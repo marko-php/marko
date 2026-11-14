@@ -77,8 +77,9 @@ class Response
      * @param array<string, string> $headers
      */
     #[NoDiscard]
-    public function withHeaders(array $headers): static
-    {
+    public function withHeaders(
+        array $headers,
+    ): static {
         $clone = clone $this;
         $clone->headers = [...$clone->headers, ...$headers];
 
@@ -86,8 +87,9 @@ class Response
     }
 
     #[NoDiscard]
-    public function withStatus(int $statusCode): static
-    {
+    public function withStatus(
+        int $statusCode,
+    ): static {
         $clone = clone $this;
         $clone->statusCode = $statusCode;
 
@@ -116,8 +118,9 @@ class Response
     }
 
     #[NoDiscard]
-    public function withCookie(Cookie $cookie): static
-    {
+    public function withCookie(
+        Cookie $cookie,
+    ): static {
         $clone = clone $this;
 
         $index = array_find_key(

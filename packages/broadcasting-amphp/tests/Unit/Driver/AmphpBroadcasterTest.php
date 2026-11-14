@@ -34,8 +34,10 @@ function amphpBroadcaster(
 /**
  * @return array<string, mixed>
  */
-function publishedPayload(InMemoryPubSub $pubSub, int $index = 0): array
-{
+function publishedPayload(
+    InMemoryPubSub $pubSub,
+    int $index = 0,
+): array {
     return json_decode($pubSub->published[$index]['message']->payload, true, flags: JSON_THROW_ON_ERROR);
 }
 

@@ -380,10 +380,18 @@ describe('legacy artifact cleanup', function (): void {
             $listCall = null;
             $removeCall = null;
             foreach ($runner->calls as $call) {
-                if ($call['command'] === 'claude' && ($call['args'][0] ?? '') === 'mcp' && ($call['args'][1] ?? '') === 'list') {
+                if (
+                    $call['command'] === 'claude'
+                    && ($call['args'][0] ?? '') === 'mcp'
+                    && ($call['args'][1] ?? '') === 'list'
+                ) {
                     $listCall = $call;
                 }
-                if ($call['command'] === 'claude' && ($call['args'][0] ?? '') === 'mcp' && ($call['args'][1] ?? '') === 'remove') {
+                if (
+                    $call['command'] === 'claude'
+                    && ($call['args'][0] ?? '') === 'mcp'
+                    && ($call['args'][1] ?? '') === 'remove'
+                ) {
                     $removeCall = $call;
                 }
             }
@@ -404,7 +412,11 @@ describe('legacy artifact cleanup', function (): void {
 
             $removeCall = null;
             foreach ($runner->calls as $call) {
-                if ($call['command'] === 'claude' && ($call['args'][0] ?? '') === 'mcp' && ($call['args'][1] ?? '') === 'remove') {
+                if (
+                    $call['command'] === 'claude'
+                    && ($call['args'][0] ?? '') === 'mcp'
+                    && ($call['args'][1] ?? '') === 'remove'
+                ) {
                     $removeCall = $call;
                 }
             }
@@ -437,8 +449,9 @@ describe('lsp deps', function (): void {
                 private array &$log,
             ) {}
 
-            public function ensure(bool $skip = false): EnsureResult
-            {
+            public function ensure(
+                bool $skip = false,
+            ): EnsureResult {
                 $this->log[] = $skip;
 
                 return EnsureResult::alreadyInstalled();
@@ -459,8 +472,9 @@ describe('lsp deps', function (): void {
                 private array &$log,
             ) {}
 
-            public function ensure(bool $skip = false): EnsureResult
-            {
+            public function ensure(
+                bool $skip = false,
+            ): EnsureResult {
                 $this->log[] = $skip;
 
                 return EnsureResult::skipped();
@@ -522,14 +536,22 @@ function claudePluginRunner(
             array $args = [],
         ): array {
             $this->calls[] = ['command' => $command, 'args' => $args];
-            if ($command === 'claude' && ($args[0] ?? '') === 'plugin' && ($args[1] ?? '') === 'marketplace') {
+            if (
+                $command === 'claude'
+                && ($args[0] ?? '') === 'plugin'
+                && ($args[1] ?? '') === 'marketplace'
+            ) {
                 return [
                     'exitCode' => $this->marketplaceAddExitCode,
                     'stdout' => '',
                     'stderr' => $this->marketplaceAddExitCode === 0 ? '' : 'marketplace add exploded',
                 ];
             }
-            if ($command === 'claude' && ($args[0] ?? '') === 'plugin' && ($args[1] ?? '') === 'install') {
+            if (
+                $command === 'claude'
+                && ($args[0] ?? '') === 'plugin'
+                && ($args[1] ?? '') === 'install'
+            ) {
                 $path = $this->projectRoot . '/.claude/settings.json';
                 $this->settingsAtInstall[] = is_file($path) ? (string) file_get_contents($path) : '';
                 file_put_contents(
@@ -539,7 +561,11 @@ function claudePluginRunner(
 
                 return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
             }
-            if ($command === 'claude' && ($args[0] ?? '') === 'plugin' && ($args[1] ?? '') === 'list') {
+            if (
+                $command === 'claude'
+                && ($args[0] ?? '') === 'plugin'
+                && ($args[1] ?? '') === 'list'
+            ) {
                 $plugins = [];
                 foreach ($this->listed as $id => $enabled) {
                     $plugins[] = ['id' => $id, 'scope' => 'project', 'enabled' => $enabled];
@@ -555,19 +581,26 @@ function claudePluginRunner(
             return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
         }
 
-        public function isOnPath(string $binary): bool
-        {
-            return $binary === 'claude' && $this->claudeOnPath;
+        public function isOnPath(
+            string $binary,
+        ): bool {
+            return $binary === 'claude'
+                && $this->claudeOnPath;
         }
 
         /**
          * @return list<list<string>>
          */
-        public function pluginCalls(string $subcommand): array
-        {
+        public function pluginCalls(
+            string $subcommand,
+        ): array {
             $matches = [];
             foreach ($this->calls as $call) {
-                if ($call['command'] === 'claude' && ($call['args'][0] ?? '') === 'plugin' && ($call['args'][1] ?? '') === $subcommand) {
+                if (
+                    $call['command'] === 'claude'
+                    && ($call['args'][0] ?? '') === 'plugin'
+                    && ($call['args'][1] ?? '') === $subcommand
+                ) {
                     $matches[] = $call['args'];
                 }
             }
@@ -609,7 +642,8 @@ describe('plugin installation', function (): void {
                 fn (array $call): array => $call['args'],
                 array_filter(
                     $runner->calls,
-                    fn (array $call): bool => $call['command'] === 'claude' && ($call['args'][0] ?? '') === 'plugin',
+                    fn (array $call): bool => $call['command'] === 'claude'
+                        && ($call['args'][0] ?? '') === 'plugin',
                 ),
             ));
             expect($pluginCalls[0])->toBe(
@@ -672,7 +706,8 @@ describe('plugin installation', function (): void {
 
         $pluginCalls = array_values(array_filter(
             $runner->calls,
-            fn (array $call): bool => $call['command'] === 'claude' && ($call['args'][0] ?? '') === 'plugin',
+            fn (array $call): bool => $call['command'] === 'claude'
+                && ($call['args'][0] ?? '') === 'plugin',
         ));
         expect(end($pluginCalls)['args'])->toBe(['plugin', 'list', '--json']);
     });

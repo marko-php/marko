@@ -49,11 +49,14 @@ readonly class MediaManager implements MediaManagerInterface
 
         $mimeExtensionMap = $this->config->mimeExtensionMap();
 
-        if (isset($mimeExtensionMap[$derivedMimeType]) && !in_array(
-            $file->extension,
-            $mimeExtensionMap[$derivedMimeType],
-            true,
-        )) {
+        if (
+            isset($mimeExtensionMap[$derivedMimeType])
+            && !in_array(
+                $file->extension,
+                $mimeExtensionMap[$derivedMimeType],
+                true,
+            )
+        ) {
             throw UploadException::mimeExtensionMismatch(
                 $derivedMimeType,
                 $file->extension,
@@ -85,8 +88,9 @@ readonly class MediaManager implements MediaManagerInterface
     /**
      * @throws UploadException
      */
-    private function deriveContentMimeType(string $tmpPath): string
-    {
+    private function deriveContentMimeType(
+        string $tmpPath,
+    ): string {
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
 
         if ($finfo === false) {

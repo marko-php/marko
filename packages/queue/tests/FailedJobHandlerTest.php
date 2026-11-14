@@ -45,8 +45,9 @@ class LoggingFailedJobRepository implements FailedJobRepositoryInterface
         private readonly ArrayObject $log = new ArrayObject(),
     ) {}
 
-    public function store(FailedJob $failedJob): void
-    {
+    public function store(
+        FailedJob $failedJob,
+    ): void {
         $this->log[] = 'store:' . $failedJob->id;
         $this->stored[$failedJob->id] = $failedJob;
     }
@@ -56,13 +57,15 @@ class LoggingFailedJobRepository implements FailedJobRepositoryInterface
         return array_values($this->stored);
     }
 
-    public function find(string $id): ?FailedJob
-    {
+    public function find(
+        string $id,
+    ): ?FailedJob {
         return $this->stored[$id] ?? null;
     }
 
-    public function delete(string $id): bool
-    {
+    public function delete(
+        string $id,
+    ): bool {
         unset($this->stored[$id]);
 
         return true;
@@ -97,8 +100,9 @@ class LoggingEventDispatcher implements EventDispatcherInterface
         private readonly ArrayObject $log = new ArrayObject(),
     ) {}
 
-    public function dispatch(Event $event): void
-    {
+    public function dispatch(
+        Event $event,
+    ): void {
         $this->log[] = 'event:' . $event::class;
         $this->events[] = $event;
     }
@@ -119,8 +123,9 @@ class HandlerFailableJob extends Job implements FailableJobInterface
 
     public function handle(): void {}
 
-    public function failed(Throwable $exception): void
-    {
+    public function failed(
+        Throwable $exception,
+    ): void {
         $this->log?->append('failed:' . $exception->getMessage());
         $this->failedWith[] = $exception;
 
@@ -136,8 +141,9 @@ class HandlerContainerAwareFailableJob extends Job implements ContainerAwareJobI
 
     public ?object $resolvedInFailed = null;
 
-    public function setContainer(ContainerInterface $container): void
-    {
+    public function setContainer(
+        ContainerInterface $container,
+    ): void {
         $this->container = $container;
     }
 
@@ -150,8 +156,9 @@ class HandlerContainerAwareFailableJob extends Job implements ContainerAwareJobI
 
     public function handle(): void {}
 
-    public function failed(Throwable $exception): void
-    {
+    public function failed(
+        Throwable $exception,
+    ): void {
         $this->resolvedInFailed = $this->container?->get(HandlerCleanupService::class);
     }
 }
@@ -315,8 +322,9 @@ describe('FailedJobHandler', function (): void {
 
                 public function handle(): void {}
 
-                public function failed(Throwable $exception): void
-                {
+                public function failed(
+                    Throwable $exception,
+                ): void {
                     $this->failedCalled = true;
                 }
             };
@@ -375,8 +383,9 @@ describe('FailedJobHandler', function (): void {
  */
 class ThrowingFailedJobRepository extends LoggingFailedJobRepository
 {
-    public function store(FailedJob $failedJob): void
-    {
+    public function store(
+        FailedJob $failedJob,
+    ): void {
         throw new RuntimeException('failed_jobs table is gone');
     }
 }

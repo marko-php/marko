@@ -13,8 +13,9 @@ class ConfigCollector implements CollectorInterface
         return 'config';
     }
 
-    public function collect(Debugbar $debugbar): array
-    {
+    public function collect(
+        Debugbar $debugbar,
+    ): array {
         $config = $this->mask(
             values: $debugbar->config()->all(),
             patterns: $debugbar->configArray('debugbar.options.config.masked', []),
@@ -61,7 +62,10 @@ class ConfigCollector implements CollectorInterface
         array $patterns,
     ): bool {
         foreach ($patterns as $pattern) {
-            if (! is_string($pattern) || $pattern === '') {
+            if (
+                ! is_string($pattern)
+                || $pattern === ''
+            ) {
                 continue;
             }
 

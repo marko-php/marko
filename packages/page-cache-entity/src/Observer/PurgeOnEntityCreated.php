@@ -15,8 +15,9 @@ readonly class PurgeOnEntityCreated
         private IdentityPurger $identityPurger,
     ) {}
 
-    public function handle(EntityCreated $event): void
-    {
+    public function handle(
+        EntityCreated $event,
+    ): void {
         $this->identityPurger->purge($event->entity);
     }
 }

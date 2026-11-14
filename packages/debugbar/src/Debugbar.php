@@ -97,7 +97,10 @@ class Debugbar
             return;
         }
 
-        if (PHP_SAPI === 'cli' && ! $this->configBool('debugbar.capture_cli', false)) {
+        if (
+            PHP_SAPI === 'cli'
+            && ! $this->configBool('debugbar.capture_cli', false)
+        ) {
             return;
         }
 
@@ -109,7 +112,10 @@ class Debugbar
 
         if (function_exists('header_register_callback')) {
             header_register_callback(function (): void {
-                if (! $this->isEnabled() || headers_sent()) {
+                if (
+                    ! $this->isEnabled()
+                    || headers_sent()
+                ) {
                     return;
                 }
 
@@ -222,8 +228,9 @@ class Debugbar
         $this->addMessage($message, 'error', $context);
     }
 
-    public function startMeasure(string $name): void
-    {
+    public function startMeasure(
+        string $name,
+    ): void {
         if (! $this->isEnabled()) {
             return;
         }
@@ -231,8 +238,9 @@ class Debugbar
         $this->openMeasures[$name] = microtime(true);
     }
 
-    public function stopMeasure(string $name): void
-    {
+    public function stopMeasure(
+        string $name,
+    ): void {
         if (! isset($this->openMeasures[$name])) {
             return;
         }
@@ -317,16 +325,23 @@ class Debugbar
         );
     }
 
-    public function inject(string $html): string
-    {
-        if (! $this->isEnabled() || ! $this->clientAllowed()) {
+    public function inject(
+        string $html,
+    ): string {
+        if (
+            ! $this->isEnabled()
+            || ! $this->clientAllowed()
+        ) {
             return $html;
         }
 
         $dataset = $this->collect($html);
         $this->store($dataset);
 
-        if (! $this->configBool('debugbar.inject', true) || ! $this->looksLikeHtml($html)) {
+        if (
+            ! $this->configBool('debugbar.inject', true)
+            || ! $this->looksLikeHtml($html)
+        ) {
             return $html;
         }
 
@@ -347,8 +362,9 @@ class Debugbar
     /**
      * @return array<string, mixed>
      */
-    public function collect(?string $responseBody = null): array
-    {
+    public function collect(
+        ?string $responseBody = null,
+    ): array {
         $collectors = [
             new MessagesCollector(),
             new TimeCollector(),
@@ -370,11 +386,17 @@ class Debugbar
             $collected[$collector->name()] = $collector->collect($this);
         }
 
-        if ($responseBody !== null && $this->configBool('debugbar.collectors.response', true)) {
+        if (
+            $responseBody !== null
+            && $this->configBool('debugbar.collectors.response', true)
+        ) {
             $collected['response'] = (new ResponseCollector())->collect($responseBody);
         }
 
-        if ($responseBody !== null && $this->configBool('debugbar.collectors.inertia', true)) {
+        if (
+            $responseBody !== null
+            && $this->configBool('debugbar.collectors.inertia', true)
+        ) {
             $inertia = (new InertiaCollector())->collect($responseBody);
 
             if ($inertia !== null) {
@@ -510,11 +532,17 @@ class Debugbar
 
         $value = $this->config->get($key);
 
-        if (is_int($value) || is_float($value)) {
+        if (
+            is_int($value)
+            || is_float($value)
+        ) {
             return (float) $value;
         }
 
-        if (is_string($value) && is_numeric($value)) {
+        if (
+            is_string($value)
+            && is_numeric($value)
+        ) {
             return (float) $value;
         }
 
@@ -548,24 +576,33 @@ class Debugbar
             return $value;
         }
 
-        if (is_int($value) || is_float($value) || is_bool($value)) {
+        if (
+            is_int($value)
+            || is_float($value)
+            || is_bool($value)
+        ) {
             return (string) $value;
         }
 
         return $default;
     }
 
-    private function collectorEnabled(CollectorInterface $collector): bool
-    {
+    private function collectorEnabled(
+        CollectorInterface $collector,
+    ): bool {
         return $this->configBool('debugbar.collectors.'.$collector->name(), false);
     }
 
     /**
      * @param array<string, mixed> $dataset
      */
-    private function store(array $dataset): void
-    {
-        if ($this->storage === null || ! $this->configBool('debugbar.storage.enabled', true)) {
+    private function store(
+        array $dataset,
+    ): void {
+        if (
+            $this->storage === null
+            || ! $this->configBool('debugbar.storage.enabled', true)
+        ) {
             return;
         }
 
@@ -589,7 +626,11 @@ class Debugbar
             $file = $frame['file'] ?? null;
             $line = $frame['line'] ?? null;
 
-            if (! is_string($file) || ! is_int($line) || str_contains($file, '/marko-debugbar/src/')) {
+            if (
+                ! is_string($file)
+                || ! is_int($line)
+                || str_contains($file, '/marko-debugbar/src/')
+            ) {
                 continue;
             }
 
@@ -602,15 +643,19 @@ class Debugbar
         return null;
     }
 
-    private function looksLikeHtml(string $html): bool
-    {
+    private function looksLikeHtml(
+        string $html,
+    ): bool {
         $trimmed = ltrim($html);
 
         if ($trimmed === '') {
             return false;
         }
 
-        if (str_starts_with($trimmed, '{') || str_starts_with($trimmed, '[')) {
+        if (
+            str_starts_with($trimmed, '{')
+            || str_starts_with($trimmed, '[')
+        ) {
             return false;
         }
 

@@ -6,8 +6,9 @@ namespace Marko\Layout\Exceptions;
 
 class LayoutNotFoundException extends LayoutException
 {
-    public static function forLayout(string $name): self
-    {
+    public static function forLayout(
+        string $name,
+    ): self {
         return new self(
             message: "Layout '$name' not found.",
             context: "Attempted to use layout '$name' but no matching layout was registered.",

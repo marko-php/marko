@@ -11,8 +11,9 @@ readonly class FindEventObserversTool implements ToolHandlerInterface
 {
     public function __construct(private IndexCache $index) {}
 
-    public static function definition(IndexCache $index): ToolDefinition
-    {
+    public static function definition(
+        IndexCache $index,
+    ): ToolDefinition {
         return new ToolDefinition(
             name: 'find_event_observers',
             description: 'Find all observers listening to a given event class',
@@ -25,8 +26,9 @@ readonly class FindEventObserversTool implements ToolHandlerInterface
         );
     }
 
-    public function handle(array $arguments): array
-    {
+    public function handle(
+        array $arguments,
+    ): array {
         $event = (string) $arguments['event'];
         $observers = $this->index->findObserversForEvent($event);
 

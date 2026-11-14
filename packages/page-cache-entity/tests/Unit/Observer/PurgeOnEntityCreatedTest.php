@@ -33,13 +33,15 @@ it('invokes IdentityPurger from PurgeOnEntityCreated when EntityCreated is dispa
             return $response;
         }
 
-        public function purgeUrl(string $url): bool
-        {
+        public function purgeUrl(
+            string $url,
+        ): bool {
             return true;
         }
 
-        public function purgeTag(string $tag): bool
-        {
+        public function purgeTag(
+            string $tag,
+        ): bool {
             $this->purgedTags[] = $tag;
 
             return true;

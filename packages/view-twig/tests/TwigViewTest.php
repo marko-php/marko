@@ -22,8 +22,9 @@ describe('TwigView', function (): void {
         ]);
     }
 
-    function makeTwigResolver(array $map): TemplateResolverInterface
-    {
+    function makeTwigResolver(
+        array $map,
+    ): TemplateResolverInterface {
         $resolver = test()->createStub(TemplateResolverInterface::class);
         $resolver->method('resolve')
             ->willReturnCallback(fn (string $template) => $map[$template]

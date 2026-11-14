@@ -12,18 +12,21 @@ readonly class DefaultAmphpRedisSubscriber implements AmphpRedisSubscriberInterf
 {
     private AmphpRedisSubscriber $subscriber;
 
-    public function __construct(RedisConnector $connector)
-    {
+    public function __construct(
+        RedisConnector $connector,
+    ) {
         $this->subscriber = new AmphpRedisSubscriber($connector);
     }
 
-    public function subscribe(string $channel): AmphpRedisSubscription
-    {
+    public function subscribe(
+        string $channel,
+    ): AmphpRedisSubscription {
         return $this->subscriber->subscribe($channel);
     }
 
-    public function subscribeToPattern(string $pattern): AmphpRedisSubscription
-    {
+    public function subscribeToPattern(
+        string $pattern,
+    ): AmphpRedisSubscription {
         return $this->subscriber->subscribeToPattern($pattern);
     }
 }

@@ -10,8 +10,9 @@ readonly class ValidateModuleTool implements ToolHandlerInterface
 {
     public function __construct(private IndexCache $index) {}
 
-    public static function definition(IndexCache $index): ToolDefinition
-    {
+    public static function definition(
+        IndexCache $index,
+    ): ToolDefinition {
         return new ToolDefinition(
             name: 'validate_module',
             description: 'Run consistency checks on a Marko module and return diagnostics',
@@ -24,8 +25,9 @@ readonly class ValidateModuleTool implements ToolHandlerInterface
         );
     }
 
-    public function handle(array $arguments): array
-    {
+    public function handle(
+        array $arguments,
+    ): array {
         $moduleName = (string) $arguments['module'];
         $module = null;
 
@@ -92,7 +94,10 @@ readonly class ValidateModuleTool implements ToolHandlerInterface
         );
 
         foreach ($modulePrefs as $p) {
-            if (!class_exists($p->implementation) && !interface_exists($p->implementation)) {
+            if (
+                !class_exists($p->implementation)
+                && !interface_exists($p->implementation)
+            ) {
                 $diagnostics[] = [
                     'severity' => 'error',
                     'message' => "Preference implementation does not exist: $p->implementation",
@@ -116,8 +121,9 @@ readonly class ValidateModuleTool implements ToolHandlerInterface
         return ['content' => [['type' => 'text', 'text' => $text]]];
     }
 
-    private function classPrefix(string $moduleName): string
-    {
+    private function classPrefix(
+        string $moduleName,
+    ): string {
         $parts = explode('/', $moduleName, 2);
 
         if (count($parts) !== 2) {

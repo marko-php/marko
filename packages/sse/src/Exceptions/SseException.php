@@ -27,8 +27,9 @@ class SseException extends MarkoException
         );
     }
 
-    public static function invalidMaxConnections(int $maxConnections): self
-    {
+    public static function invalidMaxConnections(
+        int $maxConnections,
+    ): self {
         return new self(
             message: "sse.max_connections must be at least 1, got $maxConnections.",
             context: 'While building SseConnectionLimiter from config/sse.php',
@@ -36,8 +37,9 @@ class SseException extends MarkoException
         );
     }
 
-    public static function processLocalCache(string $cacheClass): self
-    {
+    public static function processLocalCache(
+        string $cacheClass,
+    ): self {
         return new self(
             message: "The SSE connection guard needs a cache shared across PHP processes, but '$cacheClass' keeps data inside one process.",
             context: 'sse.max_connections is set, so open streams are counted in the cache bound to CacheInterface',

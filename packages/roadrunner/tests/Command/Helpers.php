@@ -41,10 +41,14 @@ final class Helpers
         return $dir;
     }
 
-    public static function removeTempProjectDir(string $dir): void
-    {
+    public static function removeTempProjectDir(
+        string $dir,
+    ): void {
         foreach (scandir($dir) ?: [] as $entry) {
-            if ($entry === '.' || $entry === '..') {
+            if (
+                $entry === '.'
+                || $entry === '..'
+            ) {
                 continue;
             }
 

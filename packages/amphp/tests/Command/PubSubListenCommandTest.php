@@ -24,38 +24,37 @@ class FakeSubscriber implements SubscriberInterface
 
     private ?Subscription $nextSubscription = null;
 
-    public function setNextSubscription(Subscription $subscription): void
-    {
+    public function setNextSubscription(
+        Subscription $subscription,
+    ): void {
         $this->nextSubscription = $subscription;
     }
 
-    public function subscribe(string ...$channels): Subscription
-    {
+    public function subscribe(
+        string ...$channels,
+    ): Subscription {
         $this->subscribedChannels[] = $channels;
 
         return $this->nextSubscription ?? new FakeSubscription([]);
     }
 
-    public function psubscribe(string ...$patterns): Subscription
-    {
+    public function psubscribe(
+        string ...$patterns,
+    ): Subscription {
         return new FakeSubscription([]);
     }
 }
 
 class FakeSubscription implements Subscription
 {
-    /** @var array<int, Message> */
-    private array $messages;
-
     public bool $cancelled = false;
 
     /**
      * @param array<int, Message> $messages
      */
-    public function __construct(array $messages)
-    {
-        $this->messages = $messages;
-    }
+    public function __construct(
+        private array $messages,
+    ) {}
 
     public function getIterator(): Generator
     {
@@ -75,8 +74,9 @@ class FakeMessageHandler implements MessageHandlerInterface
     /** @var array<int, Message> */
     public array $handled = [];
 
-    public function handle(Message $message): void
-    {
+    public function handle(
+        Message $message,
+    ): void {
         $this->handled[] = $message;
     }
 }
@@ -89,8 +89,9 @@ class TestEventLoopRunner extends EventLoopRunner
     /** @var array<int, array{signal: int, handler: callable}> */
     public array $signals = [];
 
-    public function queue(callable $callback): void
-    {
+    public function queue(
+        callable $callback,
+    ): void {
         $this->queued[] = $callback;
     }
 

@@ -16,8 +16,9 @@ use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Module\ModuleRepository;
 use Marko\Testing\Fake\FakeAuthenticatable;
 
-function broadcastChannelDiscovery(string $fixture): BroadcastChannelDiscovery
-{
+function broadcastChannelDiscovery(
+    string $fixture,
+): BroadcastChannelDiscovery {
     return new BroadcastChannelDiscovery(
         moduleRepository: new ModuleRepository([
             new ModuleManifest(
@@ -30,8 +31,9 @@ function broadcastChannelDiscovery(string $fixture): BroadcastChannelDiscovery
     );
 }
 
-function channelRegistry(string $fixture = 'ValidModule'): ChannelRegistry
-{
+function channelRegistry(
+    string $fixture = 'ValidModule',
+): ChannelRegistry {
     return new ChannelRegistry(
         broadcastChannelDiscovery: broadcastChannelDiscovery($fixture),
         container: new Container(),

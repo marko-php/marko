@@ -56,8 +56,9 @@ class SseConnection
     /**
      * Queue a frame; returns false when the connection is closed or was just closed for lagging.
      */
-    public function send(string $frame): bool
-    {
+    public function send(
+        string $frame,
+    ): bool {
         if ($this->closed) {
             return false;
         }
@@ -81,8 +82,9 @@ class SseConnection
     /**
      * End the stream, optionally after a last frame. Safe to call more than once.
      */
-    public function close(?string $finalFrame = null): void
-    {
+    public function close(
+        ?string $finalFrame = null,
+    ): void {
         if ($this->closed) {
             return;
         }
@@ -117,8 +119,9 @@ class SseConnection
     /**
      * @param Closure(self): void $callback
      */
-    public function onClose(Closure $callback): void
-    {
+    public function onClose(
+        Closure $callback,
+    ): void {
         if ($this->closed) {
             $callback($this);
 

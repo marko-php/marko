@@ -28,8 +28,9 @@ class FtsSearch implements DocsSearchInterface
      *
      * @throws DocsException
      */
-    public function search(DocsQuery $query): array
-    {
+    public function search(
+        DocsQuery $query,
+    ): array {
         $expression = FtsQueryBuilder::toMatchExpression($query->query);
 
         // No usable search terms (e.g. punctuation-only input) — nothing to match.
@@ -72,8 +73,9 @@ class FtsSearch implements DocsSearchInterface
     }
 
     /** @throws DocsException */
-    public function getPage(string $id): DocsPage
-    {
+    public function getPage(
+        string $id,
+    ): DocsPage {
         $pdo = $this->pdo();
         $stmt = $pdo->prepare('SELECT page_id, title, url FROM docs_meta WHERE page_id = :id');
         $stmt->execute([':id' => $id]);

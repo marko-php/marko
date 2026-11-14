@@ -6,12 +6,14 @@ use Marko\CodeIndexer\Cache\IndexCache;
 use Marko\CodeIndexer\ValueObject\ConfigKeyEntry;
 use Marko\Mcp\Tools\CheckConfigKeyTool;
 
-function makeFakeIndexCacheForCheck(array $configKeys = []): IndexCache
-{
+function makeFakeIndexCacheForCheck(
+    array $configKeys = [],
+): IndexCache {
     return new class ($configKeys) extends IndexCache
     {
-        public function __construct(private array $keys)
-        {
+        public function __construct(
+            private array $keys,
+        ) {
             // Skip parent constructor
         }
 

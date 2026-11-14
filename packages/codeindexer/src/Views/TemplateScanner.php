@@ -18,8 +18,9 @@ class TemplateScanner
     ) {}
 
     /** @return list<TemplateEntry> */
-    public function scan(ModuleInfo $module): array
-    {
+    public function scan(
+        ModuleInfo $module,
+    ): array {
         $viewsDir = $module->path . '/resources/views';
 
         if (!is_dir($viewsDir)) {

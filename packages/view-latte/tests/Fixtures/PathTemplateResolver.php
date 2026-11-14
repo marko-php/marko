@@ -11,13 +11,15 @@ use Marko\View\TemplateResolverInterface;
  */
 class PathTemplateResolver implements TemplateResolverInterface
 {
-    public function resolve(string $template): string
-    {
+    public function resolve(
+        string $template,
+    ): string {
         return $template;
     }
 
-    public function getSearchedPaths(string $template): array
-    {
+    public function getSearchedPaths(
+        string $template,
+    ): array {
         return [$template];
     }
 

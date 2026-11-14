@@ -83,7 +83,8 @@ class ProcessManager
 
         $addressInUse = defined('SOCKET_EADDRINUSE') ? SOCKET_EADDRINUSE : null;
 
-        return !($errno === $addressInUse || stripos($errstr, 'address already in use') !== false);
+        return !($errno === $addressInUse
+            || stripos($errstr, 'address already in use') !== false);
     }
 
     /**
@@ -153,8 +154,9 @@ class ProcessManager
      * @param callable(): T $operation
      * @return T
      */
-    private function withoutWarnings(callable $operation): mixed
-    {
+    private function withoutWarnings(
+        callable $operation,
+    ): mixed {
         set_error_handler(static fn (): bool => true);
 
         try {
@@ -205,11 +207,17 @@ class ProcessManager
         // Watch the process for the probe window, returning early once it exits,
         // and fail if it exited because the command was not found or not executable
         $deadline = microtime(true) + $this->startProbeSeconds;
-        while (($status = proc_get_status($process))['running'] && microtime(true) < $deadline) {
+        while (
+            ($status = proc_get_status($process))['running']
+            && microtime(true) < $deadline
+        ) {
             usleep(self::POLL_INTERVAL_MICROS);
         }
 
-        if (!$status['running'] && in_array($status['exitcode'], [126, 127], true)) {
+        if (
+            !$status['running']
+            && in_array($status['exitcode'], [126, 127], true)
+        ) {
             $this->stopAfterFailedStart($name);
             throw DevServerException::processFailedToStart($name, $command, "exited with code {$status['exitcode']}");
         }
@@ -243,7 +251,10 @@ class ProcessManager
                 throw DevServerException::processFailedToStart($name, $command, "'$executable' does not exist");
             }
 
-            if (!is_file($executable) || !is_executable($executable)) {
+            if (
+                !is_file($executable)
+                || !is_executable($executable)
+            ) {
                 throw DevServerException::processFailedToStart($name, $command, "'$executable' is not executable");
             }
 
@@ -267,12 +278,16 @@ class ProcessManager
      * Returns null when the shell would have to interpret the word first (quotes,
      * expansions, operators, reserved words), because only the shell can resolve it.
      */
-    private function leadingExecutable(string $command): ?string
-    {
+    private function leadingExecutable(
+        string $command,
+    ): ?string {
         $words = preg_split('/\s+/', trim($command), -1, PREG_SPLIT_NO_EMPTY);
 
         foreach ($words === false ? [] : $words as $word) {
-            if ($word === 'exec' || $word === 'env') {
+            if (
+                $word === 'exec'
+                || $word === 'env'
+            ) {
                 continue;
             }
 
@@ -280,8 +295,10 @@ class ProcessManager
                 continue;
             }
 
-            if (preg_match('/\A[A-Za-z0-9_.\/+@%:,][A-Za-z0-9_.\/+@%:,-]*\z/', $word) !== 1
+            if (
+                preg_match('/\A[A-Za-z0-9_.\/+@%:,][A-Za-z0-9_.\/+@%:,-]*\z/', $word) !== 1
                 || in_array($word, self::SHELL_RESERVED_WORDS, true)
+
             ) {
                 return null;
             }
@@ -307,7 +324,11 @@ class ProcessManager
         string $name,
         string $command,
     ): int {
-        if (!function_exists('posix_setsid') || !function_exists('posix_kill') || !function_exists('pcntl_waitpid')) {
+        if (
+            !function_exists('posix_setsid')
+            || !function_exists('posix_kill')
+            || !function_exists('pcntl_waitpid')
+        ) {
             throw new DevServerException(
                 message: "Cannot start process '$name' in detached mode: the posix and pcntl extensions are required",
                 context: 'While starting development services in detached mode',
@@ -359,7 +380,10 @@ class ProcessManager
         while (true) {
             $exitCode = $this->readExitStatus($statusFile);
 
-            if ($exitCode !== null && $exitCode !== 0) {
+            if (
+                $exitCode !== null
+                && $exitCode !== 0
+            ) {
                 return "exited with code $exitCode";
             }
 
@@ -393,16 +417,18 @@ class ProcessManager
     /**
      * Whether the PID is the leader of its own process group.
      */
-    private function leadsProcessGroup(int $pid): bool
-    {
+    private function leadsProcessGroup(
+        int $pid,
+    ): bool {
         return @posix_getpgid($pid) === $pid;
     }
 
     /**
      * The exit code the supervisor recorded, or null while the command is still running.
      */
-    private function readExitStatus(string $statusFile): ?int
-    {
+    private function readExitStatus(
+        string $statusFile,
+    ): ?int {
         clearstatcache(true, $statusFile);
 
         if (!is_file($statusFile)) {
@@ -419,7 +445,10 @@ class ProcessManager
         $directory = ($this->statusDirectory ?? sys_get_temp_dir())
             . '/marko-devserver-' . bin2hex(random_bytes(8));
 
-        if (!$this->withoutWarnings(fn (): bool => mkdir($directory, 0700, true)) && !is_dir($directory)) {
+        if (
+            !$this->withoutWarnings(fn (): bool => mkdir($directory, 0700, true))
+            && !is_dir($directory)
+        ) {
             throw new DevServerException(
                 message: "Cannot create the status directory $directory",
                 context: 'While starting development services in detached mode',
@@ -441,7 +470,8 @@ class ProcessManager
         string $statusFile,
     ): void {
         // A second pass covers a status written between removing the file and removing the directory
-        for ($attempt = 0; $attempt < 2 && is_dir($directory); $attempt++) {
+        for ($attempt = 0; $attempt < 2
+            && is_dir($directory); $attempt++) {
             $this->withoutWarnings(fn (): bool => unlink($statusFile));
             $this->withoutWarnings(fn (): bool => rmdir($directory));
             clearstatcache(true, $directory);
@@ -475,10 +505,12 @@ class ProcessManager
     /**
      * Check if a detached process (or its process group) is still running.
      */
-    private function isDetachedRunning(int $pid): bool
-    {
+    private function isDetachedRunning(
+        int $pid,
+    ): bool {
         try {
-            return @posix_kill(-$pid, 0) || @posix_kill($pid, 0);
+            return @posix_kill(-$pid, 0)
+                || @posix_kill($pid, 0);
         } catch (ValueError) {
             return false;
         }
@@ -495,8 +527,9 @@ class ProcessManager
      *
      * @throws DevServerException If the process group survives SIGKILL
      */
-    public function stop(string $name): void
-    {
+    public function stop(
+        string $name,
+    ): void {
         if (!isset($this->pids[$name])) {
             return;
         }
@@ -509,8 +542,9 @@ class ProcessManager
      *
      * A group that survives stays tracked, so a later stop() or stopAll() reports it.
      */
-    private function stopAfterFailedStart(string $name): void
-    {
+    private function stopAfterFailedStart(
+        string $name,
+    ): void {
         try {
             $this->stop($name);
         } catch (DevServerException) {
@@ -527,8 +561,9 @@ class ProcessManager
      * @param list<string> $names
      * @throws DevServerException If a process group survives SIGKILL
      */
-    private function terminate(array $names): void
-    {
+    private function terminate(
+        array $names,
+    ): void {
         $remaining = $this->waitForExit($names, 0.0);
         $this->signalAll($remaining, self::SIGTERM);
 
@@ -589,7 +624,8 @@ class ProcessManager
         if (!isset($this->processes[$name])) {
             // A detached supervisor leads its own group once posix_setsid() ran; before that, only its PID reaches it
             try {
-                @posix_kill(-$pid, $signal) || @posix_kill($pid, $signal);
+                @posix_kill(-$pid, $signal)
+                    || @posix_kill($pid, $signal);
             } catch (ValueError) {
                 // The process is already gone
             }
@@ -612,8 +648,9 @@ class ProcessManager
     /**
      * Whether a process or any process in its group is still alive.
      */
-    private function isAlive(string $name): bool
-    {
+    private function isAlive(
+        string $name,
+    ): bool {
         if (!isset($this->processes[$name])) {
             return $this->isDetachedRunning($this->pids[$name]);
         }
@@ -638,7 +675,10 @@ class ProcessManager
         while (true) {
             $names = array_values(array_filter($names, $this->isAlive(...)));
 
-            if ($names === [] || microtime(true) >= $deadline) {
+            if (
+                $names === []
+                || microtime(true) >= $deadline
+            ) {
                 return $names;
             }
 
@@ -649,8 +689,9 @@ class ProcessManager
     /**
      * Check if any process in the process group led by the given PID is still alive.
      */
-    private function isProcessGroupAlive(int $pgid): bool
-    {
+    private function isProcessGroupAlive(
+        int $pgid,
+    ): bool {
         if (!function_exists('posix_kill')) {
             return false;
         }
@@ -681,8 +722,9 @@ class ProcessManager
     /**
      * Get the PID of a named process.
      */
-    public function getPid(string $name): ?int
-    {
+    public function getPid(
+        string $name,
+    ): ?int {
         return $this->pids[$name] ?? null;
     }
 
@@ -699,8 +741,9 @@ class ProcessManager
     /**
      * Check if a process is still running.
      */
-    public function isRunning(string $name): bool
-    {
+    public function isRunning(
+        string $name,
+    ): bool {
         if (!isset($this->processes[$name])) {
             return false;
         }
@@ -728,7 +771,10 @@ class ProcessManager
             pcntl_async_signals(true);
         }
 
-        while (!$signaled && $this->processes !== []) {
+        while (
+            !$signaled
+            && $this->processes !== []
+        ) {
             $this->drainOutput();
 
             // Remove exited processes and report their exit status
@@ -760,15 +806,18 @@ class ProcessManager
      *
      * @return int|null The exit code, or null while the process runs or when it is not tracked
      */
-    public function getExitCode(string $name): ?int
-    {
+    public function getExitCode(
+        string $name,
+    ): ?int {
         if (!isset($this->processes[$name])) {
             return null;
         }
 
         $status = proc_get_status($this->processes[$name]['resource']);
 
-        return $status['running'] || $status['exitcode'] === -1 ? null : $status['exitcode'];
+        return ($status['running'] || $status['exitcode'] === -1)
+            ? null
+            : $status['exitcode'];
     }
 
     /**
@@ -776,8 +825,9 @@ class ProcessManager
      *
      * Returns stdout followed by stderr, trimmed. Call it before stop(), which closes the pipes.
      */
-    public function collectOutput(string $name): string
-    {
+    public function collectOutput(
+        string $name,
+    ): string {
         if (!isset($this->processes[$name])) {
             return '';
         }
@@ -798,8 +848,9 @@ class ProcessManager
     /**
      * Read available output from process pipes and write with prefix.
      */
-    private function drainOutput(?string $onlyName = null): void
-    {
+    private function drainOutput(
+        ?string $onlyName = null,
+    ): void {
         $names = $onlyName !== null ? [$onlyName] : array_keys($this->processes);
 
         foreach ($names as $name) {
@@ -840,9 +891,13 @@ class ProcessManager
      * server workers, npx children) share the same group and can be killed
      * or status-checked together.
      */
-    private function wrapWithNewProcessGroup(string $command): string
-    {
-        if (!function_exists('posix_setsid') || !function_exists('pcntl_exec')) {
+    private function wrapWithNewProcessGroup(
+        string $command,
+    ): string {
+        if (
+            !function_exists('posix_setsid')
+            || !function_exists('pcntl_exec')
+        ) {
             return "exec $command";
         }
 

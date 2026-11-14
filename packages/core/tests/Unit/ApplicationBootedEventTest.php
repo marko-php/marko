@@ -44,8 +44,9 @@ function applicationBootedProject(): array
         #[Observer(event: ApplicationBooted::class)]
         class BootAuditor
         {
-            public function handle(ApplicationBooted \$event): void
-            {
+            public function handle(
+                ApplicationBooted \$event,
+            ): void {
                 \$GLOBALS['$key'][] = 'observer saw zeta booted: ' . var_export(\$GLOBALS['$key.zeta'] ?? false, true);
             }
         }

@@ -763,15 +763,17 @@ test('it forgets the cached user without destroying the session', function (): v
     {
         public int $retrieveCalls = 0;
 
-        public function retrieveById(int|string $identifier): ?AuthenticatableInterface
-        {
+        public function retrieveById(
+            int|string $identifier,
+        ): ?AuthenticatableInterface {
             $this->retrieveCalls++;
 
             return new FakeAuthenticatable(id: (int) $identifier);
         }
 
-        public function retrieveByCredentials(array $credentials): ?AuthenticatableInterface
-        {
+        public function retrieveByCredentials(
+            array $credentials,
+        ): ?AuthenticatableInterface {
             return null;
         }
 

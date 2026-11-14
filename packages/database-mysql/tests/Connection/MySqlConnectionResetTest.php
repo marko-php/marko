@@ -13,8 +13,9 @@ use PDO;
  * A MySqlConnection backed by an in-memory SQLite PDO, which supports real
  * transactions, so reset() can be exercised without a MySQL server.
  */
-function makeResettableMySqlConnection(int &$pdoCreations = 0): MySqlConnection
-{
+function makeResettableMySqlConnection(
+    int &$pdoCreations = 0,
+): MySqlConnection {
     $config = DatabaseConfig::fromArray([
         'driver' => 'mysql',
         'host' => 'localhost',

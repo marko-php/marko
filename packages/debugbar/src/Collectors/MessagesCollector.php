@@ -18,8 +18,9 @@ class MessagesCollector implements CollectorInterface
         return 'messages';
     }
 
-    public function collect(Debugbar $debugbar): array
-    {
+    public function collect(
+        Debugbar $debugbar,
+    ): array {
         return [
             'label' => 'Messages',
             'badge' => count($debugbar->messages()),
@@ -34,8 +35,9 @@ class MessagesCollector implements CollectorInterface
      * @param array<string, mixed> $entry
      * @return array<string, mixed>
      */
-    private function redactContext(array $entry): array
-    {
+    private function redactContext(
+        array $entry,
+    ): array {
         if (is_array($entry['context'] ?? null)) {
             $entry['context'] = $this->redactor->redact($entry['context']);
         }

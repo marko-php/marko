@@ -156,8 +156,9 @@ final class Helpers
     /**
      * @param array<string, mixed> $configData
      */
-    public static function createSecurityConfig(array $configData = []): SecurityConfig
-    {
+    public static function createSecurityConfig(
+        array $configData = [],
+    ): SecurityConfig {
         return new SecurityConfig(new FakeConfigRepository($configData));
     }
 
@@ -165,8 +166,9 @@ final class Helpers
      * @param array<string, mixed> $overrides
      * @return array<string, mixed>
      */
-    public static function defaultHeadersConfig(array $overrides = []): array
-    {
+    public static function defaultHeadersConfig(
+        array $overrides = [],
+    ): array {
         return array_merge([
             'security.headers.x_content_type_options' => 'nosniff',
             'security.headers.x_frame_options' => 'SAMEORIGIN',

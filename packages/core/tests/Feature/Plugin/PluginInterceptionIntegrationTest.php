@@ -22,8 +22,9 @@ interface PIIT_HasherInterface
 
 class PIIT_BcryptHasher implements PIIT_HasherInterface
 {
-    public function hash(string $value): string
-    {
+    public function hash(
+        string $value,
+    ): string {
         return "bcrypt:$value";
     }
 }
@@ -33,8 +34,9 @@ class PIIT_HasherPlugin
     public static array $log = [];
 
     /** @noinspection PhpUnused - Invoked via plugin interception */
-    public function hash(string $value): null
-    {
+    public function hash(
+        string $value,
+    ): null {
         self::$log[] = "before:$value";
 
         return null;
@@ -61,8 +63,9 @@ class PIIT_LoggingPlugin
     public static array $log = [];
 
     /** @noinspection PhpUnused - Invoked via plugin interception */
-    public function hash(string $value): null
-    {
+    public function hash(
+        string $value,
+    ): null {
         self::$log[] = "before:$value";
 
         return null;
@@ -82,8 +85,9 @@ class PIIT_LoggingPlugin
 class PIIT_ShortCircuitPlugin
 {
     /** @noinspection PhpUnused - Invoked via plugin interception */
-    public function hash(string $value): string
-    {
+    public function hash(
+        string $value,
+    ): string {
         return "short-circuit:$value";
     }
 }
@@ -91,8 +95,9 @@ class PIIT_ShortCircuitPlugin
 class PIIT_ArgModifyingPlugin
 {
     /** @noinspection PhpUnused - Invoked via plugin interception */
-    public function hash(string $value): array
-    {
+    public function hash(
+        string $value,
+    ): array {
         return ["modified:$value"];
     }
 }
@@ -131,8 +136,9 @@ class PIIT_ConcreteService
 {
     public static array $log = [];
 
-    public function compute(string $input): string
-    {
+    public function compute(
+        string $input,
+    ): string {
         self::$log[] = "compute:$input";
 
         return "result:$input";
@@ -144,8 +150,9 @@ class PIIT_ConcretePlugin
     public static array $log = [];
 
     /** @noinspection PhpUnused - Invoked via plugin interception */
-    public function compute(string $input): null
-    {
+    public function compute(
+        string $input,
+    ): null {
         self::$log[] = "before-compute:$input";
 
         return null;

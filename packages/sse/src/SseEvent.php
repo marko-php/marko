@@ -19,11 +19,17 @@ readonly class SseEvent
         public string|int|null $id = null,
         public ?int $retry = null,
     ) {
-        if ($this->event !== null && self::containsForbiddenCharacter($this->event)) {
+        if (
+            $this->event !== null
+            && self::containsForbiddenCharacter($this->event)
+        ) {
             throw SseException::invalidField('event', $this->event);
         }
 
-        if (is_string($this->id) && self::containsForbiddenCharacter($this->id)) {
+        if (
+            is_string($this->id)
+            && self::containsForbiddenCharacter($this->id)
+        ) {
             throw SseException::invalidField('id', $this->id);
         }
     }
@@ -31,8 +37,9 @@ readonly class SseEvent
     /**
      * CR and LF end an SSE field line; a NUL in `id` makes browsers ignore the field.
      */
-    private static function containsForbiddenCharacter(string $value): bool
-    {
+    private static function containsForbiddenCharacter(
+        string $value,
+    ): bool {
         return strpbrk($value, "\r\n\0") !== false;
     }
 

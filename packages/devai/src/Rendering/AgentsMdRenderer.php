@@ -23,8 +23,9 @@ readonly class AgentsMdRenderer
      *   guidelines?: array<string, string>
      * } $input
      */
-    public function render(array $input): GuidelinesContent
-    {
+    public function render(
+        array $input,
+    ): GuidelinesContent {
         $sections = [];
 
         $sections[] = '# ' . ($input['projectName'] ?? 'Marko Project') . "\n";
@@ -117,8 +118,9 @@ readonly class AgentsMdRenderer
     }
 
     /** @param array<string, string> $commands */
-    private function formatCommandTable(array $commands): string
-    {
+    private function formatCommandTable(
+        array $commands,
+    ): string {
         ksort($commands);
         $rows = ['| Command | Description |', '|---------|-------------|'];
         foreach ($commands as $cmd => $desc) {

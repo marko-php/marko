@@ -53,7 +53,10 @@ class SkillsDistributor
         $seenSkillNames = [];
 
         $coreSkillsDir = $this->resolveCoreSkillsDir();
-        if ($coreSkillsDir !== null && is_dir($coreSkillsDir)) {
+        if (
+            $coreSkillsDir !== null
+            && is_dir($coreSkillsDir)
+        ) {
             foreach ($this->collectFromDir($coreSkillsDir, 'marko/claude-plugins', $seenSkillNames) as $b) {
                 $bundles[] = $b;
             }
@@ -182,8 +185,9 @@ class SkillsDistributor
     /**
      * Whether a skill name is a single safe, lowercase path segment.
      */
-    public static function isValidSkillName(string $name): bool
-    {
+    public static function isValidSkillName(
+        string $name,
+    ): bool {
         return preg_match(self::SKILL_NAME_PATTERN, $name) === 1;
     }
 
@@ -204,8 +208,9 @@ class SkillsDistributor
      * Render an untrusted name for a message without letting control
      * characters (NUL, newlines) leak into terminal output.
      */
-    private static function describeName(string $name): string
-    {
+    private static function describeName(
+        string $name,
+    ): string {
         return (string) json_encode(
             $name,
             JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE,
@@ -266,8 +271,9 @@ class SkillsDistributor
      *
      * @return array<string, string>
      */
-    private function parseFrontmatter(string $content): array
-    {
+    private function parseFrontmatter(
+        string $content,
+    ): array {
         if (!preg_match('/\A---\R(.*?)\R---\R/s', $content, $matches)) {
             return [];
         }
@@ -278,8 +284,16 @@ class SkillsDistributor
                 continue;
             }
             $value = $kv[2];
-            if ((str_starts_with($value, '"') && str_ends_with($value, '"'))
-                || (str_starts_with($value, "'") && str_ends_with($value, "'"))) {
+            if (
+                (
+                    str_starts_with($value, '"')
+                    && str_ends_with($value, '"')
+                )
+                || (
+                    str_starts_with($value, "'")
+                    && str_ends_with($value, "'")
+                )
+            ) {
                 $value = substr($value, 1, -1);
             }
             $result[$kv[1]] = $value;
@@ -310,8 +324,9 @@ class SkillsDistributor
         return $files;
     }
 
-    private static function removeDir(string $dir): void
-    {
+    private static function removeDir(
+        string $dir,
+    ): void {
         if (!is_dir($dir)) {
             return;
         }
@@ -322,7 +337,9 @@ class SkillsDistributor
         foreach ($iter as $f) {
             // Symlinks are unlinked, never followed — a link inside a shipped
             // skill must not take its target down with it.
-            $f->isDir() && !$f->isLink() ? rmdir($f->getPathname()) : unlink($f->getPathname());
+            ($f->isDir() && !$f->isLink())
+                ? rmdir($f->getPathname())
+                : unlink($f->getPathname());
         }
         rmdir($dir);
     }

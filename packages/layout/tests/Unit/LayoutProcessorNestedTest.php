@@ -132,8 +132,9 @@ class LpnFixtureCycleFillerComponent {}
 
 // Helper stubs
 
-function lpnStubCollector(ComponentCollection $collection): ComponentCollectorInterface
-{
+function lpnStubCollector(
+    ComponentCollection $collection,
+): ComponentCollectorInterface {
     return new class ($collection) implements ComponentCollectorInterface
     {
         public function __construct(private readonly ComponentCollection $stub) {}
@@ -145,15 +146,17 @@ function lpnStubCollector(ComponentCollection $collection): ComponentCollectorIn
             return $this->stub;
         }
 
-        public function discoverFromClass(string $className): ?ComponentDefinition
-        {
+        public function discoverFromClass(
+            string $className,
+        ): ?ComponentDefinition {
             return null;
         }
     };
 }
 
-function lpnStubView(callable $renderFn): ViewInterface
-{
+function lpnStubView(
+    callable $renderFn,
+): ViewInterface {
     return new class ($renderFn) implements ViewInterface
     {
         public function __construct(private readonly mixed $renderFn) {}
@@ -174,8 +177,11 @@ function lpnStubView(callable $renderFn): ViewInterface
     };
 }
 
-function lpnBuildProcessor(ComponentCollection $collection, ViewInterface $view, string $controllerClass = LpnFixtureController::class): LayoutProcessor
-{
+function lpnBuildProcessor(
+    ComponentCollection $collection,
+    ViewInterface $view,
+    string $controllerClass = LpnFixtureController::class,
+): LayoutProcessor {
     return new LayoutProcessor(
         container: Helpers::stubContainer(),
         layoutResolver: new LayoutResolver(),
@@ -186,8 +192,9 @@ function lpnBuildProcessor(ComponentCollection $collection, ViewInterface $view,
     );
 }
 
-function lpnMakeCollection(array $definitions): ComponentCollection
-{
+function lpnMakeCollection(
+    array $definitions,
+): ComponentCollection {
     $collection = new ComponentCollection();
 
     foreach ($definitions as $def) {
@@ -491,7 +498,10 @@ describe('LayoutProcessor nested slots', function (): void {
         $renderOrder = [];
 
         $view = lpnStubView(function (string $template) use (&$renderOrder): string {
-            if ($template !== 'layouts/root.html' && $template !== 'components/tabs.html') {
+            if (
+                $template !== 'layouts/root.html'
+                && $template !== 'components/tabs.html'
+            ) {
                 $renderOrder[] = $template;
             }
 

@@ -154,8 +154,9 @@ class PCSDI_AfterPlugin
     public static array $callLog = [];
 
     /** @noinspection PhpUnused - invoked via reflection */
-    public function work(mixed $result): string
-    {
+    public function work(
+        mixed $result,
+    ): string {
         self::$callLog[] = 'PCSDI_AfterPlugin::work';
 
         return $result . ' [after]';
@@ -174,8 +175,9 @@ class PCSDI_ComputeBeforePlugin
 class PCSDI_ComputeAfterPlugin
 {
     /** @noinspection PhpUnused - invoked via reflection */
-    public function compute(mixed $result): string
-    {
+    public function compute(
+        mixed $result,
+    ): string {
         return $result . ' [modified]';
     }
 }
@@ -202,8 +204,10 @@ class PCSDI_WorkBeforePlugin
 // Helper
 // ---------------------------------------------------------------------------
 
-function makePcsDiInterceptor(Container $container, PluginRegistry $registry): PluginInterceptor
-{
+function makePcsDiInterceptor(
+    Container $container,
+    PluginRegistry $registry,
+): PluginInterceptor {
     return new PluginInterceptor($container, $registry, new InterceptorClassGenerator());
 }
 

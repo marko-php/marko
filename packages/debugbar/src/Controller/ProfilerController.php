@@ -27,8 +27,9 @@ class ProfilerController
     }
 
     #[Get('/_debugbar')]
-    public function index(Request $request): Response
-    {
+    public function index(
+        Request $request,
+    ): Response {
         if (! $this->allowed()) {
             return $this->notFound();
         }
@@ -73,8 +74,9 @@ class ProfilerController
     }
 
     #[Delete('/_debugbar')]
-    public function clear(Request $request): Response
-    {
+    public function clear(
+        Request $request,
+    ): Response {
         if (! $this->allowed()) {
             return $this->notFound();
         }
@@ -90,7 +92,8 @@ class ProfilerController
      */
     private function allowed(): bool
     {
-        return $this->access->enabled() && $this->access->clientAllowed($_SERVER);
+        return $this->access->enabled()
+            && $this->access->clientAllowed($_SERVER);
     }
 
     private function notFound(): Response

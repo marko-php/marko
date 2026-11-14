@@ -170,8 +170,9 @@ function tsConnection(): RecordingSqliteConnection
     return $connection;
 }
 
-function tsAt(string $time): DateTimeImmutable
-{
+function tsAt(
+    string $time,
+): DateTimeImmutable {
     return new DateTimeImmutable($time, new DateTimeZone('UTC'));
 }
 

@@ -305,8 +305,11 @@ it('keeps registering built sections by hand', function (): void {
     expect($registry->get('reports'))->toBe($section);
 });
 
-function createMockSection(string $id, string $label, int $sortOrder): AdminSectionInterface
-{
+function createMockSection(
+    string $id,
+    string $label,
+    int $sortOrder,
+): AdminSectionInterface {
     return new readonly class ($id, $label, $sortOrder) implements AdminSectionInterface
     {
         public function __construct(

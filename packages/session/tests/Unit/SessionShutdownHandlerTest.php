@@ -42,8 +42,9 @@ it('registers the session save handler shutdown function only once', function ()
             return true;
         }
 
-        public function read(string $id): string|false
-        {
+        public function read(
+            string $id,
+        ): string|false {
             return $this->written[$id] ?? '';
         }
 
@@ -56,20 +57,23 @@ it('registers the session save handler shutdown function only once', function ()
             return true;
         }
 
-        public function destroy(string $id): bool
-        {
+        public function destroy(
+            string $id,
+        ): bool {
             unset($this->written[$id]);
 
             return true;
         }
 
-        public function gc(int $max_lifetime): int|false
-        {
+        public function gc(
+            int $max_lifetime,
+        ): int|false {
             return 0;
         }
 
-        public function validateId(string $id): bool
-        {
+        public function validateId(
+            string $id,
+        ): bool {
             return isset($this->written[$id]);
         }
 

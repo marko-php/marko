@@ -62,8 +62,9 @@ class PgSqlQueryBuilder extends SqlQueryBuilder
      *
      * @throws InvalidJsonPathException
      */
-    protected function compileJsonPath(string $expression): string
-    {
+    protected function compileJsonPath(
+        string $expression,
+    ): string {
         $path = JsonPathParser::parse($expression);
         $sql = $this->quoteIdentifier($path->column);
         $lastIndex = count($path->segments) - 1;
@@ -79,8 +80,9 @@ class PgSqlQueryBuilder extends SqlQueryBuilder
     /**
      * @throws InvalidJsonPathException
      */
-    protected function compileJsonContains(string $path): string
-    {
+    protected function compileJsonContains(
+        string $path,
+    ): string {
         $columnSql = JsonPathParser::isJsonPath($path)
             ? $this->compileJsonPath($path)
             : $this->quoteIdentifier($path);
@@ -91,8 +93,9 @@ class PgSqlQueryBuilder extends SqlQueryBuilder
     /**
      * @throws InvalidJsonPathException
      */
-    protected function compileJsonPathExists(string $path): string
-    {
+    protected function compileJsonPathExists(
+        string $path,
+    ): string {
         $parsed = JsonPathParser::parse($path);
 
         return sprintf(

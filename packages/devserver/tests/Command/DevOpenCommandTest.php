@@ -24,13 +24,17 @@ function devOpenTmpDir(): string
 /**
  * Recursively remove a directory.
  */
-function devOpenRemoveDir(string $dir): void
-{
+function devOpenRemoveDir(
+    string $dir,
+): void {
     if (!is_dir($dir)) {
         return;
     }
     foreach (scandir($dir) as $file) {
-        if ($file === '.' || $file === '..') {
+        if (
+            $file === '.'
+            || $file === '..'
+        ) {
             continue;
         }
         $path = $dir . '/' . $file;

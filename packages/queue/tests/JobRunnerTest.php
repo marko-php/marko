@@ -65,13 +65,15 @@ class JobRunnerContainerAwareJob extends Job implements ContainerAwareJobInterfa
         public readonly bool $fails = false,
     ) {}
 
-    public function setContainer(ContainerInterface $container): void
-    {
+    public function setContainer(
+        ContainerInterface $container,
+    ): void {
         $this->container = $container;
     }
 
-    public function setJobEnvelope(JobEnvelope $jobEnvelope): void
-    {
+    public function setJobEnvelope(
+        JobEnvelope $jobEnvelope,
+    ): void {
         $this->jobEnvelope = $jobEnvelope;
     }
 
@@ -84,7 +86,8 @@ class JobRunnerContainerAwareJob extends Job implements ContainerAwareJobInterfa
 
     public function handle(): void
     {
-        $this->hadBothWhenHandled = $this->container !== null && $this->jobEnvelope !== null;
+        $this->hadBothWhenHandled = $this->container !== null
+            && $this->jobEnvelope !== null;
 
         if ($this->fails) {
             throw new RuntimeException('container-aware job failed');
@@ -196,8 +199,9 @@ describe('JobRunner', function (): void {
             /** @var list<string> */
             public array $log = [];
 
-            public function dispatch(Event $event): void
-            {
+            public function dispatch(
+                Event $event,
+            ): void {
                 $this->log[] = $event::class . ':' . $event->jobId . ':attempt ' . $event->job->attempts;
             }
         };
@@ -265,8 +269,9 @@ describe('JobRunner', function (): void {
                 private readonly JobRunnerContainerAwareJob $job,
             ) {}
 
-            public function dispatch(Event $event): void
-            {
+            public function dispatch(
+                Event $event,
+            ): void {
                 $this->hadContainer[] = $this->job->container !== null;
             }
         };

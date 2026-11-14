@@ -25,8 +25,9 @@ class ModuleLoader implements LoaderInterface
     /**
      * @throws LoaderError|TemplateNotFoundException
      */
-    public function getSourceContext(string $name): Source
-    {
+    public function getSourceContext(
+        string $name,
+    ): Source {
         $this->assertModuleNamespacedFormat($name);
 
         $path = $this->resolvePath($name);
@@ -47,8 +48,9 @@ class ModuleLoader implements LoaderInterface
     /**
      * @throws LoaderError|TemplateNotFoundException
      */
-    public function getCacheKey(string $name): string
-    {
+    public function getCacheKey(
+        string $name,
+    ): string {
         $this->assertModuleNamespacedFormat($name);
 
         return $this->resolvePath($name);
@@ -66,8 +68,9 @@ class ModuleLoader implements LoaderInterface
         return filemtime($path) <= $time;
     }
 
-    public function exists(string $name): bool
-    {
+    public function exists(
+        string $name,
+    ): bool {
         if (!str_contains($name, '::')) {
             return false;
         }
@@ -81,8 +84,9 @@ class ModuleLoader implements LoaderInterface
         }
     }
 
-    private function assertModuleNamespacedFormat(string $name): void
-    {
+    private function assertModuleNamespacedFormat(
+        string $name,
+    ): void {
         if (!str_contains($name, '::')) {
             throw new LoaderError(
                 "Template includes must use module namespace format (e.g., 'blog::post/list/item'). Got '$name'.",
@@ -90,8 +94,9 @@ class ModuleLoader implements LoaderInterface
         }
     }
 
-    private function resolvePath(string $name): string
-    {
+    private function resolvePath(
+        string $name,
+    ): string {
         return $this->resolver->resolve($name);
     }
 }

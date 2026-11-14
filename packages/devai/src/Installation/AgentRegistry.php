@@ -29,8 +29,9 @@ class AgentRegistry
      * @return array<string, AgentInterface> name => agent
      * @throws DevAiInstallException when devai.claude_code.marketplace_ref is set to something other than a non-empty string
      */
-    public function all(string $projectRoot): array
-    {
+    public function all(
+        string $projectRoot,
+    ): array {
         return [
             'claude-code' => new ClaudeCodeAgent(
                 $this->runner,
@@ -59,7 +60,10 @@ class AgentRegistry
             : null;
 
         if ($configured !== null) {
-            if (!is_string($configured) || trim($configured) === '') {
+            if (
+                !is_string($configured)
+                || trim($configured) === ''
+            ) {
                 throw DevAiInstallException::invalidConfig(
                     self::MARKETPLACE_REF_KEY,
                     'a non-empty git tag or commit',
@@ -74,7 +78,10 @@ class AgentRegistry
             ? InstalledVersions::getPrettyVersion('marko/devai')
             : null;
 
-        if ($installed !== null && preg_match('/^v?\d+\.\d+\.\d+$/', $installed) === 1) {
+        if (
+            $installed !== null
+            && preg_match('/^v?\d+\.\d+\.\d+$/', $installed) === 1
+        ) {
             return $installed;
         }
 

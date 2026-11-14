@@ -8,12 +8,14 @@ use Marko\Mcp\Protocol\JsonRpcProtocol;
 use Marko\Mcp\Server\McpServer;
 use Marko\Mcp\Tools\ResolvePreferenceTool;
 
-function makeFakeIndexCacheForPreference(array $preferences = []): IndexCache
-{
+function makeFakeIndexCacheForPreference(
+    array $preferences = [],
+): IndexCache {
     return new class ($preferences) extends IndexCache
     {
-        public function __construct(private array $prefs)
-        {
+        public function __construct(
+            private array $prefs,
+        ) {
             // Skip parent constructor
         }
 

@@ -24,13 +24,15 @@ class SharedAmphpRedisSubscriber implements AmphpRedisSubscriberInterface
         private readonly Closure $factory,
     ) {}
 
-    public function subscribe(string $channel): AmphpRedisSubscription
-    {
+    public function subscribe(
+        string $channel,
+    ): AmphpRedisSubscription {
         return $this->subscriber()->subscribe($channel);
     }
 
-    public function subscribeToPattern(string $pattern): AmphpRedisSubscription
-    {
+    public function subscribeToPattern(
+        string $pattern,
+    ): AmphpRedisSubscription {
         return $this->subscriber()->subscribeToPattern($pattern);
     }
 

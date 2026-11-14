@@ -30,13 +30,15 @@ it('checks cache read/write via CacheHealthCheck', function (): void {
             return true;
         }
 
-        public function has(string $key): bool
-        {
+        public function has(
+            string $key,
+        ): bool {
             return isset($this->store[$key]);
         }
 
-        public function delete(string $key): bool
-        {
+        public function delete(
+            string $key,
+        ): bool {
             unset($this->store[$key]);
 
             return true;
@@ -49,8 +51,9 @@ it('checks cache read/write via CacheHealthCheck', function (): void {
             return true;
         }
 
-        public function getItem(string $key): CacheItemInterface
-        {
+        public function getItem(
+            string $key,
+        ): CacheItemInterface {
             throw new RuntimeException('Not implemented');
         }
 
@@ -68,8 +71,9 @@ it('checks cache read/write via CacheHealthCheck', function (): void {
             return true;
         }
 
-        public function deleteMultiple(array $keys): bool
-        {
+        public function deleteMultiple(
+            array $keys,
+        ): bool {
             return true;
         }
 
@@ -139,13 +143,15 @@ it('returns unhealthy status when cache write fails', function (): void {
             throw new RuntimeException('Cache unavailable');
         }
 
-        public function has(string $key): bool
-        {
+        public function has(
+            string $key,
+        ): bool {
             return false;
         }
 
-        public function delete(string $key): bool
-        {
+        public function delete(
+            string $key,
+        ): bool {
             return false;
         }
 
@@ -154,8 +160,9 @@ it('returns unhealthy status when cache write fails', function (): void {
             return false;
         }
 
-        public function getItem(string $key): CacheItemInterface
-        {
+        public function getItem(
+            string $key,
+        ): CacheItemInterface {
             throw new RuntimeException('Not implemented');
         }
 
@@ -173,8 +180,9 @@ it('returns unhealthy status when cache write fails', function (): void {
             return false;
         }
 
-        public function deleteMultiple(array $keys): bool
-        {
+        public function deleteMultiple(
+            array $keys,
+        ): bool {
             return false;
         }
 

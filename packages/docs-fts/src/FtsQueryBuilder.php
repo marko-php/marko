@@ -32,8 +32,9 @@ class FtsQueryBuilder
      * and OR-joins them so BM25 ranks by term overlap. Returns '' when no usable
      * term remains, so the caller can short-circuit to an empty result set.
      */
-    public static function toMatchExpression(string $raw): string
-    {
+    public static function toMatchExpression(
+        string $raw,
+    ): string {
         $tokens = self::tokenize($raw);
 
         if ($tokens === []) {
@@ -57,8 +58,9 @@ class FtsQueryBuilder
     }
 
     /** @return list<string> */
-    private static function tokenize(string $raw): array
-    {
+    private static function tokenize(
+        string $raw,
+    ): array {
         preg_match_all('/[\p{L}\p{N}]+/u', mb_strtolower($raw), $matches);
 
         return $matches[0];

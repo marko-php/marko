@@ -275,8 +275,9 @@ class RetryFailableJob extends Job implements FailableJobInterface
 
     public function handle(): void {}
 
-    public function failed(Throwable $exception): void
-    {
+    public function failed(
+        Throwable $exception,
+    ): void {
         $this->failedCalls++;
     }
 }
@@ -523,8 +524,9 @@ class RetryContainerAwareJob extends Job implements ContainerAwareJobInterface
 
     public private(set) int $attemptsWhenHandled = 0;
 
-    public function setContainer(ContainerInterface $container): void
-    {
+    public function setContainer(
+        ContainerInterface $container,
+    ): void {
         $this->container = $container;
     }
 
@@ -608,13 +610,15 @@ function createFailingRetryContainer(): ContainerInterface
 {
     return new class () implements ContainerInterface
     {
-        public function get(string $id): never
-        {
+        public function get(
+            string $id,
+        ): never {
             throw new RuntimeException("Service unavailable: $id");
         }
 
-        public function has(string $id): bool
-        {
+        public function has(
+            string $id,
+        ): bool {
             return false;
         }
 
@@ -625,13 +629,15 @@ function createFailingRetryContainer(): ContainerInterface
             object $instance,
         ): void {}
 
-        public function call(Closure $callable): mixed
-        {
+        public function call(
+            Closure $callable,
+        ): mixed {
             return null;
         }
 
-        public function resolvedInstances(?string $interface = null): array
-        {
+        public function resolvedInstances(
+            ?string $interface = null,
+        ): array {
             return [];
         }
     };

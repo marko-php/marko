@@ -24,8 +24,9 @@ class TranslationScanner
     }
 
     /** @return list<TranslationEntry> */
-    public function scan(ModuleInfo $module): array
-    {
+    public function scan(
+        ModuleInfo $module,
+    ): array {
         $translationsDir = $module->path . '/resources/translations';
         if (!is_dir($translationsDir)) {
             return [];

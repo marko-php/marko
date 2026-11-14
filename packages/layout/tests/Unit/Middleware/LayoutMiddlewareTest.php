@@ -40,8 +40,9 @@ class LmFixtureNoLayoutController
 #[Layout(component: LmFixtureRootComponent::class)]
 class LmFixtureClassLayoutController
 {
-    public function show(string $id): string
-    {
+    public function show(
+        string $id,
+    ): string {
         return 'show ' . $id;
     }
 }
@@ -64,8 +65,9 @@ class LmFixtureMethodLayoutController
 class LmFixtureRootComponent {}
 
 // Stub RouteMatcherInterface that always returns the given MatchedRoute
-function stubMatcher(?MatchedRoute $matched): RouteMatcherInterface
-{
+function stubMatcher(
+    ?MatchedRoute $matched,
+): RouteMatcherInterface {
     return new class ($matched) implements RouteMatcherInterface
     {
         public function allowedMethods(
@@ -86,8 +88,9 @@ function stubMatcher(?MatchedRoute $matched): RouteMatcherInterface
 }
 
 // Stub LayoutProcessorInterface that records calls and returns a fixed response
-function stubProcessor(?Response $response = null): LayoutProcessorInterface
-{
+function stubProcessor(
+    ?Response $response = null,
+): LayoutProcessorInterface {
     return new class ($response ?? Response::html('<layout/>')) implements LayoutProcessorInterface
     {
         public ?string $calledController = null;
@@ -114,8 +117,11 @@ function stubProcessor(?Response $response = null): LayoutProcessorInterface
     };
 }
 
-function makeRoute(string $controller, string $action, string $path = '/test'): RouteDefinition
-{
+function makeRoute(
+    string $controller,
+    string $action,
+    string $path = '/test',
+): RouteDefinition {
     return new RouteDefinition(
         method: 'GET',
         path: $path,
@@ -124,8 +130,9 @@ function makeRoute(string $controller, string $action, string $path = '/test'): 
     );
 }
 
-function makeRequest(string $path = '/test'): Request
-{
+function makeRequest(
+    string $path = '/test',
+): Request {
     return new Request(server: ['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => $path]);
 }
 

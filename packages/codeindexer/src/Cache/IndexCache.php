@@ -113,9 +113,11 @@ class IndexCache implements IndexCacheInterface
     {
         $cacheDir = $this->rootPath . '/.marko';
 
-        if (!is_dir($cacheDir)
+        if (
+            !is_dir($cacheDir)
             && !ErrorCapture::run($reason, fn (): bool => mkdir($cacheDir, 0755, true))
             && !is_dir($cacheDir)
+
         ) {
             throw IndexCacheException::cacheDirUnwritable($cacheDir, $reason);
         }
@@ -216,7 +218,10 @@ class IndexCache implements IndexCacheInterface
 
             $composerJson = $module->path . '/composer.json';
 
-            if (is_file($composerJson) && filemtime($composerJson) > $cacheMtime) {
+            if (
+                is_file($composerJson)
+                && filemtime($composerJson) > $cacheMtime
+            ) {
                 return true;
             }
 
@@ -235,9 +240,11 @@ class IndexCache implements IndexCacheInterface
         // ordering trap: during load(), $this->data is null when isStale() is called.
         $persisted = $this->loadPayloadFromDisk($cachePath);
 
-        if ($persisted === null
+        if (
+            $persisted === null
             || !is_array($persisted['trackedPaths'] ?? null)
             || !array_key_exists('composerState', $persisted)
+
         ) {
             // Unreadable or legacy payload without these keys — treat as stale
             return true;
@@ -263,7 +270,10 @@ class IndexCache implements IndexCacheInterface
         );
 
         foreach ($iter as $f) {
-            if ($f->isFile() && $f->getMTime() > $mtime) {
+            if (
+                $f->isFile()
+                && $f->getMTime() > $mtime
+            ) {
                 return true;
             }
         }
@@ -333,8 +343,9 @@ class IndexCache implements IndexCacheInterface
      *
      * @return array<string, mixed>|null
      */
-    private function loadPayloadFromDisk(string $cachePath): ?array
-    {
+    private function loadPayloadFromDisk(
+        string $cachePath,
+    ): ?array {
         $raw = ErrorCapture::run($reason, fn (): string|false => file_get_contents($cachePath));
 
         if ($raw === false) {
@@ -449,8 +460,9 @@ class IndexCache implements IndexCacheInterface
      * @return list<ObserverEntry>
      * @throws IndexCacheException
      */
-    public function findObserversForEvent(string $eventClass): array
-    {
+    public function findObserversForEvent(
+        string $eventClass,
+    ): array {
         return array_values(
             array_filter(
                 $this->getObservers(),
@@ -463,8 +475,9 @@ class IndexCache implements IndexCacheInterface
      * @return list<PluginEntry>
      * @throws IndexCacheException
      */
-    public function findPluginsForTarget(string $targetClass): array
-    {
+    public function findPluginsForTarget(
+        string $targetClass,
+    ): array {
         return array_values(
             array_filter(
                 $this->getPlugins(),
@@ -473,8 +486,9 @@ class IndexCache implements IndexCacheInterface
         );
     }
 
-    public function get(string $key): mixed
-    {
+    public function get(
+        string $key,
+    ): mixed {
         return $this->data[$key] ?? null;
     }
 
@@ -485,8 +499,9 @@ class IndexCache implements IndexCacheInterface
         $this->data[$key] = $value;
     }
 
-    public function has(string $key): bool
-    {
+    public function has(
+        string $key,
+    ): bool {
         return isset($this->data[$key]);
     }
 
@@ -496,8 +511,9 @@ class IndexCache implements IndexCacheInterface
      * A corrupt payload makes unserialize() return false with a notice; the notice
      * is captured (not emitted) because a corrupt cache simply triggers a rebuild.
      */
-    private function unserializeCache(string $raw): mixed
-    {
+    private function unserializeCache(
+        string $raw,
+    ): mixed {
         return ErrorCapture::run($reason, fn (): mixed => unserialize($raw, [
             'allowed_classes' => [
                 CommandEntry::class,

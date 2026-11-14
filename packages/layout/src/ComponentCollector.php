@@ -56,13 +56,17 @@ readonly class ComponentCollector implements ComponentCollectorInterface
      * @param class-string|string $className
      * @throws Error|ReflectionException
      */
-    public function discoverFromClass(string $className): ?ComponentDefinition
-    {
+    public function discoverFromClass(
+        string $className,
+    ): ?ComponentDefinition {
         try {
             $reflection = new ReflectionClass($className);
         } catch (Error $e) {
             $missingClass = MarkoException::extractMissingClass($e);
-            if ($missingClass !== null && MarkoException::inferPackageName($missingClass) !== null) {
+            if (
+                $missingClass !== null
+                && MarkoException::inferPackageName($missingClass) !== null
+            ) {
                 return null;
             }
             throw $e;
@@ -84,7 +88,10 @@ readonly class ComponentCollector implements ComponentCollectorInterface
             $attribute = $attributes[0]->newInstance();
         } catch (Error $e) {
             $missingClass = MarkoException::extractMissingClass($e);
-            if ($missingClass !== null && MarkoException::inferPackageName($missingClass) !== null) {
+            if (
+                $missingClass !== null
+                && MarkoException::inferPackageName($missingClass) !== null
+            ) {
                 return null;
             }
             throw $e;
@@ -110,8 +117,9 @@ readonly class ComponentCollector implements ComponentCollectorInterface
      * @param string|array<mixed> $handle
      * @return array<int, string>
      */
-    private function resolveHandles(string|array $handle): array
-    {
+    private function resolveHandles(
+        string|array $handle,
+    ): array {
         if (is_string($handle)) {
             return [$handle];
         }
@@ -143,7 +151,10 @@ readonly class ComponentCollector implements ComponentCollectorInterface
         string $action,
     ): ?string {
         foreach ($this->routeCollection->all() as $route) {
-            if ($route->controller === $controllerClass && $route->action === $action) {
+            if (
+                $route->controller === $controllerClass
+                && $route->action === $action
+            ) {
                 return $this->handleResolver->generate($route->path, $controllerClass, $action);
             }
         }

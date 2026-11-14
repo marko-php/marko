@@ -6,8 +6,9 @@ namespace Marko\Broadcasting\Exceptions;
 
 class ChannelAuthorizationException extends BroadcastException
 {
-    public static function unknownChannel(string $channelName): self
-    {
+    public static function unknownChannel(
+        string $channelName,
+    ): self {
         return new self(
             message: "No authorizer is registered for private channel '$channelName'.",
             context: "While authorizing a subscription to private channel '$channelName'",
@@ -17,8 +18,9 @@ class ChannelAuthorizationException extends BroadcastException
         );
     }
 
-    public static function unknownPresenceChannel(string $channelName): self
-    {
+    public static function unknownPresenceChannel(
+        string $channelName,
+    ): self {
         return new self(
             message: "No authorizer is registered for presence channel '$channelName'.",
             context: "While authorizing a subscription to presence channel '$channelName'",
@@ -50,8 +52,9 @@ class ChannelAuthorizationException extends BroadcastException
         );
     }
 
-    public static function notAnAuthorizer(string $className): self
-    {
+    public static function notAnAuthorizer(
+        string $className,
+    ): self {
         return new self(
             message: "Class '$className' has #[BroadcastChannel] but must implement ChannelAuthorizerInterface or PresenceChannelAuthorizerInterface.",
             context: 'While discovering #[BroadcastChannel] authorizers',

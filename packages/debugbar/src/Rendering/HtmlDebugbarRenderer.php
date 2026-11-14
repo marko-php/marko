@@ -228,8 +228,9 @@ HTML;
     /**
      * @param array<string, mixed> $collector
      */
-    private function renderMessages(array $collector): string
-    {
+    private function renderMessages(
+        array $collector,
+    ): string {
         $messages = is_array($collector['messages'] ?? null) ? $collector['messages'] : [];
 
         if ($messages === []) {
@@ -262,13 +263,17 @@ HTML;
     /**
      * @param array<string, mixed> $message
      */
-    private function renderContext(array $message): string
-    {
+    private function renderContext(
+        array $message,
+    ): string {
         $context = $message['context'] ?? [];
         $trace = $message['trace'] ?? null;
         $output = '';
 
-        if (is_array($context) && $context !== []) {
+        if (
+            is_array($context)
+            && $context !== []
+        ) {
             $output .= '<pre>'.$this->escape($this->json($context)).'</pre>';
         }
 
@@ -284,8 +289,9 @@ HTML;
     /**
      * @param array<string, mixed> $collector
      */
-    private function renderTime(array $collector): string
-    {
+    private function renderTime(
+        array $collector,
+    ): string {
         $measures = is_array($collector['measures'] ?? null) ? $collector['measures'] : [];
 
         $html = '<table><tbody>'
@@ -320,8 +326,9 @@ HTML;
     /**
      * @param array<string, mixed> $collector
      */
-    private function renderDatabase(array $collector): string
-    {
+    private function renderDatabase(
+        array $collector,
+    ): string {
         $queries = is_array($collector['queries'] ?? null) ? $collector['queries'] : [];
 
         $html = '<table><tbody>'
@@ -349,7 +356,7 @@ HTML;
 
             $duration = $this->floatValue($query['duration_ms'] ?? null, 0.0);
             $slow = $duration >= $threshold ? ' class="marko-debugbar-level"' : '';
-            $bindings = is_array($query['bindings'] ?? null) && $query['bindings'] !== []
+            $bindings = (is_array($query['bindings'] ?? null) && $query['bindings'] !== [])
                 ? '<pre>'.$this->escape($this->json($query['bindings'])).'</pre>'
                 : '';
 
@@ -367,8 +374,9 @@ HTML;
     /**
      * @param array<string, mixed> $collector
      */
-    private function renderLogs(array $collector): string
-    {
+    private function renderLogs(
+        array $collector,
+    ): string {
         $logs = is_array($collector['logs'] ?? null) ? $collector['logs'] : [];
 
         if ($logs === []) {
@@ -384,7 +392,7 @@ HTML;
                 continue;
             }
 
-            $context = is_array($log['context'] ?? null) && $log['context'] !== []
+            $context = (is_array($log['context'] ?? null) && $log['context'] !== [])
                 ? '<pre>'.$this->escape($this->json($log['context'])).'</pre>'
                 : '';
 
@@ -423,9 +431,13 @@ HTML;
         return '<table><tbody>'.$rows.'</tbody></table>';
     }
 
-    private function value(mixed $value): string
-    {
-        if (is_array($value) || is_object($value)) {
+    private function value(
+        mixed $value,
+    ): string {
+        if (
+            is_array($value)
+            || is_object($value)
+        ) {
             return $this->json($value);
         }
 
@@ -441,15 +453,19 @@ HTML;
             return 'null';
         }
 
-        if (is_int($value) || is_float($value)) {
+        if (
+            is_int($value)
+            || is_float($value)
+        ) {
             return (string) $value;
         }
 
         return get_debug_type($value);
     }
 
-    private function json(mixed $value): string
-    {
+    private function json(
+        mixed $value,
+    ): string {
         try {
             return json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
         } catch (JsonException) {
@@ -457,8 +473,9 @@ HTML;
         }
     }
 
-    private function escape(string $value): string
-    {
+    private function escape(
+        string $value,
+    ): string {
         return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
@@ -470,7 +487,11 @@ HTML;
             return $value;
         }
 
-        if (is_int($value) || is_float($value) || is_bool($value)) {
+        if (
+            is_int($value)
+            || is_float($value)
+            || is_bool($value)
+        ) {
             return (string) $value;
         }
 
@@ -481,11 +502,17 @@ HTML;
         mixed $value,
         float $default,
     ): float {
-        if (is_int($value) || is_float($value)) {
+        if (
+            is_int($value)
+            || is_float($value)
+        ) {
             return (float) $value;
         }
 
-        if (is_string($value) && is_numeric($value)) {
+        if (
+            is_string($value)
+            && is_numeric($value)
+        ) {
             return (float) $value;
         }
 
@@ -495,8 +522,9 @@ HTML;
     /**
      * @return array<string, mixed>
      */
-    private function stringKeyArray(mixed $value): array
-    {
+    private function stringKeyArray(
+        mixed $value,
+    ): array {
         if (! is_array($value)) {
             return [];
         }

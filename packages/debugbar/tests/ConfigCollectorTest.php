@@ -9,8 +9,9 @@ use Marko\Debugbar\Access\AccessGate;
 use Marko\Debugbar\Debugbar;
 use Marko\Debugbar\Storage\DebugbarStorage;
 
-function makeDebugbarWithConfig(array $appConfig): Debugbar
-{
+function makeDebugbarWithConfig(
+    array $appConfig,
+): Debugbar {
     $basePath = sys_get_temp_dir().'/marko-debugbar-config-test-'.bin2hex(random_bytes(4));
 
     $config = array_replace_recursive([

@@ -126,8 +126,9 @@ class ClaudeCodeAgent implements AgentInterface, ReportsInstallNoticesInterface
         );
     }
 
-    private function settingsPath(string $projectRoot): string
-    {
+    private function settingsPath(
+        string $projectRoot,
+    ): string {
         return $projectRoot . '/.claude/settings.json';
     }
 
@@ -197,8 +198,9 @@ class ClaudeCodeAgent implements AgentInterface, ReportsInstallNoticesInterface
      * @param list<string> $installFailures
      * @throws DevAiInstallException
      */
-    private function verifyPluginsInstalled(array $installFailures): void
-    {
+    private function verifyPluginsInstalled(
+        array $installFailures,
+    ): void {
         $result = $this->commandRunner->run('claude', ['plugin', 'list', '--json']);
         $details = $installFailures;
 
@@ -234,8 +236,9 @@ class ClaudeCodeAgent implements AgentInterface, ReportsInstallNoticesInterface
      *
      * @return list<string>
      */
-    private function enabledPluginIds(string $listJson): array
-    {
+    private function enabledPluginIds(
+        string $listJson,
+    ): array {
         $decoded = json_decode($listJson, true);
         if (!is_array($decoded)) {
             return [];
@@ -243,7 +246,11 @@ class ClaudeCodeAgent implements AgentInterface, ReportsInstallNoticesInterface
 
         $ids = [];
         foreach ($decoded as $plugin) {
-            if (is_array($plugin) && is_string($plugin['id'] ?? null) && ($plugin['enabled'] ?? false) === true) {
+            if (
+                is_array($plugin)
+                && is_string($plugin['id'] ?? null)
+                && ($plugin['enabled'] ?? false) === true
+            ) {
                 $ids[] = $plugin['id'];
             }
         }
@@ -270,8 +277,9 @@ class ClaudeCodeAgent implements AgentInterface, ReportsInstallNoticesInterface
      *
      * @throws DevAiInstallException
      */
-    private function ensureLspDeps(bool $skipLspDeps): void
-    {
+    private function ensureLspDeps(
+        bool $skipLspDeps,
+    ): void {
         $this->intelephenseEnsurer?->ensure($skipLspDeps);
     }
 
@@ -324,8 +332,9 @@ CLAUDE;
     /**
      * @return array<string, mixed>
      */
-    private function readExistingSettings(string $settingsPath): array
-    {
+    private function readExistingSettings(
+        string $settingsPath,
+    ): array {
         if (!is_file($settingsPath)) {
             return [];
         }
@@ -350,7 +359,10 @@ CLAUDE;
         $hasMarketplace = isset($existing['extraKnownMarketplaces']['marko']);
         $hasPlugin = $this->hasAnyMarkoPlugin($existing);
 
-        if ($hasMarketplace || $hasPlugin) {
+        if (
+            $hasMarketplace
+            || $hasPlugin
+        ) {
             throw DevAiInstallException::alreadyRegistered($projectRoot);
         }
     }
@@ -358,8 +370,9 @@ CLAUDE;
     /**
      * @param array<string, mixed> $existing
      */
-    private function hasAnyMarkoPlugin(array $existing): bool
-    {
+    private function hasAnyMarkoPlugin(
+        array $existing,
+    ): bool {
         $plugins = $existing['enabledPlugins'] ?? [];
         if (!is_array($plugins)) {
             return false;
@@ -414,8 +427,9 @@ CLAUDE;
     /**
      * @return array<string, mixed>
      */
-    private function buildMarketplaceEntry(string $projectRoot): array
-    {
+    private function buildMarketplaceEntry(
+        string $projectRoot,
+    ): array {
         if ($this->isMonorepo($projectRoot)) {
             return ['source' => ['source' => 'local', 'path' => '.']];
         }
@@ -423,13 +437,15 @@ CLAUDE;
         return ['source' => ['source' => 'github', 'repo' => 'marko-php/marko', 'ref' => $this->marketplaceRef]];
     }
 
-    private function isMonorepo(string $projectRoot): bool
-    {
+    private function isMonorepo(
+        string $projectRoot,
+    ): bool {
         return is_dir($projectRoot . '/packages/claude-plugins');
     }
 
-    private function cleanupLegacyLspFile(string $projectRoot): void
-    {
+    private function cleanupLegacyLspFile(
+        string $projectRoot,
+    ): void {
         $lspFile = $projectRoot . '/.claude/plugins/marko/.lsp.json';
         if (is_file($lspFile)) {
             unlink($lspFile);
@@ -437,7 +453,10 @@ CLAUDE;
 
         // Remove directory if now empty
         $lspDir = $projectRoot . '/.claude/plugins/marko';
-        if (is_dir($lspDir) && count(scandir($lspDir)) === 2) {
+        if (
+            is_dir($lspDir)
+            && count(scandir($lspDir)) === 2
+        ) {
             rmdir($lspDir);
         }
     }

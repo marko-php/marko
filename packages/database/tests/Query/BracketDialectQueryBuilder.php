@@ -29,15 +29,17 @@ class BracketDialectQueryBuilder extends SqlQueryBuilder
         return $this->connection->lastInsertId();
     }
 
-    protected function compileJsonPath(string $expression): string
-    {
+    protected function compileJsonPath(
+        string $expression,
+    ): string {
         $path = JsonPathParser::parse($expression);
 
         return sprintf('JSON_AT(%s, %s)', $this->quoteIdentifier($path->column), implode('.', $path->segments));
     }
 
-    protected function compileJsonContains(string $path): string
-    {
+    protected function compileJsonContains(
+        string $path,
+    ): string {
         return 'CONTAINS(' . (JsonPathParser::isJsonPath($path) ? $this->compileJsonPath(
             $path,
         ) : $this->quoteIdentifier(
@@ -45,8 +47,9 @@ class BracketDialectQueryBuilder extends SqlQueryBuilder
         )) . ', ?)';
     }
 
-    protected function compileJsonPathExists(string $path): string
-    {
+    protected function compileJsonPathExists(
+        string $path,
+    ): string {
         return 'HAS_PATH(' . $this->compileJsonPath($path) . ')';
     }
 

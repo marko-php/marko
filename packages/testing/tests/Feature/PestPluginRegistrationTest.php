@@ -54,7 +54,8 @@ function runFixturePestProject(): array
             $name,
             ['PARATEST', 'TEST_TOKEN', 'UNIQUE_TEST_TOKEN'],
             true,
-        ) && !str_starts_with($name, 'PEST_PARALLEL'),
+        )
+            && !str_starts_with($name, 'PEST_PARALLEL'),
         ARRAY_FILTER_USE_BOTH,
     );
 
@@ -88,8 +89,9 @@ function runFixturePestProject(): array
     return $result;
 }
 
-function removeFixturePestCacheDirectory(string $directory): void
-{
+function removeFixturePestCacheDirectory(
+    string $directory,
+): void {
     if (!is_dir($directory)) {
         return;
     }

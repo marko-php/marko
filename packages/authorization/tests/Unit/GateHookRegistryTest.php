@@ -104,8 +104,11 @@ use Marko\Authorization\Contracts\GateHookInterface;
 #[GateHook(priority: 100)]
 class ScannedAdminHook implements GateHookInterface
 {
-    public function before(?AuthorizableInterface $user, string $ability, array $arguments): ?bool
-    {
+    public function before(
+        ?AuthorizableInterface $user,
+        string $ability,
+        array $arguments,
+    ): ?bool {
         return true;
     }
 }

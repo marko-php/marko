@@ -57,8 +57,9 @@ readonly class ServeCommand implements CommandInterface
         return $this->processRunner->run($binary . ' serve -c ' . escapeshellarg($configPath));
     }
 
-    private function resolveConfigPath(Input $input): string
-    {
+    private function resolveConfigPath(
+        Input $input,
+    ): string {
         $configOption = $input->getOption('config') ?? self::DEFAULT_CONFIG_FILE;
 
         return $this->paths->resolve($configOption);

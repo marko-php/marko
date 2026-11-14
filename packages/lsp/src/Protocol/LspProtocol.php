@@ -35,7 +35,10 @@ class LspProtocol
      */
     public function serve(): void
     {
-        while (!$this->shutdown && !feof($this->input)) {
+        while (
+            !$this->shutdown
+            && !feof($this->input)
+        ) {
             $message = $this->readMessage();
             if ($message === false) {
                 break;
@@ -73,7 +76,10 @@ class LspProtocol
             }
         }
 
-        if (!$sawHeader || $contentLength === 0) {
+        if (
+            !$sawHeader
+            || $contentLength === 0
+        ) {
             return null;
         }
 
@@ -82,7 +88,10 @@ class LspProtocol
 
         while ($remaining > 0) {
             $chunk = fread($this->input, $remaining);
-            if ($chunk === false || $chunk === '') {
+            if (
+                $chunk === false
+                || $chunk === ''
+            ) {
                 break;
             }
             $body .= $chunk;
@@ -95,8 +104,9 @@ class LspProtocol
     /**
      * @throws JsonException
      */
-    public function handleMessage(string $jsonBody): void
-    {
+    public function handleMessage(
+        string $jsonBody,
+    ): void {
         try {
             $request = json_decode($jsonBody, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
@@ -107,7 +117,10 @@ class LspProtocol
             return;
         }
 
-        if (!is_array($request) || !isset($request['method'])) {
+        if (
+            !is_array($request)
+            || !isset($request['method'])
+        ) {
             $this->writeResponse(
                 ['jsonrpc' => '2.0', 'error' => ['code' => -32600, 'message' => 'Invalid Request'], 'id' => $request['id'] ?? null],
             );
@@ -165,8 +178,9 @@ class LspProtocol
      *
      * @throws JsonException
      */
-    public function writeResponse(array $response): void
-    {
+    public function writeResponse(
+        array $response,
+    ): void {
         $json = json_encode($response, JSON_THROW_ON_ERROR);
         $contentLength = strlen($json);
         fwrite($this->output, "Content-Length: $contentLength\r\n\r\n$json");

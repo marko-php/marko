@@ -6,8 +6,9 @@ use Marko\Config\ConfigRepository;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Debugbar\Storage\DebugbarStorage;
 
-function makeStorage(?string $basePath = null): DebugbarStorage
-{
+function makeStorage(
+    ?string $basePath = null,
+): DebugbarStorage {
     $path = $basePath ?? sys_get_temp_dir().'/marko-debugbar-storage-test-'.bin2hex(random_bytes(4));
 
     $config = new ConfigRepository([
@@ -22,8 +23,9 @@ function makeStorage(?string $basePath = null): DebugbarStorage
     return new DebugbarStorage($config, new ProjectPaths($path));
 }
 
-function makeDataset(string $id): array
-{
+function makeDataset(
+    string $id,
+): array {
     return [
         'id' => $id,
         'stored_at' => '2026-01-01T00:00:00+00:00',

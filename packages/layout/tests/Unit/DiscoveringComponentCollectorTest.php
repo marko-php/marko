@@ -24,8 +24,9 @@ class NonComponentClass {}
 
 // --- Helper to build a fake ModuleRepositoryInterface ---
 
-function makeModuleRepository(array $modules): ModuleRepositoryInterface
-{
+function makeModuleRepository(
+    array $modules,
+): ModuleRepositoryInterface {
     return new class ($modules) implements ModuleRepositoryInterface
     {
         public function __construct(private array $modules) {}

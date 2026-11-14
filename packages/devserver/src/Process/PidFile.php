@@ -21,8 +21,9 @@ class PidFile
      *
      * @param array<ProcessEntry> $entries
      */
-    public function write(array $entries): void
-    {
+    public function write(
+        array $entries,
+    ): void {
         $dir = dirname($this->filePath);
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
@@ -54,7 +55,10 @@ class PidFile
         $content = file_get_contents($this->filePath);
         $data = json_decode($content, true);
 
-        if (!is_array($data) || !isset($data['processes'])) {
+        if (
+            !is_array($data)
+            || !isset($data['processes'])
+        ) {
             return [];
         }
 
@@ -82,8 +86,9 @@ class PidFile
     /**
      * Check if a process is still running.
      */
-    public function isRunning(int $pid): bool
-    {
+    public function isRunning(
+        int $pid,
+    ): bool {
         if ($pid <= 0) {
             return false;
         }
@@ -92,7 +97,8 @@ class PidFile
         if (function_exists('posix_kill')) {
             try {
                 // Check individual process first, then process group
-                return posix_kill($pid, 0) || $this->isProcessGroupRunning($pid);
+                return posix_kill($pid, 0)
+                    || $this->isProcessGroupRunning($pid);
             } catch (ValueError) {
                 return false;
             }
@@ -108,9 +114,13 @@ class PidFile
      * This catches cases where a wrapper (e.g. npx) exits but its child
      * process is still alive in the same process group.
      */
-    public function isProcessGroupRunning(int $pgid): bool
-    {
-        if ($pgid <= 0 || !function_exists('posix_kill')) {
+    public function isProcessGroupRunning(
+        int $pgid,
+    ): bool {
+        if (
+            $pgid <= 0
+            || !function_exists('posix_kill')
+        ) {
             return false;
         }
 
@@ -125,9 +135,13 @@ class PidFile
     /**
      * Kill all processes in a process group.
      */
-    public function killProcessGroup(int $pgid): void
-    {
-        if ($pgid <= 0 || !function_exists('posix_kill')) {
+    public function killProcessGroup(
+        int $pgid,
+    ): void {
+        if (
+            $pgid <= 0
+            || !function_exists('posix_kill')
+        ) {
             return;
         }
 

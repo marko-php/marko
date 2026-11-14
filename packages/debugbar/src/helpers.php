@@ -10,11 +10,17 @@ if (! function_exists('debugbar')) {
      *
      * @param array<string, mixed> $context
      */
-    function debugbar(?string $message = null, string $level = 'info', array $context = []): ?Debugbar
-    {
+    function debugbar(
+        ?string $message = null,
+        string $level = 'info',
+        array $context = [],
+    ): ?Debugbar {
         $debugbar = Debugbar::current();
 
-        if ($debugbar !== null && $message !== null) {
+        if (
+            $debugbar !== null
+            && $message !== null
+        ) {
             $debugbar->addMessage($message, $level, $context);
         }
 

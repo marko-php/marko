@@ -26,8 +26,9 @@ readonly class RedisSubscriber implements SubscriberInterface
         );
     }
 
-    public function subscribe(string ...$channels): Subscription
-    {
+    public function subscribe(
+        string ...$channels,
+    ): Subscription {
         $prefix = $this->config->prefix();
 
         $amphpSubscriptions = [];
@@ -41,8 +42,9 @@ readonly class RedisSubscriber implements SubscriberInterface
         return new RedisSubscription($amphpSubscriptions, $prefix, $channelNames);
     }
 
-    public function psubscribe(string ...$patterns): Subscription
-    {
+    public function psubscribe(
+        string ...$patterns,
+    ): Subscription {
         $prefix = $this->config->prefix();
 
         $amphpSubscriptions = [];

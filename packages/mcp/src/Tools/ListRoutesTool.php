@@ -11,8 +11,9 @@ readonly class ListRoutesTool implements ToolHandlerInterface
 {
     public function __construct(private IndexCache $index) {}
 
-    public static function definition(IndexCache $index): ToolDefinition
-    {
+    public static function definition(
+        IndexCache $index,
+    ): ToolDefinition {
         return new ToolDefinition(
             name: 'list_routes',
             description: 'List all Marko routes discovered in the project',
@@ -24,8 +25,9 @@ readonly class ListRoutesTool implements ToolHandlerInterface
         );
     }
 
-    public function handle(array $arguments): array
-    {
+    public function handle(
+        array $arguments,
+    ): array {
         $filter = isset($arguments['filter']) ? (string) $arguments['filter'] : '';
         $routes = $this->index->getRoutes();
 

@@ -134,8 +134,9 @@ readonly class PusherBroadcaster implements BroadcasterInterface
     /**
      * @throws BroadcastException
      */
-    private function channelName(Channel $channel): string
-    {
+    private function channelName(
+        Channel $channel,
+    ): string {
         $channelName = match (true) {
             $channel->isPresence() => 'presence-' . $channel->name,
             $channel->isPrivate() => 'private-' . $channel->name,

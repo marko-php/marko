@@ -19,13 +19,17 @@ function devDownTmpDir(): string
     return $tmpDir;
 }
 
-function devDownRemoveDir(string $dir): void
-{
+function devDownRemoveDir(
+    string $dir,
+): void {
     if (!is_dir($dir)) {
         return;
     }
     foreach (scandir($dir) as $file) {
-        if ($file === '.' || $file === '..') {
+        if (
+            $file === '.'
+            || $file === '..'
+        ) {
             continue;
         }
         $path = $dir . '/' . $file;
@@ -38,8 +42,10 @@ function devDownRemoveDir(string $dir): void
  * @param array<string, mixed> $config
  * @return array{command: DevDownCommand, pidFile: PidFile, tmpDir: string}
  */
-function createDevDownCommand(array $config = [], ?string $tmpDir = null): array
-{
+function createDevDownCommand(
+    array $config = [],
+    ?string $tmpDir = null,
+): array {
     $dir = $tmpDir ?? devDownTmpDir();
 
     $configDefaults = [

@@ -32,8 +32,9 @@ class FakePsr7Worker implements PSR7WorkerInterface
         return array_shift($this->requests);
     }
 
-    public function respond(ResponseInterface $response): void
-    {
+    public function respond(
+        ResponseInterface $response,
+    ): void {
         $this->responses[] = $response;
     }
 

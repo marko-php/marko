@@ -6,8 +6,9 @@ namespace Marko\Layout\Exceptions;
 
 class ComponentNotFoundException extends LayoutException
 {
-    public static function forComponent(string $name): self
-    {
+    public static function forComponent(
+        string $name,
+    ): self {
         return new self(
             message: "Component '$name' not found.",
             context: "Attempted to render component '$name' but no matching component was registered.",

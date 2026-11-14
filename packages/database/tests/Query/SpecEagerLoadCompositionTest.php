@@ -102,8 +102,9 @@ class SpecPostRepository extends Repository
  *
  * @param array<array<string, mixed>> $rows
  */
-function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
-{
+function makeSpecStubBuilder(
+    array $rows = [],
+): QueryBuilderInterface {
     return new class ($rows) implements QueryBuilderInterface
     {
         /** @var string[] */
@@ -118,8 +119,9 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function select(string ...$columns): static
-        {
+        public function select(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -145,13 +147,15 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function whereNull(string $column): static
-        {
+        public function whereNull(
+            string $column,
+        ): static {
             return $this;
         }
 
-        public function whereNotNull(string $column): static
-        {
+        public function whereNotNull(
+            string $column,
+        ): static {
             return $this;
         }
 
@@ -162,13 +166,15 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function whereJsonExists(string $path): static
-        {
+        public function whereJsonExists(
+            string $path,
+        ): static {
             return $this;
         }
 
-        public function whereJsonMissing(string $path): static
-        {
+        public function whereJsonMissing(
+            string $path,
+        ): static {
             return $this;
         }
 
@@ -187,13 +193,15 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function whereExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
-        public function whereNotExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereNotExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
@@ -260,23 +268,27 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function limit(int $limit): static
-        {
+        public function limit(
+            int $limit,
+        ): static {
             return $this;
         }
 
-        public function offset(int $offset): static
-        {
+        public function offset(
+            int $offset,
+        ): static {
             return $this;
         }
 
-        public function union(QueryBuilderInterface $other): static
-        {
+        public function union(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
-        public function unionAll(QueryBuilderInterface $other): static
-        {
+        public function unionAll(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
@@ -297,8 +309,9 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             return 0;
         }
 
-        public function update(array $data): int
-        {
+        public function update(
+            array $data,
+        ): int {
             return 0;
         }
 
@@ -307,8 +320,9 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             return 0;
         }
 
-        public function count(?string $column = null): int
-        {
+        public function count(
+            ?string $column = null,
+        ): int {
             return count($this->rows);
         }
 
@@ -317,13 +331,15 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             return 0;
         }
 
-        public function compileSubquery(array &$bindings): string
-        {
+        public function compileSubquery(
+            array &$bindings,
+        ): string {
             return '';
         }
 
-        public function groupBy(string ...$columns): static
-        {
+        public function groupBy(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -334,23 +350,27 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function min(string $column): int|float|null
-        {
+        public function min(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function max(string $column): int|float|null
-        {
+        public function max(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function sum(string $column): int|float|null
-        {
+        public function sum(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function avg(string $column): int|float|null
-        {
+        public function avg(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
@@ -394,8 +414,9 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
 /**
  * Build a QueryBuilderInterface that tracks whereIn call count (for N+1 detection).
  */
-function makeCountingBuilder(array $rows = []): QueryBuilderInterface
-{
+function makeCountingBuilder(
+    array $rows = [],
+): QueryBuilderInterface {
     return new class ($rows) implements QueryBuilderInterface
     {
         public int $whereInCount = 0;
@@ -409,8 +430,9 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function select(string ...$columns): static
-        {
+        public function select(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -436,13 +458,15 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function whereNull(string $column): static
-        {
+        public function whereNull(
+            string $column,
+        ): static {
             return $this;
         }
 
-        public function whereNotNull(string $column): static
-        {
+        public function whereNotNull(
+            string $column,
+        ): static {
             return $this;
         }
 
@@ -453,13 +477,15 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function whereJsonExists(string $path): static
-        {
+        public function whereJsonExists(
+            string $path,
+        ): static {
             return $this;
         }
 
-        public function whereJsonMissing(string $path): static
-        {
+        public function whereJsonMissing(
+            string $path,
+        ): static {
             return $this;
         }
 
@@ -478,13 +504,15 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function whereExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
-        public function whereNotExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereNotExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
@@ -551,23 +579,27 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function limit(int $limit): static
-        {
+        public function limit(
+            int $limit,
+        ): static {
             return $this;
         }
 
-        public function offset(int $offset): static
-        {
+        public function offset(
+            int $offset,
+        ): static {
             return $this;
         }
 
-        public function union(QueryBuilderInterface $other): static
-        {
+        public function union(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
-        public function unionAll(QueryBuilderInterface $other): static
-        {
+        public function unionAll(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
@@ -588,8 +620,9 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             return 0;
         }
 
-        public function update(array $data): int
-        {
+        public function update(
+            array $data,
+        ): int {
             return 0;
         }
 
@@ -598,8 +631,9 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             return 0;
         }
 
-        public function count(?string $column = null): int
-        {
+        public function count(
+            ?string $column = null,
+        ): int {
             return count($this->rows);
         }
 
@@ -608,13 +642,15 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             return 0;
         }
 
-        public function compileSubquery(array &$bindings): string
-        {
+        public function compileSubquery(
+            array &$bindings,
+        ): string {
             return '';
         }
 
-        public function groupBy(string ...$columns): static
-        {
+        public function groupBy(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -625,23 +661,27 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function min(string $column): int|float|null
-        {
+        public function min(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function max(string $column): int|float|null
-        {
+        public function max(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function sum(string $column): int|float|null
-        {
+        public function sum(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function avg(string $column): int|float|null
-        {
+        public function avg(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
@@ -682,8 +722,9 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
     };
 }
 
-function makeSpecConnection(array $rows = []): ConnectionInterface
-{
+function makeSpecConnection(
+    array $rows = [],
+): ConnectionInterface {
     return new readonly class ($rows) implements ConnectionInterface
     {
         public function __construct(private array $rows) {}
@@ -711,8 +752,9 @@ function makeSpecConnection(array $rows = []): ConnectionInterface
             return 0;
         }
 
-        public function prepare(string $sql): StatementInterface
-        {
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
             throw new RuntimeException('Not implemented');
         }
 
@@ -739,8 +781,9 @@ function makeSpecConnection(array $rows = []): ConnectionInterface
     };
 }
 
-function makeSpecQbFactory(QueryBuilderInterface $builder): QueryBuilderFactoryInterface
-{
+function makeSpecQbFactory(
+    QueryBuilderInterface $builder,
+): QueryBuilderFactoryInterface {
     return new readonly class ($builder) implements QueryBuilderFactoryInterface
     {
         public function __construct(private QueryBuilderInterface $builder) {}
@@ -752,8 +795,9 @@ function makeSpecQbFactory(QueryBuilderInterface $builder): QueryBuilderFactoryI
     };
 }
 
-function makeSpecLoader(QueryBuilderInterface $relatedBuilder): RelationshipLoader
-{
+function makeSpecLoader(
+    QueryBuilderInterface $relatedBuilder,
+): RelationshipLoader {
     return new RelationshipLoader(
         new EntityMetadataFactory(),
         new EntityHydrator(),
@@ -798,8 +842,9 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
     {
         public function __construct(private array &$capturedWith) {}
 
-        public function with(string ...$relations): static
-        {
+        public function with(
+            string ...$relations,
+        ): static {
             $this->capturedWith = array_values($relations);
 
             return $this;
@@ -826,8 +871,9 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             return $this;
         }
 
-        public function select(string ...$columns): static
-        {
+        public function select(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -851,13 +897,15 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             return $this;
         }
 
-        public function whereNull(string $column): static
-        {
+        public function whereNull(
+            string $column,
+        ): static {
             return $this;
         }
 
-        public function whereNotNull(string $column): static
-        {
+        public function whereNotNull(
+            string $column,
+        ): static {
             return $this;
         }
 
@@ -868,13 +916,15 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             return $this;
         }
 
-        public function whereJsonExists(string $path): static
-        {
+        public function whereJsonExists(
+            string $path,
+        ): static {
             return $this;
         }
 
-        public function whereJsonMissing(string $path): static
-        {
+        public function whereJsonMissing(
+            string $path,
+        ): static {
             return $this;
         }
 
@@ -893,13 +943,15 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             return $this;
         }
 
-        public function whereExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
-        public function whereNotExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereNotExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
@@ -966,23 +1018,27 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             return $this;
         }
 
-        public function limit(int $limit): static
-        {
+        public function limit(
+            int $limit,
+        ): static {
             return $this;
         }
 
-        public function offset(int $offset): static
-        {
+        public function offset(
+            int $offset,
+        ): static {
             return $this;
         }
 
-        public function union(QueryBuilderInterface $other): static
-        {
+        public function union(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
-        public function unionAll(QueryBuilderInterface $other): static
-        {
+        public function unionAll(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
@@ -1003,8 +1059,9 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             return 0;
         }
 
-        public function update(array $data): int
-        {
+        public function update(
+            array $data,
+        ): int {
             return 0;
         }
 
@@ -1013,8 +1070,9 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             return 0;
         }
 
-        public function count(?string $column = null): int
-        {
+        public function count(
+            ?string $column = null,
+        ): int {
             return 0;
         }
 
@@ -1023,13 +1081,15 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             return 0;
         }
 
-        public function compileSubquery(array &$bindings): string
-        {
+        public function compileSubquery(
+            array &$bindings,
+        ): string {
             return '';
         }
 
-        public function groupBy(string ...$columns): static
-        {
+        public function groupBy(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -1040,23 +1100,27 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             return $this;
         }
 
-        public function min(string $column): int|float|null
-        {
+        public function min(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function max(string $column): int|float|null
-        {
+        public function max(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function sum(string $column): int|float|null
-        {
+        public function sum(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function avg(string $column): int|float|null
-        {
+        public function avg(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
@@ -1098,8 +1162,9 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
 
     $spec = new class () implements QuerySpecification
     {
-        public function apply(EntityQueryBuilderInterface $builder): void
-        {
+        public function apply(
+            EntityQueryBuilderInterface $builder,
+        ): void {
             $builder->with('author');
         }
     };
@@ -1120,8 +1185,9 @@ it('eager-loads relationships declared by a spec via the fluent builder', functi
 
     $spec = new class () implements QuerySpecification
     {
-        public function apply(EntityQueryBuilderInterface $builder): void
-        {
+        public function apply(
+            EntityQueryBuilderInterface $builder,
+        ): void {
             $builder->with('author');
         }
     };
@@ -1145,8 +1211,9 @@ it('eager-loads nested relationship paths declared by a spec (e.g. "author.profi
 
     $spec = new class () implements QuerySpecification
     {
-        public function apply(EntityQueryBuilderInterface $builder): void
-        {
+        public function apply(
+            EntityQueryBuilderInterface $builder,
+        ): void {
             $builder->with('author.profile');
         }
     };
@@ -1169,16 +1236,18 @@ it('merges eager loads across multiple specs without duplicating queries', funct
 
     $specA = new class () implements QuerySpecification
     {
-        public function apply(EntityQueryBuilderInterface $builder): void
-        {
+        public function apply(
+            EntityQueryBuilderInterface $builder,
+        ): void {
             $builder->with('author');
         }
     };
 
     $specB = new class () implements QuerySpecification
     {
-        public function apply(EntityQueryBuilderInterface $builder): void
-        {
+        public function apply(
+            EntityQueryBuilderInterface $builder,
+        ): void {
             $builder->with('author'); // duplicate — should not cause double query
         }
     };
@@ -1203,8 +1272,9 @@ it(
         // Plain spec that applies no eager load — eager load comes from call-site with()
         $spec = new class () implements QuerySpecification
         {
-            public function apply(EntityQueryBuilderInterface $builder): void
-            {
+            public function apply(
+                EntityQueryBuilderInterface $builder,
+            ): void {
                 $builder->where('status', '=', 'published');
             }
         };
@@ -1228,8 +1298,9 @@ it(
 
         $spec = new class () implements QuerySpecification
         {
-            public function apply(EntityQueryBuilderInterface $builder): void
-            {
+            public function apply(
+                EntityQueryBuilderInterface $builder,
+            ): void {
                 $builder->with('author');
             }
         };
@@ -1256,8 +1327,9 @@ it('does not execute N+1 queries when a spec declares eager loads', function ():
 
     $spec = new class () implements QuerySpecification
     {
-        public function apply(EntityQueryBuilderInterface $builder): void
-        {
+        public function apply(
+            EntityQueryBuilderInterface $builder,
+        ): void {
             $builder->with('author');
         }
     };
@@ -1279,8 +1351,9 @@ it(
 
         $spec = new class () implements QuerySpecification
         {
-            public function apply(EntityQueryBuilderInterface $builder): void
-            {
+            public function apply(
+                EntityQueryBuilderInterface $builder,
+            ): void {
                 $builder->with('nonExistentRelationship');
             }
         };
@@ -1295,8 +1368,9 @@ it(
         // A spec using the new signature — verifies backward-compatible refactor
         $spec = new class () implements QuerySpecification
         {
-            public function apply(EntityQueryBuilderInterface $builder): void
-            {
+            public function apply(
+                EntityQueryBuilderInterface $builder,
+            ): void {
                 $builder->where('status', '=', 'active');
             }
         };

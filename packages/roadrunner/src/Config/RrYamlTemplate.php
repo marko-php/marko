@@ -25,8 +25,9 @@ class RrYamlTemplate
      */
     private const int MAX_WORKER_MEMORY_MB = 128;
 
-    public static function render(string $basePath): string
-    {
+    public static function render(
+        string $basePath,
+    ): string {
         $maxJobs = self::MAX_JOBS;
         $maxWorkerMemory = self::MAX_WORKER_MEMORY_MB;
 

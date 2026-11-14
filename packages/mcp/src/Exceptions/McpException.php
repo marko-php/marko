@@ -39,32 +39,36 @@ class McpException extends MarkoException
         return $this->jsonRpcCode;
     }
 
-    public static function methodNotFound(string $method): self
-    {
+    public static function methodNotFound(
+        string $method,
+    ): self {
         return new self(
             message: "Method not found: $method",
             jsonRpcCode: self::METHOD_NOT_FOUND,
         );
     }
 
-    public static function invalidRequest(string $reason): self
-    {
+    public static function invalidRequest(
+        string $reason,
+    ): self {
         return new self(
             message: "Invalid Request: $reason",
             jsonRpcCode: self::INVALID_REQUEST,
         );
     }
 
-    public static function parseError(string $reason): self
-    {
+    public static function parseError(
+        string $reason,
+    ): self {
         return new self(
             message: "Parse error: $reason",
             jsonRpcCode: self::PARSE_ERROR,
         );
     }
 
-    public static function readOnlyUnsupportedDriver(string $driver): UnsupportedMcpFeatureException
-    {
+    public static function readOnlyUnsupportedDriver(
+        string $driver,
+    ): UnsupportedMcpFeatureException {
         return new UnsupportedMcpFeatureException(
             unsupportedFeature: new UnsupportedFeature(
                 feature: 'read-only queries',
@@ -78,8 +82,9 @@ class McpException extends MarkoException
         );
     }
 
-    public static function productionServeRefused(string $environment): self
-    {
+    public static function productionServeRefused(
+        string $environment,
+    ): self {
         return new self(
             message: "Refusing to start the MCP server in the '$environment' environment",
             jsonRpcCode: self::INTERNAL_ERROR,
@@ -91,8 +96,9 @@ class McpException extends MarkoException
         );
     }
 
-    public static function internalError(string $message): self
-    {
+    public static function internalError(
+        string $message,
+    ): self {
         return new self(
             message: "Internal error: $message",
             jsonRpcCode: self::INTERNAL_ERROR,

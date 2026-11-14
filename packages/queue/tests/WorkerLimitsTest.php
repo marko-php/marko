@@ -118,8 +118,6 @@ class LimitsRecordingQueue implements QueueInterface
  */
 class LimitsCallbackJob extends Job implements FailableJobInterface
 {
-    public protected(set) ?int $maxAttempts = 1;
-
     /** @var list<Throwable> */
     public array $failedWith = [];
 
@@ -127,10 +125,9 @@ class LimitsCallbackJob extends Job implements FailableJobInterface
 
     public function __construct(
         private readonly ?Closure $during = null,
-        ?int $maxAttempts = 1,
+        public protected(set) ?int $maxAttempts = 1,
         ?int $timeout = null,
     ) {
-        $this->maxAttempts = $maxAttempts;
         $this->timeout = $timeout;
     }
 
@@ -141,8 +138,9 @@ class LimitsCallbackJob extends Job implements FailableJobInterface
         }
     }
 
-    public function failed(Throwable $exception): void
-    {
+    public function failed(
+        Throwable $exception,
+    ): void {
         $this->failedWith[] = $exception;
     }
 }

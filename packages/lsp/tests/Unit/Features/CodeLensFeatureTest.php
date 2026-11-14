@@ -7,8 +7,10 @@ use Marko\CodeIndexer\ValueObject\ObserverEntry;
 use Marko\CodeIndexer\ValueObject\PluginEntry;
 use Marko\Lsp\Features\CodeLensFeature;
 
-function makeCodeLensIndex(array $observers = [], array $plugins = []): IndexCache
-{
+function makeCodeLensIndex(
+    array $observers = [],
+    array $plugins = [],
+): IndexCache {
     return new class ($observers, $plugins) extends IndexCache
     {
         public function __construct(
@@ -18,15 +20,17 @@ function makeCodeLensIndex(array $observers = [], array $plugins = []): IndexCac
             // Skip parent constructor
         }
 
-        public function findObserversForEvent(string $eventClass): array
-        {
+        public function findObserversForEvent(
+            string $eventClass,
+        ): array {
             return array_values(
                 array_filter($this->observers, fn (ObserverEntry $o) => $o->event === $eventClass),
             );
         }
 
-        public function findPluginsForTarget(string $targetClass): array
-        {
+        public function findPluginsForTarget(
+            string $targetClass,
+        ): array {
             return array_values(
                 array_filter($this->plugins, fn (PluginEntry $p) => $p->target === $targetClass),
             );
@@ -34,8 +38,10 @@ function makeCodeLensIndex(array $observers = [], array $plugins = []): IndexCac
     };
 }
 
-function firstLensWithCommand(array $lenses, string $command): ?array
-{
+function firstLensWithCommand(
+    array $lenses,
+    string $command,
+): ?array {
     return array_values(array_filter($lenses, fn ($l) => $l['command']['command'] === $command))[0] ?? null;
 }
 
@@ -124,27 +130,27 @@ it('refreshes lenses when the workspace re-indexes', function () {
 
     $index = new class ($observers) extends IndexCache
     {
-        private array $currentObservers;
+        public function __construct(
+            private array $currentObservers,
+        ) {}
 
-        public function __construct(array $initialObservers)
-        {
-            $this->currentObservers = $initialObservers;
-        }
-
-        public function findObserversForEvent(string $eventClass): array
-        {
+        public function findObserversForEvent(
+            string $eventClass,
+        ): array {
             return array_values(
                 array_filter($this->currentObservers, fn (ObserverEntry $o) => $o->event === $eventClass),
             );
         }
 
-        public function findPluginsForTarget(string $targetClass): array
-        {
+        public function findPluginsForTarget(
+            string $targetClass,
+        ): array {
             return [];
         }
 
-        public function setObservers(array $observers): void
-        {
+        public function setObservers(
+            array $observers,
+        ): void {
             $this->currentObservers = $observers;
         }
     };

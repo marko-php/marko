@@ -65,8 +65,9 @@ class FobUserRepository extends Repository
  *
  * @param array<array<string, mixed>> $rows
  */
-function makeFobConnection(array $rows = []): ConnectionInterface
-{
+function makeFobConnection(
+    array $rows = [],
+): ConnectionInterface {
     return new readonly class ($rows) implements ConnectionInterface
     {
         public function __construct(
@@ -96,8 +97,9 @@ function makeFobConnection(array $rows = []): ConnectionInterface
             return 0;
         }
 
-        public function prepare(string $sql): StatementInterface
-        {
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
             throw new RuntimeException('Not implemented');
         }
 
@@ -130,8 +132,10 @@ function makeFobConnection(array $rows = []): ConnectionInterface
  * @param array<array<string, mixed>> $rows Rows to return for every query() call
  * @param array<array{sql: string, bindings: array<mixed>}> $queries Reference to the external capture array
  */
-function makeFobRecordingConnection(array $rows, array &$queries): ConnectionInterface
-{
+function makeFobRecordingConnection(
+    array $rows,
+    array &$queries,
+): ConnectionInterface {
     return new class ($rows, $queries) implements ConnectionInterface
     {
         public function __construct(
@@ -165,8 +169,9 @@ function makeFobRecordingConnection(array $rows, array &$queries): ConnectionInt
             return 0;
         }
 
-        public function prepare(string $sql): StatementInterface
-        {
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
             throw new RuntimeException('Not implemented');
         }
 
@@ -193,8 +198,9 @@ function makeFobRecordingConnection(array $rows, array &$queries): ConnectionInt
     };
 }
 
-function makeFobQbFactory(array $relatedRows = []): QueryBuilderFactoryInterface
-{
+function makeFobQbFactory(
+    array $relatedRows = [],
+): QueryBuilderFactoryInterface {
     $stub = new readonly class ($relatedRows) implements QueryBuilderInterface
     {
         public function __construct(private array $rows) {}
@@ -206,8 +212,9 @@ function makeFobQbFactory(array $relatedRows = []): QueryBuilderFactoryInterface
             return $this;
         }
 
-        public function select(string ...$columns): static
-        {
+        public function select(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -226,13 +233,15 @@ function makeFobQbFactory(array $relatedRows = []): QueryBuilderFactoryInterface
             return $this;
         }
 
-        public function whereNull(string $column): static
-        {
+        public function whereNull(
+            string $column,
+        ): static {
             return $this;
         }
 
-        public function whereNotNull(string $column): static
-        {
+        public function whereNotNull(
+            string $column,
+        ): static {
             return $this;
         }
 
@@ -243,13 +252,15 @@ function makeFobQbFactory(array $relatedRows = []): QueryBuilderFactoryInterface
             return $this;
         }
 
-        public function whereJsonExists(string $path): static
-        {
+        public function whereJsonExists(
+            string $path,
+        ): static {
             return $this;
         }
 
-        public function whereJsonMissing(string $path): static
-        {
+        public function whereJsonMissing(
+            string $path,
+        ): static {
             return $this;
         }
 
@@ -268,13 +279,15 @@ function makeFobQbFactory(array $relatedRows = []): QueryBuilderFactoryInterface
             return $this;
         }
 
-        public function whereExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
-        public function whereNotExists(callable|QueryBuilderInterface $subquery): static
-        {
+        public function whereNotExists(
+            callable|QueryBuilderInterface $subquery,
+        ): static {
             return $this;
         }
 
@@ -341,13 +354,15 @@ function makeFobQbFactory(array $relatedRows = []): QueryBuilderFactoryInterface
             return $this;
         }
 
-        public function limit(int $limit): static
-        {
+        public function limit(
+            int $limit,
+        ): static {
             return $this;
         }
 
-        public function offset(int $offset): static
-        {
+        public function offset(
+            int $offset,
+        ): static {
             return $this;
         }
 
@@ -356,13 +371,15 @@ function makeFobQbFactory(array $relatedRows = []): QueryBuilderFactoryInterface
             return $this;
         }
 
-        public function union(QueryBuilderInterface $other): static
-        {
+        public function union(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
-        public function unionAll(QueryBuilderInterface $other): static
-        {
+        public function unionAll(
+            QueryBuilderInterface $other,
+        ): static {
             return $this;
         }
 
@@ -371,8 +388,9 @@ function makeFobQbFactory(array $relatedRows = []): QueryBuilderFactoryInterface
             return 1;
         }
 
-        public function compileSubquery(array &$bindings): string
-        {
+        public function compileSubquery(
+            array &$bindings,
+        ): string {
             return '';
         }
 
@@ -393,8 +411,9 @@ function makeFobQbFactory(array $relatedRows = []): QueryBuilderFactoryInterface
             return 0;
         }
 
-        public function update(array $data): int
-        {
+        public function update(
+            array $data,
+        ): int {
             return 0;
         }
 
@@ -403,8 +422,9 @@ function makeFobQbFactory(array $relatedRows = []): QueryBuilderFactoryInterface
             return 0;
         }
 
-        public function count(?string $column = null): int
-        {
+        public function count(
+            ?string $column = null,
+        ): int {
             return count($this->rows);
         }
 
@@ -443,8 +463,9 @@ function makeFobQbFactory(array $relatedRows = []): QueryBuilderFactoryInterface
             return count($rows);
         }
 
-        public function groupBy(string ...$columns): static
-        {
+        public function groupBy(
+            string ...$columns,
+        ): static {
             return $this;
         }
 
@@ -455,23 +476,27 @@ function makeFobQbFactory(array $relatedRows = []): QueryBuilderFactoryInterface
             return $this;
         }
 
-        public function min(string $column): int|float|null
-        {
+        public function min(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function max(string $column): int|float|null
-        {
+        public function max(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function sum(string $column): int|float|null
-        {
+        public function sum(
+            string $column,
+        ): int|float|null {
             return null;
         }
 
-        public function avg(string $column): int|float|null
-        {
+        public function avg(
+            string $column,
+        ): int|float|null {
             return null;
         }
     };
@@ -487,8 +512,9 @@ function makeFobQbFactory(array $relatedRows = []): QueryBuilderFactoryInterface
     };
 }
 
-function makeFobLoader(array $relatedRows = []): RelationshipLoader
-{
+function makeFobLoader(
+    array $relatedRows = [],
+): RelationshipLoader {
     return new RelationshipLoader(
         new EntityMetadataFactory(),
         new EntityHydrator(),

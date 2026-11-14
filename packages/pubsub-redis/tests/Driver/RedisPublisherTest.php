@@ -39,8 +39,9 @@ class PublisherTestStubRedisLink implements RedisLink
     }
 }
 
-function createPubSubConfig(string $prefix = 'marko:'): PubSubConfig
-{
+function createPubSubConfig(
+    string $prefix = 'marko:',
+): PubSubConfig {
     return new PubSubConfig(new FakeConfigRepository([
         'pubsub.driver' => 'redis',
         'pubsub.prefix' => $prefix,

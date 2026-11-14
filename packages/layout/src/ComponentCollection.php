@@ -16,8 +16,9 @@ class ComponentCollection
     /**
      * @throws DuplicateComponentException
      */
-    public function add(ComponentDefinition $definition): void
-    {
+    public function add(
+        ComponentDefinition $definition,
+    ): void {
         if (isset($this->components[$definition->className])) {
             throw DuplicateComponentException::duplicate($definition->className);
         }
@@ -28,8 +29,9 @@ class ComponentCollection
     /**
      * @throws ComponentNotFoundException
      */
-    public function remove(string $className): void
-    {
+    public function remove(
+        string $className,
+    ): void {
         if (!isset($this->components[$className])) {
             throw ComponentNotFoundException::forComponent($className);
         }
@@ -40,8 +42,9 @@ class ComponentCollection
     /**
      * @throws ComponentNotFoundException
      */
-    public function get(string $className): ComponentDefinition
-    {
+    public function get(
+        string $className,
+    ): ComponentDefinition {
         if (!isset($this->components[$className])) {
             throw ComponentNotFoundException::forComponent($className);
         }
@@ -61,8 +64,9 @@ class ComponentCollection
      * @return array<int, ComponentDefinition>
      * @throws AmbiguousSortOrderException
      */
-    public function forSlot(string $slot): array
-    {
+    public function forSlot(
+        string $slot,
+    ): array {
         $filtered = array_values(
             array_filter(
                 $this->components,
@@ -157,7 +161,10 @@ class ComponentCollection
         $groups = [];
 
         foreach ($components as $def) {
-            if ($def->before === null && $def->after === null) {
+            if (
+                $def->before === null
+                && $def->after === null
+            ) {
                 $groups[$def->sortOrder][] = $def->className;
             }
         }
@@ -177,8 +184,9 @@ class ComponentCollection
      * @param array<int, ComponentDefinition> $components
      * @return array<int, ComponentDefinition>
      */
-    private function applyConstraints(array $components): array
-    {
+    private function applyConstraints(
+        array $components,
+    ): array {
         $classNames = array_map(fn (ComponentDefinition $def): string => $def->className, $components);
 
         foreach ($components as $def) {
@@ -186,7 +194,11 @@ class ComponentCollection
                 $targetIndex = array_search($def->before, $classNames, true);
                 $currentIndex = array_search($def->className, $classNames, true);
 
-                if ($targetIndex !== false && $currentIndex !== false && $currentIndex > $targetIndex) {
+                if (
+                    $targetIndex !== false
+                    && $currentIndex !== false
+                    && $currentIndex > $targetIndex
+                ) {
                     // Move current before target
                     array_splice($classNames, (int) $currentIndex, 1);
                     $targetIndex = (int) array_search($def->before, $classNames, true);
@@ -198,7 +210,11 @@ class ComponentCollection
                 $targetIndex = array_search($def->after, $classNames, true);
                 $currentIndex = array_search($def->className, $classNames, true);
 
-                if ($targetIndex !== false && $currentIndex !== false && $currentIndex < $targetIndex) {
+                if (
+                    $targetIndex !== false
+                    && $currentIndex !== false
+                    && $currentIndex < $targetIndex
+                ) {
                     // Move current after target
                     array_splice($classNames, (int) $currentIndex, 1);
                     $targetIndex = (int) array_search($def->after, $classNames, true);

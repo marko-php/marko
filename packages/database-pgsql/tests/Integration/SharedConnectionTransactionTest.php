@@ -25,8 +25,10 @@ use RuntimeException;
  * skipping. Part of the integration-services group.
  */
 
-function pgsqlRowCount(PgSqlConnection $connection, string $table): int
-{
+function pgsqlRowCount(
+    PgSqlConnection $connection,
+    string $table,
+): int {
     return (int) $connection->query("SELECT COUNT(*) AS total FROM $table")[0]['total'];
 }
 

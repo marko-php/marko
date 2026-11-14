@@ -41,8 +41,9 @@ describe('Response::send() with a streamed response', function (): void {
                 echo 'custom stream';
             }
 
-            public function withOutputStreamer(OutputStreamer $outputStreamer): static
-            {
+            public function withOutputStreamer(
+                OutputStreamer $outputStreamer,
+            ): static {
                 return $this;
             }
         };

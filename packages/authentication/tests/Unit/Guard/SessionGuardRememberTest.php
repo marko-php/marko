@@ -44,13 +44,15 @@ describe('SessionGuard remember-me', function (): void {
         $user = new FakeAuthenticatable(id: 42);
         $provider = new readonly class () implements UserProviderInterface
         {
-            public function retrieveById(int|string $identifier): ?AuthenticatableInterface
-            {
+            public function retrieveById(
+                int|string $identifier,
+            ): ?AuthenticatableInterface {
                 return null;
             }
 
-            public function retrieveByCredentials(array $credentials): ?AuthenticatableInterface
-            {
+            public function retrieveByCredentials(
+                array $credentials,
+            ): ?AuthenticatableInterface {
                 return null;
             }
 
@@ -162,8 +164,9 @@ describe('SessionGuard remember-me', function (): void {
         {
             public ?int $minutes = null;
 
-            public function get(string $name): ?string
-            {
+            public function get(
+                string $name,
+            ): ?string {
                 return null;
             }
 
@@ -323,8 +326,9 @@ describe('SessionGuard remember-me expiry', function (): void {
         {
             public ?int $minutes = null;
 
-            public function get(string $name): ?string
-            {
+            public function get(
+                string $name,
+            ): ?string {
                 return '42|plain-token';
             }
 
@@ -355,13 +359,15 @@ describe('SessionGuard remember-me expiry', function (): void {
         $user = new FakeAuthenticatable(id: 42);
         $provider = new readonly class () implements UserProviderInterface
         {
-            public function retrieveById(int|string $identifier): ?AuthenticatableInterface
-            {
+            public function retrieveById(
+                int|string $identifier,
+            ): ?AuthenticatableInterface {
                 return null;
             }
 
-            public function retrieveByCredentials(array $credentials): ?AuthenticatableInterface
-            {
+            public function retrieveByCredentials(
+                array $credentials,
+            ): ?AuthenticatableInterface {
                 return null;
             }
 

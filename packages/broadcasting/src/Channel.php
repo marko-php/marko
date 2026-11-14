@@ -37,8 +37,9 @@ readonly class Channel
      *
      * @throws BroadcastException
      */
-    public static function from(string|self $channel): self
-    {
+    public static function from(
+        string|self $channel,
+    ): self {
         return $channel instanceof self ? $channel : new self($channel);
     }
 

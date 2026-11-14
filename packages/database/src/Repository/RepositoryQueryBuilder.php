@@ -188,15 +188,17 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
         return $this;
     }
 
-    public function whereJsonExists(string $path): static
-    {
+    public function whereJsonExists(
+        string $path,
+    ): static {
         $this->queryBuilder->whereJsonExists($path);
 
         return $this;
     }
 
-    public function whereJsonMissing(string $path): static
-    {
+    public function whereJsonMissing(
+        string $path,
+    ): static {
         $this->queryBuilder->whereJsonMissing($path);
 
         return $this;
@@ -264,8 +266,9 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
         return $this;
     }
 
-    public function groupBy(string ...$columns): static
-    {
+    public function groupBy(
+        string ...$columns,
+    ): static {
         $this->queryBuilder->groupBy(...$columns);
 
         return $this;
@@ -358,28 +361,33 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
         return $this->queryBuilder->delete();
     }
 
-    public function count(?string $column = null): int
-    {
+    public function count(
+        ?string $column = null,
+    ): int {
         return $this->queryBuilder->count($column);
     }
 
-    public function min(string $column): int|float|null
-    {
+    public function min(
+        string $column,
+    ): int|float|null {
         return $this->queryBuilder->min($column);
     }
 
-    public function max(string $column): int|float|null
-    {
+    public function max(
+        string $column,
+    ): int|float|null {
         return $this->queryBuilder->max($column);
     }
 
-    public function sum(string $column): int|float|null
-    {
+    public function sum(
+        string $column,
+    ): int|float|null {
         return $this->queryBuilder->sum($column);
     }
 
-    public function avg(string $column): int|float|null
-    {
+    public function avg(
+        string $column,
+    ): int|float|null {
         return $this->queryBuilder->avg($column);
     }
 
@@ -388,8 +396,9 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
         return $this->queryBuilder->getColumnCount();
     }
 
-    public function compileSubquery(array &$bindings): string
-    {
+    public function compileSubquery(
+        array &$bindings,
+    ): string {
         return $this->queryBuilder->compileSubquery($bindings);
     }
 
@@ -444,8 +453,9 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
      *
      * @throws RepositoryException When the relationship name is unknown
      */
-    public function with(string ...$relationships): static
-    {
+    public function with(
+        string ...$relationships,
+    ): static {
         foreach ($relationships as $name) {
             $topLevel = explode('.', $name, 2)[0];
 
@@ -474,8 +484,9 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
      *
      * @return EntityCollection<Entity>
      */
-    public function matching(QuerySpecification ...$specifications): EntityCollection
-    {
+    public function matching(
+        QuerySpecification ...$specifications,
+    ): EntityCollection {
         foreach ($specifications as $specification) {
             $specification->apply($this);
         }
@@ -565,7 +576,10 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
                 $remainingPath,
                 $constraint,
             ): void {
-                if ($remainingPath === null && $constraint === null) {
+                if (
+                    $remainingPath === null
+                    && $constraint === null
+                ) {
                     return;
                 }
 
@@ -597,9 +611,14 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
      *
      * @param Entity[] $entities
      */
-    private function eagerLoadRelationships(array $entities): void
-    {
-        if ($this->relationships === [] || $this->relationshipLoader === null || $entities === []) {
+    private function eagerLoadRelationships(
+        array $entities,
+    ): void {
+        if (
+            $this->relationships === []
+            || $this->relationshipLoader === null
+            || $entities === []
+        ) {
             return;
         }
 

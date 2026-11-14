@@ -668,8 +668,9 @@ describe('strict session ids', function (): void {
 /**
  * A handler that writes to the session, so the middleware persists it.
  */
-function writingHandler(SessionInterface $session): Closure
-{
+function writingHandler(
+    SessionInterface $session,
+): Closure {
     return function (Request $r) use ($session): Response {
         $session->set('key', 'value');
 
@@ -682,8 +683,9 @@ function writingHandler(SessionInterface $session): Closure
  *
  * @param array<string, mixed> $overrides
  */
-function createMiddlewareSessionConfig(array $overrides = []): SessionConfig
-{
+function createMiddlewareSessionConfig(
+    array $overrides = [],
+): SessionConfig {
     return new SessionConfig(new FakeConfigRepository([
         'session.driver' => 'array',
         'session.lifetime' => 120,
@@ -738,7 +740,8 @@ function createFakeSession(
 
         public function isAvailable(): bool
         {
-            return $this->started || $this->armed;
+            return $this->started
+                || $this->armed;
         }
 
         /**
@@ -746,14 +749,18 @@ function createFakeSession(
          */
         private function startIfArmed(): void
         {
-            if (!$this->started && $this->armed) {
+            if (
+                !$this->started
+                && $this->armed
+            ) {
                 $this->start();
             }
         }
 
         public function isModified(): bool
         {
-            return $this->started && $this->modified;
+            return $this->started
+                && $this->modified;
         }
 
         public function discard(): void
@@ -774,7 +781,10 @@ function createFakeSession(
 
             // rejectOnStart mimics PHP strict mode with a handler whose
             // validateId() does not know the seeded id: it is replaced.
-            if ($this->id === '' || $this->rejectOnStart) {
+            if (
+                $this->id === ''
+                || $this->rejectOnStart
+            ) {
                 $this->id = 'generated-session-id-1234567890123456';
             }
 
@@ -808,8 +818,9 @@ function createFakeSession(
             $this->modified = true;
         }
 
-        public function has(string $key): bool
-        {
+        public function has(
+            string $key,
+        ): bool {
             $this->startIfArmed();
 
             return false;
@@ -827,8 +838,9 @@ function createFakeSession(
             return [];
         }
 
-        public function regenerate(bool $deleteOldSession = true): void
-        {
+        public function regenerate(
+            bool $deleteOldSession = true,
+        ): void {
             $this->startIfArmed();
             $this->id = 'regenerated-session-id-1234567890123456';
             $this->modified = true;
@@ -849,8 +861,9 @@ function createFakeSession(
         /**
          * @throws InvalidSessionIdException
          */
-        public function setId(string $id): void
-        {
+        public function setId(
+            string $id,
+        ): void {
             if ($this->onSetId !== null) {
                 ($this->onSetId)($id);
             }

@@ -23,8 +23,9 @@ function makeRedisSubscriptionEmptyAmphpSub(): AmphpRedisSubscription
 /**
  * @param array<int, mixed> $messages
  */
-function makeRedisSubscriptionWithMessages(array $messages): AmphpRedisSubscription
-{
+function makeRedisSubscriptionWithMessages(
+    array $messages,
+): AmphpRedisSubscription {
     $queue = new Queue(count($messages));
     foreach ($messages as $message) {
         $queue->push($message);

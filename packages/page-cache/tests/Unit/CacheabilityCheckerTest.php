@@ -65,13 +65,17 @@ function makeNullMatcher(): RouteMatcherInterface
     };
 }
 
-function makeCacheCheckerRequest(string $method = 'GET', string $uri = '/'): Request
-{
+function makeCacheCheckerRequest(
+    string $method = 'GET',
+    string $uri = '/',
+): Request {
     return new Request(server: ['REQUEST_METHOD' => $method, 'REQUEST_URI' => $uri]);
 }
 
-function makeCacheCheckerResponse(int $statusCode = 200, array $headers = []): Response
-{
+function makeCacheCheckerResponse(
+    int $statusCode = 200,
+    array $headers = [],
+): Response {
     return new Response(statusCode: $statusCode, headers: $headers);
 }
 

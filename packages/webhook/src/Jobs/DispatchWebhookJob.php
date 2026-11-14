@@ -38,13 +38,15 @@ class DispatchWebhookJob extends Job implements ContainerAwareJobInterface
         public readonly int $attemptNumber = 1,
     ) {}
 
-    public function setContainer(ContainerInterface $container): void
-    {
+    public function setContainer(
+        ContainerInterface $container,
+    ): void {
         $this->container = $container;
     }
 
-    public function setJobEnvelope(JobEnvelope $jobEnvelope): void
-    {
+    public function setJobEnvelope(
+        JobEnvelope $jobEnvelope,
+    ): void {
         // Not needed for this job — HMAC envelope is only for AsyncObserverJob event data
     }
 

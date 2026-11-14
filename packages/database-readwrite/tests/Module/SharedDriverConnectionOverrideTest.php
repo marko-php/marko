@@ -103,8 +103,9 @@ readonly class SharedOverrideConfigRepository implements ConfigRepositoryInterfa
  * Registers the real marko/database, driver and marko/database-readwrite
  * manifests, then runs boot callbacks, mirroring Application::initialize().
  */
-function buildReadWriteOverContainer(string $driver): Container
-{
+function buildReadWriteOverContainer(
+    string $driver,
+): Container {
     $packagesPath = dirname(__DIR__, 3);
     $modules = [];
 

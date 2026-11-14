@@ -29,8 +29,9 @@ class IntelephenseEnsurer implements IntelephenseEnsurerInterface
      *
      * @throws DevAiInstallException
      */
-    public function ensure(bool $skip = false): EnsureResult
-    {
+    public function ensure(
+        bool $skip = false,
+    ): EnsureResult {
         if ($skip) {
             return EnsureResult::skipped();
         }

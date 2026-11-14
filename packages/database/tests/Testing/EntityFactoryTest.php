@@ -116,8 +116,9 @@ class FactoryInsertConnection implements ConnectionInterface
         return 1;
     }
 
-    public function prepare(string $sql): StatementInterface
-    {
+    public function prepare(
+        string $sql,
+    ): StatementInterface {
         throw new RuntimeException('Not implemented');
     }
 

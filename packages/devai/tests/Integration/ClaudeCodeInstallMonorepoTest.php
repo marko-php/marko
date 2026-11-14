@@ -38,7 +38,11 @@ function integMonorepoRunnerWithLsp(
             array $args = [],
         ): array {
             $this->calls[] = [$cmd, $args];
-            if ($cmd === 'claude' && ($args[0] ?? '') === 'mcp' && ($args[1] ?? '') === 'list') {
+            if (
+                $cmd === 'claude'
+                && ($args[0] ?? '') === 'mcp'
+                && ($args[1] ?? '') === 'list'
+            ) {
                 return ['exitCode' => 0, 'stdout' => $this->listOutput, 'stderr' => ''];
             }
             if ($cmd === 'npm') {
@@ -48,8 +52,9 @@ function integMonorepoRunnerWithLsp(
             return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
         }
 
-        public function isOnPath(string $binary): bool
-        {
+        public function isOnPath(
+            string $binary,
+        ): bool {
             return match ($binary) {
                 'claude' => true,
                 'intelephense' => $this->intelephenseOnPath,
@@ -72,8 +77,9 @@ function integMonorepoTempDir(): string
     return $dir;
 }
 
-function integMonorepoRemoveTempDir(string $dir): void
-{
+function integMonorepoRemoveTempDir(
+    string $dir,
+): void {
     if (!is_dir($dir)) {
         return;
     }
@@ -88,8 +94,9 @@ function integMonorepoRemoveTempDir(string $dir): void
 }
 
 /** Build a fake CommandRunnerInterface for monorepo integration tests. */
-function integMonorepoRunner(string $listOutput = ''): CommandRunnerInterface
-{
+function integMonorepoRunner(
+    string $listOutput = '',
+): CommandRunnerInterface {
     return new class ($listOutput) implements CommandRunnerInterface
     {
         public array $calls = [];
@@ -101,10 +108,18 @@ function integMonorepoRunner(string $listOutput = ''): CommandRunnerInterface
             array $args = [],
         ): array {
             $this->calls[] = [$cmd, $args];
-            if ($cmd === 'claude' && ($args[0] ?? '') === 'mcp' && ($args[1] ?? '') === 'list') {
+            if (
+                $cmd === 'claude'
+                && ($args[0] ?? '') === 'mcp'
+                && ($args[1] ?? '') === 'list'
+            ) {
                 return ['exitCode' => 0, 'stdout' => $this->listOutput, 'stderr' => ''];
             }
-            if ($cmd === 'claude' && ($args[0] ?? '') === 'plugin' && ($args[1] ?? '') === 'list') {
+            if (
+                $cmd === 'claude'
+                && ($args[0] ?? '') === 'plugin'
+                && ($args[1] ?? '') === 'list'
+            ) {
                 // The mode-contrast test runs an external install, which verifies the plugins.
                 $plugins = array_map(
                     static fn (string $id): array => ['id' => $id, 'scope' => 'project', 'enabled' => true],
@@ -117,8 +132,9 @@ function integMonorepoRunner(string $listOutput = ''): CommandRunnerInterface
             return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
         }
 
-        public function isOnPath(string $binary): bool
-        {
+        public function isOnPath(
+            string $binary,
+        ): bool {
             // Report claude and intelephense as present so existing tests don't
             // trigger the npm-required exception path (they don't test LSP deps).
             return in_array($binary, ['claude', 'intelephense'], true);
@@ -143,8 +159,9 @@ function integMonorepoWalker(): ModuleWalker
 /**
  * Build a fully-wired InstallationOrchestrator with real classes, fake I/O deps.
  */
-function integMonorepoOrchestrator(CommandRunnerInterface $runner): InstallationOrchestrator
-{
+function integMonorepoOrchestrator(
+    CommandRunnerInterface $runner,
+): InstallationOrchestrator {
     $walker = integMonorepoWalker();
 
     return new InstallationOrchestrator(

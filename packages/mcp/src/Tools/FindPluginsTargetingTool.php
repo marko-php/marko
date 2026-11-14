@@ -11,8 +11,9 @@ readonly class FindPluginsTargetingTool implements ToolHandlerInterface
 {
     public function __construct(private IndexCache $index) {}
 
-    public static function definition(IndexCache $index): ToolDefinition
-    {
+    public static function definition(
+        IndexCache $index,
+    ): ToolDefinition {
         return new ToolDefinition(
             name: 'find_plugins_targeting',
             description: 'Find all plugins targeting a given class',
@@ -25,8 +26,9 @@ readonly class FindPluginsTargetingTool implements ToolHandlerInterface
         );
     }
 
-    public function handle(array $arguments): array
-    {
+    public function handle(
+        array $arguments,
+    ): array {
         $target = (string) $arguments['target'];
         $plugins = $this->index->findPluginsForTarget($target);
 

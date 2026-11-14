@@ -20,8 +20,11 @@ beforeEach(function () {
     $this->paths = new ProjectPaths($this->basePath);
 });
 
-function createInertia(array $config = [], array $viteConfig = [], ?FlashedFormStateInterface $formState = null): Inertia
-{
+function createInertia(
+    array $config = [],
+    array $viteConfig = [],
+    ?FlashedFormStateInterface $formState = null,
+): Inertia {
     $mergedConfig = new FakeConfigRepository(array_merge([
         'inertia.version' => '1.0',
         'inertia.assetEntry' => null,

@@ -110,8 +110,9 @@ describe('async observer dispatch through marko/queue', function (): void {
             /** @var list<FailedJob> */
             public array $stored = [];
 
-            public function store(FailedJob $failedJob): void
-            {
+            public function store(
+                FailedJob $failedJob,
+            ): void {
                 $this->stored[] = $failedJob;
             }
 
@@ -120,13 +121,15 @@ describe('async observer dispatch through marko/queue', function (): void {
                 return $this->stored;
             }
 
-            public function find(string $id): ?FailedJob
-            {
+            public function find(
+                string $id,
+            ): ?FailedJob {
                 return null;
             }
 
-            public function delete(string $id): bool
-            {
+            public function delete(
+                string $id,
+            ): bool {
                 return false;
             }
 

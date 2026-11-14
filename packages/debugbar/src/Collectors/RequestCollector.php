@@ -18,8 +18,9 @@ class RequestCollector implements CollectorInterface
         return 'request';
     }
 
-    public function collect(Debugbar $debugbar): array
-    {
+    public function collect(
+        Debugbar $debugbar,
+    ): array {
         $method = $this->stringValue($_SERVER['REQUEST_METHOD'] ?? null, 'CLI');
         $uri = $this->redactor->uri($this->stringValue($_SERVER['REQUEST_URI'] ?? null, '/'));
 
@@ -42,7 +43,10 @@ class RequestCollector implements CollectorInterface
         $headers = [];
 
         foreach ($_SERVER as $key => $value) {
-            if (! is_string($key) || ! str_starts_with($key, 'HTTP_')) {
+            if (
+                ! is_string($key)
+                || ! str_starts_with($key, 'HTTP_')
+            ) {
                 continue;
             }
 
@@ -62,7 +66,11 @@ class RequestCollector implements CollectorInterface
             return $value;
         }
 
-        if (is_int($value) || is_float($value) || is_bool($value)) {
+        if (
+            is_int($value)
+            || is_float($value)
+            || is_bool($value)
+        ) {
             return (string) $value;
         }
 

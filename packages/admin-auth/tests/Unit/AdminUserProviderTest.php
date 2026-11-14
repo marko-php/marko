@@ -48,13 +48,15 @@ class TrackingRoleRepo implements RoleRepositoryInterface
         private readonly array $permissionsMap = [],
     ) {}
 
-    public function find(int|string $id): ?Role
-    {
+    public function find(
+        int|string $id,
+    ): ?Role {
         return null;
     }
 
-    public function findOrFail(int|string $id): Role
-    {
+    public function findOrFail(
+        int|string $id,
+    ): Role {
         throw new RuntimeException('Not found');
     }
 
@@ -63,33 +65,39 @@ class TrackingRoleRepo implements RoleRepositoryInterface
         return new EntityCollection();
     }
 
-    public function findBy(array $criteria): EntityCollection
-    {
+    public function findBy(
+        array $criteria,
+    ): EntityCollection {
         return new EntityCollection();
     }
 
-    public function findOneBy(array $criteria): ?Role
-    {
+    public function findOneBy(
+        array $criteria,
+    ): ?Role {
         return null;
     }
 
-    public function existsBy(array $criteria): bool
-    {
+    public function existsBy(
+        array $criteria,
+    ): bool {
         return false;
     }
 
-    public function findBySlug(string $slug): ?Role
-    {
+    public function findBySlug(
+        string $slug,
+    ): ?Role {
         return null;
     }
 
-    public function getPermissionsForRole(int $roleId): array
-    {
+    public function getPermissionsForRole(
+        int $roleId,
+    ): array {
         throw new RuntimeException('getPermissionsForRole must not be called after rewiring to batch');
     }
 
-    public function getPermissionsForRoles(array $roleIds): array
-    {
+    public function getPermissionsForRoles(
+        array $roleIds,
+    ): array {
         $this->batchCallCount++;
         $this->batchRoleIdsReceived = $roleIds;
 
@@ -198,7 +206,8 @@ class SpyPasswordVerifier implements PasswordVerifierInterface
     ): bool {
         $this->checks[] = ['user' => $user, 'password' => $password];
 
-        return $user !== null && $this->verifyReturn;
+        return $user !== null
+            && $this->verifyReturn;
     }
 }
 

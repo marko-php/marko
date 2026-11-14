@@ -23,8 +23,9 @@ abstract class Entity
      * @param class-string<T> $class
      * @return T|null
      */
-    public function companion(string $class): ?Entity
-    {
+    public function companion(
+        string $class,
+    ): ?Entity {
         return EntityCompanionStorage::instance()->get($this)[$class] ?? null;
     }
 
@@ -35,8 +36,9 @@ abstract class Entity
      * attached here are visible to any code that reads via the same storage
      * (including EntityHydrator's internal attach).
      */
-    public function attachCompanion(Entity $companion): void
-    {
+    public function attachCompanion(
+        Entity $companion,
+    ): void {
         EntityCompanionStorage::instance()->attach($this, $companion);
     }
 }
