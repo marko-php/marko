@@ -289,7 +289,10 @@ class DiffCalculator
         $fkEntityColumns = [];
 
         foreach ($entityTable->columns as $column) {
-            if ($column->unique && !$column->primaryKey) {
+            if (
+                $column->unique
+                && !$column->primaryKey
+            ) {
                 $uniqueEntityColumns[] = $column->name;
             }
 
@@ -358,21 +361,28 @@ class DiffCalculator
         $replacements = [];
 
         foreach ($indexesToDrop as $index) {
-            if ($index->type !== IndexType::Unique || count($index->columns) !== 1) {
+            if (
+                $index->type !== IndexType::Unique
+                || count($index->columns) !== 1
+            ) {
                 continue;
             }
 
             $columnName = $index->columns[0];
             $isForeignKeyColumn = array_any(
                 $entityTable->columns,
-                static fn (Column $column): bool => $column->name === $columnName && $column->references !== null,
+                static fn (Column $column): bool => $column->name === $columnName
+                    && $column->references !== null,
             );
             $stillIndexed = array_any(
                 $remainingIndexes,
                 static fn (Index $remaining): bool => ($remaining->columns[0] ?? null) === $columnName,
             );
 
-            if ($isForeignKeyColumn && !$stillIndexed) {
+            if (
+                $isForeignKeyColumn
+                && !$stillIndexed
+            ) {
                 $replacement = new Index(
                     name: IdentifierName::derive("{$entityTable->name}_$columnName", suffix: '_index'),
                     columns: [$columnName],

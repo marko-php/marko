@@ -35,7 +35,8 @@ readonly class CurrentPassword implements RuleInterface
         // Verify first so a missing user still costs one (dummy) hash check
         $verified = $this->passwordVerifier->verify($user, $value);
 
-        return $user !== null && $verified;
+        return $user !== null
+            && $verified;
     }
 
     public function message(

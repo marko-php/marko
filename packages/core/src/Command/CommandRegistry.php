@@ -52,7 +52,8 @@ class CommandRegistry
     public function has(
         string $name,
     ): bool {
-        return isset($this->commands[$name]) || isset($this->aliases[$name]);
+        return isset($this->commands[$name])
+            || isset($this->aliases[$name]);
     }
 
     /**

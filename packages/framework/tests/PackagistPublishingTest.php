@@ -44,7 +44,10 @@ it('changes all internal marko/* require constraints from @dev to self.version',
         $data = json_decode(file_get_contents($file), true);
         $require = $data['require'] ?? [];
         foreach ($require as $package => $constraint) {
-            if (str_starts_with($package, 'marko/') && $constraint !== 'self.version') {
+            if (
+                str_starts_with($package, 'marko/')
+                && $constraint !== 'self.version'
+            ) {
                 $violations[] = $packageName . ": $package=$constraint";
             }
         }
@@ -68,7 +71,10 @@ it('changes all internal marko/* require-dev constraints from @dev to self.versi
         $data = json_decode(file_get_contents($file), true);
         $requireDev = $data['require-dev'] ?? [];
         foreach ($requireDev as $package => $constraint) {
-            if (str_starts_with($package, 'marko/') && $constraint !== 'self.version') {
+            if (
+                str_starts_with($package, 'marko/')
+                && $constraint !== 'self.version'
+            ) {
                 $violations[] = $packageName . ": $package=$constraint";
             }
         }
@@ -85,7 +91,10 @@ it('changes marko/devserver wildcard constraints to self.version', function (): 
 
     $violations = [];
     foreach (($data['require'] ?? []) as $package => $constraint) {
-        if (str_starts_with($package, 'marko/') && $constraint !== 'self.version') {
+        if (
+            str_starts_with($package, 'marko/')
+            && $constraint !== 'self.version'
+        ) {
             $violations[] = "$package=$constraint";
         }
     }
@@ -110,7 +119,10 @@ it('changes any remaining wildcard marko/* constraints to self.version', functio
         $data = json_decode(file_get_contents($file), true);
         foreach (['require', 'require-dev'] as $section) {
             foreach (($data[$section] ?? []) as $package => $constraint) {
-                if (str_starts_with($package, 'marko/') && $constraint === '*') {
+                if (
+                    str_starts_with($package, 'marko/')
+                    && $constraint === '*'
+                ) {
                     $violations[] = $packageName . " [$section]: $package=$constraint";
                 }
             }
@@ -128,7 +140,10 @@ it('preserves all non-marko dependency constraints unchanged (php, psr/*, ext-*,
         $data = json_decode(file_get_contents($file), true);
         foreach (['require', 'require-dev'] as $section) {
             foreach (($data[$section] ?? []) as $package => $constraint) {
-                if (!str_starts_with($package, 'marko/') && $constraint === 'self.version') {
+                if (
+                    !str_starts_with($package, 'marko/')
+                    && $constraint === 'self.version'
+                ) {
                     $violations[] = basename(dirname($file)) . " [$section]: $package=$constraint";
                 }
             }
@@ -166,7 +181,10 @@ it('preserves all other composer.json keys (autoload, extra, config, suggest, et
         }
 
         // If it had autoload before, it still should (spot-check psr-4 key)
-        if (isset($data['autoload']) && !isset($data['autoload']['psr-4'])) {
+        if (
+            isset($data['autoload'])
+            && !isset($data['autoload']['psr-4'])
+        ) {
             $violations[] = basename(dirname($file)) . ': autoload missing psr-4 key';
         }
     }

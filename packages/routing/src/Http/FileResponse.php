@@ -52,7 +52,10 @@ class FileResponse extends AbstractStreamedResponse
             'Last-Modified' => ConditionalRequest::httpDate($lastModified),
         ];
 
-        if ($fileOffload !== null && $fileSource instanceof LocalFileSource) {
+        if (
+            $fileOffload !== null
+            && $fileSource instanceof LocalFileSource
+        ) {
             return new self(
                 fileSource: $fileSource,
                 byteRange: null,
@@ -71,7 +74,13 @@ class FileResponse extends AbstractStreamedResponse
         $conditionalRequest = ConditionalRequest::fromRequest($request);
         $method = $request->method();
 
-        if (($method === 'GET' || $method === 'HEAD') && $conditionalRequest->isNotModified($etag, $lastModified)) {
+        if (
+            (
+                $method === 'GET'
+                || $method === 'HEAD'
+            )
+            && $conditionalRequest->isNotModified($etag, $lastModified)
+        ) {
             return new self(
                 fileSource: $fileSource,
                 byteRange: null,
@@ -81,7 +90,7 @@ class FileResponse extends AbstractStreamedResponse
             );
         }
 
-        $byteRange = $method === 'GET' && $conditionalRequest->allowsRange($etag, $lastModified)
+        $byteRange = ($method === 'GET' && $conditionalRequest->allowsRange($etag, $lastModified))
             ? ByteRange::fromHeader($request->header('Range'), $size)
             : null;
 

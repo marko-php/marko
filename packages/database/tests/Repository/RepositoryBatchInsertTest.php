@@ -212,7 +212,10 @@ function makeBatchTransactionConnection(
             string $sql,
             array $bindings = [],
         ): int {
-            if ($this->failInsert && str_contains($sql, 'INSERT')) {
+            if (
+                $this->failInsert
+                && str_contains($sql, 'INSERT')
+            ) {
                 throw new RuntimeException('Simulated DB failure on INSERT');
             }
 
@@ -995,7 +998,9 @@ it(
         // Verify the INSERT used RETURNING (pgsql path) and was a query() call
         $insertCalls = array_values(array_filter(
             $sqlLog,
-            fn ($e) => isset($e['sql']) && str_contains($e['sql'], 'INSERT') && str_contains($e['sql'], 'RETURNING'),
+            fn ($e) => isset($e['sql'])
+                && str_contains($e['sql'], 'INSERT')
+                && str_contains($e['sql'], 'RETURNING'),
         ));
         expect($insertCalls)->not->toBeEmpty()
             ->and($insertCalls[0]['type'])->toBe('query')

@@ -111,7 +111,10 @@ class PermissionRepository extends Repository implements PermissionRepositoryInt
                     $permission = $this->caseVariantOf($registered->key, $permissions);
                 }
 
-                if ($permission !== null && $permission->key !== $registered->key) {
+                if (
+                    $permission !== null
+                    && $permission->key !== $registered->key
+                ) {
                     unset($permissions[$permission->key]);
                     $permission->key = $registered->key;
                     $permission->label = $registered->label;
@@ -136,7 +139,10 @@ class PermissionRepository extends Repository implements PermissionRepositoryInt
                     continue;
                 }
 
-                if ($permission->label === $registered->label && $permission->group === $registered->group) {
+                if (
+                    $permission->label === $registered->label
+                    && $permission->group === $registered->group
+                ) {
                     continue;
                 }
 

@@ -25,7 +25,10 @@ class DateValue
             return $value->getTimestamp();
         }
 
-        if (!is_string($value) || trim($value) === '') {
+        if (
+            !is_string($value)
+            || trim($value) === ''
+        ) {
             return null;
         }
 

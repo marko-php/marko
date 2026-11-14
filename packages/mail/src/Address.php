@@ -29,7 +29,13 @@ readonly class Address
             throw MessageException::invalidEmailAddress($email);
         }
 
-        if ($name !== null && (str_contains($name, "\r") || str_contains($name, "\n"))) {
+        if (
+            $name !== null
+            && (
+                str_contains($name, "\r")
+                || str_contains($name, "\n")
+            )
+        ) {
             throw MessageException::headerInjection('display name', $name);
         }
     }

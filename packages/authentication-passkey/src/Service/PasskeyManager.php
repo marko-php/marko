@@ -99,7 +99,10 @@ readonly class PasskeyManager
     ): PasskeyCredential {
         $passkey = $this->passkeyCredentialRepository->findByCredentialId($credentialId);
 
-        if ($passkey === null || !$this->passkeyGuard->owns($user, $passkey)) {
+        if (
+            $passkey === null
+            || !$this->passkeyGuard->owns($user, $passkey)
+        ) {
             throw PasskeyNotFoundException::forCredentialId($credentialId);
         }
 

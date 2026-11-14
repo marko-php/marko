@@ -140,7 +140,10 @@ readonly class SectionController
     ): bool {
         $permission = $menuItem->getPermission();
 
-        if ($permission === '' || $user->hasPermission($permission)) {
+        if (
+            $permission === ''
+            || $user->hasPermission($permission)
+        ) {
             return true;
         }
 

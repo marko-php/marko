@@ -105,19 +105,34 @@ readonly class Password implements MultiMessageRuleInterface
             $messages[] = "The $field field must be at least $this->min characters.";
         }
 
-        if ($this->mixedCase && !($this->matches('/\p{Lu}/u', $value) && $this->matches('/\p{Ll}/u', $value))) {
+        if (
+            $this->mixedCase
+            && !(
+                $this->matches('/\p{Lu}/u', $value)
+                && $this->matches('/\p{Ll}/u', $value)
+            )
+        ) {
             $messages[] = "The $field field must contain at least one uppercase and one lowercase letter.";
         }
 
-        if ($this->letters && !$this->matches('/\p{L}/u', $value)) {
+        if (
+            $this->letters
+            && !$this->matches('/\p{L}/u', $value)
+        ) {
             $messages[] = "The $field field must contain at least one letter.";
         }
 
-        if ($this->numbers && !$this->matches('/\p{N}/u', $value)) {
+        if (
+            $this->numbers
+            && !$this->matches('/\p{N}/u', $value)
+        ) {
             $messages[] = "The $field field must contain at least one number.";
         }
 
-        if ($this->symbols && !$this->matches('/[\p{Z}\p{S}\p{P}]/u', $value)) {
+        if (
+            $this->symbols
+            && !$this->matches('/[\p{Z}\p{S}\p{P}]/u', $value)
+        ) {
             $messages[] = "The $field field must contain at least one symbol.";
         }
 

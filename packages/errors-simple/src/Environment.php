@@ -64,7 +64,8 @@ class Environment
      */
     public function throwsWarnings(): bool
     {
-        return $this->isWeb() && $this->isDevelopment();
+        return $this->isWeb()
+            && $this->isDevelopment();
     }
 
     /**
@@ -78,13 +79,17 @@ class Environment
         $server = $this->server ?? $_SERVER;
         $accept = $server['HTTP_ACCEPT'] ?? null;
 
-        if (is_string($accept) && $accept !== '') {
+        if (
+            is_string($accept)
+            && $accept !== ''
+        ) {
             return $this->isJsonMediaType($accept);
         }
 
         $contentType = $server['CONTENT_TYPE'] ?? $server['HTTP_CONTENT_TYPE'] ?? '';
 
-        return is_string($contentType) && $this->isJsonMediaType($contentType);
+        return is_string($contentType)
+            && $this->isJsonMediaType($contentType);
     }
 
     private function isJsonMediaType(
@@ -92,7 +97,8 @@ class Environment
     ): bool {
         $value = strtolower($value);
 
-        return str_contains($value, 'application/json') || str_contains($value, '+json');
+        return str_contains($value, 'application/json')
+            || str_contains($value, '+json');
     }
 
     private function getSapi(): string

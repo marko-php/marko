@@ -33,7 +33,10 @@ abstract readonly class AbstractRequiredWithRule implements ImplicitRuleInterfac
     public function __construct(
         string ...$otherFields,
     ) {
-        if ($otherFields === [] || array_any($otherFields, static fn (string $path): bool => trim($path) === '')) {
+        if (
+            $otherFields === []
+            || array_any($otherFields, static fn (string $path): bool => trim($path) === '')
+        ) {
             throw new InvalidArgumentException(
                 "The {$this->name()} rule needs at least one field, e.g. {$this->name()}:email",
             );
@@ -50,7 +53,8 @@ abstract readonly class AbstractRequiredWithRule implements ImplicitRuleInterfac
         mixed $value,
         array $data,
     ): bool {
-        return !$this->requiresValue($field, $data) || !EmptyValue::is($value);
+        return !$this->requiresValue($field, $data)
+            || !EmptyValue::is($value);
     }
 
     public function message(

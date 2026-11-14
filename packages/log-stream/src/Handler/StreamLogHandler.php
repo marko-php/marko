@@ -25,7 +25,10 @@ readonly class StreamLogHandler implements LogHandlerInterface
         private string $name,
         private LogFormatterInterface $formatter,
     ) {
-        if (!is_resource($this->stream) || get_resource_type($this->stream) !== 'stream') {
+        if (
+            !is_resource($this->stream)
+            || get_resource_type($this->stream) !== 'stream'
+        ) {
             throw LogWriteException::forStream($this->name, 'not an open stream resource');
         }
 
@@ -48,7 +51,10 @@ readonly class StreamLogHandler implements LogHandlerInterface
         while ($line !== '') {
             $written = @fwrite($this->stream, $line);
 
-            if ($written === false || $written === 0) {
+            if (
+                $written === false
+                || $written === 0
+            ) {
                 throw LogWriteException::forStream(
                     $this->name,
                     error_get_last()['message'] ?? 'the write was refused',

@@ -42,7 +42,11 @@ readonly class CredentialPayload
             throw self::malformed('type must be "public-key"');
         }
 
-        if (!is_string($rawId) || $rawId === '' || Base64Url::decode($rawId) === null) {
+        if (
+            !is_string($rawId)
+            || $rawId === ''
+            || Base64Url::decode($rawId) === null
+        ) {
             throw self::malformed('rawId must be a non-empty base64url string');
         }
 
@@ -56,7 +60,11 @@ readonly class CredentialPayload
             );
         }
 
-        if (!is_array($response) || array_is_list($response) && $response !== []) {
+        if (
+            !is_array($response)
+            || array_is_list($response)
+            && $response !== []
+        ) {
             throw self::malformed('response must be an object');
         }
 
@@ -82,7 +90,10 @@ readonly class CredentialPayload
     ): string {
         $value = $this->optionalBinary($field);
 
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             throw self::malformed("response.$field is required");
         }
 
@@ -126,10 +137,11 @@ readonly class CredentialPayload
             !is_array($transports)
             || !array_all(
                 $transports,
-                static fn (mixed $transport): bool => is_string($transport) && preg_match(
-                    '/^[a-z-]{1,32}$/',
-                    $transport,
-                ) === 1,
+                static fn (mixed $transport): bool => is_string($transport)
+                    && preg_match(
+                        '/^[a-z-]{1,32}$/',
+                        $transport,
+                    ) === 1,
             )
         ) {
             throw self::malformed('response.transports must be a list of transport names such as "internal" or "usb"');

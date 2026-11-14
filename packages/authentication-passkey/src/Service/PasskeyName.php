@@ -21,7 +21,10 @@ class PasskeyName
     ): string {
         $trimmed = trim($name);
 
-        if ($trimmed === '' || mb_strlen($trimmed) > InvalidPasskeyNameException::MAX_LENGTH) {
+        if (
+            $trimmed === ''
+            || mb_strlen($trimmed) > InvalidPasskeyNameException::MAX_LENGTH
+        ) {
             throw InvalidPasskeyNameException::forName($name);
         }
 

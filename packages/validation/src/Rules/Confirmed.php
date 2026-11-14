@@ -14,7 +14,10 @@ class Confirmed implements RuleInterface
         mixed $value,
         array $data,
     ): bool {
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return true;
         }
 

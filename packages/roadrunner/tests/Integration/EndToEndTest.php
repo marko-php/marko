@@ -38,7 +38,11 @@ it('skips with a clear message when the roadrunner binary is unavailable', funct
     expect(roadRunnerSkipReason())
         ->toContain('RoadRunner binary not found')
         ->toContain('rr get-binary')
-        ->and($binary === null || (is_file($binary) && is_executable($binary)))->toBeTrue();
+        ->and($binary === null
+        || (
+            is_file($binary)
+            && is_executable($binary)
+        ))->toBeTrue();
 });
 
 it('serves a successful http response through a real roadrunner process', function (): void {

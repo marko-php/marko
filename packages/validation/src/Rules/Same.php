@@ -27,7 +27,10 @@ readonly class Same implements WildcardAwareRuleInterface
         mixed $value,
         array $data,
     ): bool {
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return true;
         }
 

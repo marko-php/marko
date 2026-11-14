@@ -57,7 +57,10 @@ class StatementRecordingConnection implements ConnectionInterface
         $this->queries[] = $sql;
         $id = $bindings[0] ?? null;
 
-        if (!is_string($id) || !isset($this->storedPayloads[$id])) {
+        if (
+            !is_string($id)
+            || !isset($this->storedPayloads[$id])
+        ) {
             return [];
         }
 
@@ -109,10 +112,11 @@ class StatementRecordingConnection implements ConnectionInterface
     {
         return array_values(array_filter(
             $this->executed,
-            fn (string $sql): bool => str_contains($sql, 'INSERT INTO "sessions"') || str_contains(
-                $sql,
-                'UPDATE "sessions"',
-            ),
+            fn (string $sql): bool => str_contains($sql, 'INSERT INTO "sessions"')
+                || str_contains(
+                    $sql,
+                    'UPDATE "sessions"',
+                ),
         ));
     }
 }

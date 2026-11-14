@@ -78,13 +78,20 @@ readonly class MigrateCommand implements CommandInterface
         $noGenerate = $input->hasOption('no-generate');
         $forceGenerate = $input->hasOption('generate');
 
-        if ($noGenerate && $forceGenerate) {
+        if (
+            $noGenerate
+            && $forceGenerate
+        ) {
             $output->writeLine('Error: --generate and --no-generate cannot be used together.');
 
             return 1;
         }
 
-        $shouldGenerate = !$noGenerate && ($forceGenerate || $this->appEnvironment->isDevelopment());
+        $shouldGenerate = !$noGenerate
+            && (
+                $forceGenerate
+                || $this->appEnvironment->isDevelopment()
+            );
 
         // Get pending migrations
         $schemaPending = $this->migrator->getPending();
@@ -217,7 +224,10 @@ readonly class MigrateCommand implements CommandInterface
         }
 
         // Nothing was done
-        if ($schemaCount === 0 && $dataCount === 0) {
+        if (
+            $schemaCount === 0
+            && $dataCount === 0
+        ) {
             $output->writeLine('Nothing to migrate.');
 
             return 0;
@@ -443,6 +453,7 @@ readonly class MigrateCommand implements CommandInterface
     private function isVerbose(
         Input $input,
     ): bool {
-        return $input->hasOption('verbose') || $input->hasOption('v');
+        return $input->hasOption('verbose')
+            || $input->hasOption('v');
     }
 }

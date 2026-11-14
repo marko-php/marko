@@ -267,7 +267,10 @@ class GuzzleHttpClient implements HttpClientInterface
         $scheme = is_array($parts) ? strtolower($parts['scheme'] ?? '') : '';
         $host = is_array($parts) ? ($parts['host'] ?? '') : '';
 
-        if (!in_array($scheme, ['http', 'https'], true) || $host === '') {
+        if (
+            !in_array($scheme, ['http', 'https'], true)
+            || $host === ''
+        ) {
             throw InvalidRequestOptionException::unpinnableUrl();
         }
 

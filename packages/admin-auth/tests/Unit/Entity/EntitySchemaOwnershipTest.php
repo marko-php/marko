@@ -35,7 +35,10 @@ function adminAuthEntityTables(): array
         $class = 'Marko\\AdminAuth\\Entity\\' . basename($file, '.php');
         $reflection = new ReflectionClass($class);
 
-        if ($reflection->isInterface() || $reflection->getAttributes(TableAttribute::class) === []) {
+        if (
+            $reflection->isInterface()
+            || $reflection->getAttributes(TableAttribute::class) === []
+        ) {
             continue;
         }
 
@@ -58,7 +61,10 @@ function adminAuthSqlSources(): array
 
     /** @var SplFileInfo $file */
     foreach ($files as $file) {
-        if ($file->getExtension() !== 'php' || str_contains($file->getPathname(), '/src/Entity/')) {
+        if (
+            $file->getExtension() !== 'php'
+            || str_contains($file->getPathname(), '/src/Entity/')
+        ) {
             continue;
         }
 

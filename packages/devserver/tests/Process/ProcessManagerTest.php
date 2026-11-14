@@ -432,7 +432,8 @@ it('overlaps the stop grace periods of all processes in stopAll', function (): v
 
     $manager->start('a', "trap '' TERM; touch $markerA; sleep 30");
     $manager->start('b', "trap '' TERM; touch $markerB; sleep 30");
-    expect(devserverWaitUntil(fn (): bool => file_exists($markerA) && file_exists($markerB)))->toBeTrue();
+    expect(devserverWaitUntil(fn (): bool => file_exists($markerA)
+        && file_exists($markerB)))->toBeTrue();
 
     $start = microtime(true);
     $manager->stopAll();
@@ -474,9 +475,11 @@ function devserverKeepAlivesInOwnGroup(): int
     $count = 0;
 
     foreach (explode("\n", (string) shell_exec('ps -axo pgid=,command=')) as $line) {
-        if (preg_match('/\A\s*(\d+)\s+(.*)\z/', $line, $matches) === 1
+        if (
+            preg_match('/\A\s*(\d+)\s+(.*)\z/', $line, $matches) === 1
             && (int) $matches[1] === $own
             && str_starts_with($matches[2], 'tail -f /dev/null')
+
         ) {
             $count++;
         }

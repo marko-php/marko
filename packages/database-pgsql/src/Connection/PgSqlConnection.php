@@ -425,7 +425,10 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface, Pend
             } catch (Throwable $e) {
                 $this->rollbackAfterFailure($e);
 
-                if ($e instanceof TransactionConflictException && $attempt < $maxAttempts) {
+                if (
+                    $e instanceof TransactionConflictException
+                    && $attempt < $maxAttempts
+                ) {
                     $this->transactionBackoff->wait($attempt, $backoff, $e);
 
                     continue;
@@ -544,7 +547,10 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface, Pend
     {
         $this->transactionState->clear();
 
-        if ($this->pdo !== null && $this->pdo->inTransaction()) {
+        if (
+            $this->pdo !== null
+            && $this->pdo->inTransaction()
+        ) {
             $this->pdo->rollBack();
         }
     }

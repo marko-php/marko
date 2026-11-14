@@ -203,7 +203,10 @@ function canBootProject(
 function canBootCleanup(
     string $path,
 ): void {
-    if (is_link($path) || is_file($path)) {
+    if (
+        is_link($path)
+        || is_file($path)
+    ) {
         unlink($path);
 
         return;
@@ -214,7 +217,10 @@ function canBootCleanup(
     }
 
     foreach (scandir($path) ?: [] as $item) {
-        if ($item !== '.' && $item !== '..') {
+        if (
+            $item !== '.'
+            && $item !== '..'
+        ) {
             canBootCleanup("$path/$item");
         }
     }

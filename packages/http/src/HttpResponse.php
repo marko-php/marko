@@ -39,7 +39,10 @@ readonly class HttpResponse
      */
     public function headers(): array
     {
-        if ($this->headers === [] && $this->headerValues !== []) {
+        if (
+            $this->headers === []
+            && $this->headerValues !== []
+        ) {
             return array_map(static fn (array $values): string => implode(', ', $values), $this->headerValues);
         }
 
@@ -99,7 +102,10 @@ readonly class HttpResponse
         $cut = max(0, $maxBytes);
 
         // Back off continuation bytes (10xxxxxx) so a multibyte character is never split.
-        while ($cut > 0 && (ord($body[$cut]) & 0xC0) === 0x80) {
+        while (
+            $cut > 0
+            && (ord($body[$cut]) & 0xC0) === 0x80
+        ) {
             $cut--;
         }
 
@@ -116,17 +122,20 @@ readonly class HttpResponse
 
     public function isSuccessful(): bool
     {
-        return $this->statusCode >= 200 && $this->statusCode < 300;
+        return $this->statusCode >= 200
+            && $this->statusCode < 300;
     }
 
     public function isRedirect(): bool
     {
-        return $this->statusCode >= 300 && $this->statusCode < 400;
+        return $this->statusCode >= 300
+            && $this->statusCode < 400;
     }
 
     public function isClientError(): bool
     {
-        return $this->statusCode >= 400 && $this->statusCode < 500;
+        return $this->statusCode >= 400
+            && $this->statusCode < 500;
     }
 
     public function isServerError(): bool

@@ -41,10 +41,11 @@ use Psr\Clock\ClockInterface;
 // Whether a module is installed, for defaults a sibling package replaces when present.
 $moduleLoaded = static fn (ContainerInterface $container, string $name): bool => $container->has(
     ModuleRepositoryInterface::class,
-) && array_any(
-    $container->get(ModuleRepositoryInterface::class)->all(),
-    fn (ModuleManifest $module): bool => $module->name === $name,
-);
+)
+    && array_any(
+        $container->get(ModuleRepositoryInterface::class)->all(),
+        fn (ModuleManifest $module): bool => $module->name === $name,
+    );
 
 return [
     // Load after the session drivers so QueuedCookiesMiddleware runs inside SessionMiddleware.

@@ -49,7 +49,9 @@ class ExceptionRenderer
         $data = $exception->getResponseData();
         $message = $data['message'] ?? null;
         $data = [
-            'message' => is_string($message) && $message !== '' ? $message : HttpStatus::reasonPhrase($statusCode),
+            'message' => (is_string($message) && $message !== '')
+                ? $message
+                : HttpStatus::reasonPhrase($statusCode),
             ...$data,
         ];
 
@@ -65,7 +67,10 @@ class ExceptionRenderer
     ): bool {
         $accept = $request->header('Accept');
 
-        if ($accept !== null && $accept !== '') {
+        if (
+            $accept !== null
+            && $accept !== ''
+        ) {
             return $this->isJsonMediaType($accept);
         }
 
@@ -117,7 +122,8 @@ HTML;
     ): bool {
         $value = strtolower($value);
 
-        return str_contains($value, 'application/json') || str_contains($value, '+json');
+        return str_contains($value, 'application/json')
+            || str_contains($value, '+json');
     }
 
     private function escape(

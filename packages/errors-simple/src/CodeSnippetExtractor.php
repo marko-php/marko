@@ -24,7 +24,10 @@ class CodeSnippetExtractor
         int $lineNumber,
         int $context = 5,
     ): array {
-        if (!file_exists($filePath) || !is_readable($filePath)) {
+        if (
+            !file_exists($filePath)
+            || !is_readable($filePath)
+        ) {
             return [
                 'lines' => [],
                 'errorLine' => $lineNumber,
@@ -41,7 +44,10 @@ class CodeSnippetExtractor
         $currentLine = 1;
 
         foreach ($file as $line) {
-            if ($currentLine >= $startLine && $currentLine <= $endLine) {
+            if (
+                $currentLine >= $startLine
+                && $currentLine <= $endLine
+            ) {
                 $lines[$currentLine] = rtrim($line);
             }
             if ($currentLine > $endLine) {

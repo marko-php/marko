@@ -109,7 +109,10 @@ readonly class TruncateDatabase
 
             $table = $metadata->tableName;
 
-            if ($table === self::MIGRATIONS_TABLE || !in_array($table, $existing, true)) {
+            if (
+                $table === self::MIGRATIONS_TABLE
+                || !in_array($table, $existing, true)
+            ) {
                 continue;
             }
 

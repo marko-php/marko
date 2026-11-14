@@ -105,7 +105,10 @@ class DiscoveryCache
         $dir = dirname($path);
 
         if (!is_dir($dir)) {
-            if (!ErrorCapture::run($reason, fn (): bool => mkdir($dir, 0755, true)) && !is_dir($dir)) {
+            if (
+                !ErrorCapture::run($reason, fn (): bool => mkdir($dir, 0755, true))
+                && !is_dir($dir)
+            ) {
                 throw DiscoveryCacheException::notWritable($path, $reason);
             }
         }
@@ -267,7 +270,10 @@ class DiscoveryCache
      */
     protected function currentUid(): ?int
     {
-        if (PHP_OS_FAMILY === 'Windows' || !function_exists('posix_geteuid')) {
+        if (
+            PHP_OS_FAMILY === 'Windows'
+            || !function_exists('posix_geteuid')
+        ) {
             return null;
         }
 
@@ -312,7 +318,10 @@ class DiscoveryCache
             );
         }
 
-        if ($owner !== $uid && $owner !== 0) {
+        if (
+            $owner !== $uid
+            && $owner !== 0
+        ) {
             throw DiscoveryCacheException::untrusted(
                 $target,
                 "it is owned by uid $owner, not by uid $uid running PHP (or root)",
@@ -425,7 +434,10 @@ class DiscoveryCache
         }
 
         foreach ($sections as $key => $section) {
-            if (!is_string($key) || !is_array($section)) {
+            if (
+                !is_string($key)
+                || !is_array($section)
+            ) {
                 throw DiscoveryCacheException::malformed($path, "sections.$key must be an array");
             }
         }

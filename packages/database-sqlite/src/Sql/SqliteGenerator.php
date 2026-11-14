@@ -205,7 +205,9 @@ class SqliteGenerator implements SqlGeneratorInterface
             throw MigrationException::unsupportedIndexType($index->name, 'fulltext', self::DRIVER);
         }
 
-        $unique = $index->type === IndexType::Unique || $index->constraint ? 'UNIQUE ' : '';
+        $unique = ($index->type === IndexType::Unique || $index->constraint)
+            ? 'UNIQUE '
+            : '';
         $columns = implode(', ', array_map(SqliteIdentifier::quote(...), $index->columns));
         $where = $index->where !== null ? " WHERE $index->where" : '';
 
@@ -249,7 +251,11 @@ class SqliteGenerator implements SqlGeneratorInterface
         TableDiff $diff,
         bool $reverse = false,
     ): bool {
-        if ($diff->columnsToModify !== [] || $diff->foreignKeysToAdd !== [] || $diff->foreignKeysToDrop !== []) {
+        if (
+            $diff->columnsToModify !== []
+            || $diff->foreignKeysToAdd !== []
+            || $diff->foreignKeysToDrop !== []
+        ) {
             return true;
         }
 
@@ -361,11 +367,14 @@ class SqliteGenerator implements SqlGeneratorInterface
         $names = array_map(static fn (Index $index): string => $index->name, $indexes);
 
         foreach ($table->columns as $column) {
-            if ($this->needsUniqueIndex($column) && !in_array(
-                $this->uniqueIndex($table->name, $column)->name,
-                $names,
-                true,
-            )) {
+            if (
+                $this->needsUniqueIndex($column)
+                && !in_array(
+                    $this->uniqueIndex($table->name, $column)->name,
+                    $names,
+                    true,
+                )
+            ) {
                 $indexes[] = $this->uniqueIndex($table->name, $column);
             }
         }
@@ -482,7 +491,8 @@ class SqliteGenerator implements SqlGeneratorInterface
     private function needsUniqueIndex(
         Column $column,
     ): bool {
-        return $column->unique && !$column->primaryKey;
+        return $column->unique
+            && !$column->primaryKey;
     }
 
     private function uniqueIndex(
@@ -504,12 +514,19 @@ class SqliteGenerator implements SqlGeneratorInterface
         Column $column,
     ): bool {
         $default = $column->default;
-        $isExpression = $default instanceof Expression || (is_string($default) && Expression::isShortcut($default));
+        $isExpression = $default instanceof Expression
+            || (
+                is_string($default)
+                && Expression::isShortcut($default)
+            );
 
         return !$column->primaryKey
             && $column->references === null
             && !$isExpression
-            && ($column->nullable || $default !== null);
+            && (
+                $column->nullable
+                || $default !== null
+            );
     }
 
     /**
@@ -521,13 +538,19 @@ class SqliteGenerator implements SqlGeneratorInterface
         Column $column,
         bool $reverse,
     ): bool {
-        if ($column->primaryKey || in_array($column->name, $diff->currentPrimaryKey, true)) {
+        if (
+            $column->primaryKey
+            || in_array($column->name, $diff->currentPrimaryKey, true)
+        ) {
             return false;
         }
 
         $current = $diff->currentTable;
 
-        if ($reverse || $current === null) {
+        if (
+            $reverse
+            || $current === null
+        ) {
             return true;
         }
 
@@ -538,13 +561,17 @@ class SqliteGenerator implements SqlGeneratorInterface
             $current->indexes,
             static fn (Index $index): bool => !in_array($index->name, $droppedIndexes, true)
                 && (in_array($column->name, $index->columns, true)
-                    || ($index->where !== null && preg_match($predicate, $index->where) === 1)),
+                    || (
+                        $index->where !== null
+                        && preg_match($predicate, $index->where) === 1
+                    )),
         );
 
-        return !$indexed && !array_any(
-            $current->foreignKeys,
-            static fn (ForeignKey $foreignKey): bool => in_array($column->name, $foreignKey->columns, true),
-        );
+        return !$indexed
+            && !array_any(
+                $current->foreignKeys,
+                static fn (ForeignKey $foreignKey): bool => in_array($column->name, $foreignKey->columns, true),
+            );
     }
 
     /**
@@ -560,7 +587,10 @@ class SqliteGenerator implements SqlGeneratorInterface
         $statements = [$this->generateCreateTable($table)];
 
         foreach ($table->columns as $column) {
-            if ($column->unique && !$column->primaryKey) {
+            if (
+                $column->unique
+                && !$column->primaryKey
+            ) {
                 $statements[] = $this->generateAddIndex($table->name, new Index(
                     name: IdentifierName::derive("{$table->name}_$column->name", suffix: '_unique'),
                     columns: [$column->name],
@@ -586,7 +616,11 @@ class SqliteGenerator implements SqlGeneratorInterface
     ): string {
         $parts = [SqliteIdentifier::quote($column->name)];
 
-        if ($inlinePrimaryKey && $column->primaryKey && $column->autoIncrement) {
+        if (
+            $inlinePrimaryKey
+            && $column->primaryKey
+            && $column->autoIncrement
+        ) {
             // The rowid alias must be declared exactly INTEGER; the Marko type is kept in a comment
             return implode(' ', [...$parts, 'INTEGER', "/* marko:$column->type */", 'PRIMARY KEY AUTOINCREMENT']);
         }
@@ -601,7 +635,10 @@ class SqliteGenerator implements SqlGeneratorInterface
             $parts[] = 'DEFAULT ' . $this->formatDefaultValue($table, $column);
         }
 
-        if ($inlinePrimaryKey && $column->primaryKey) {
+        if (
+            $inlinePrimaryKey
+            && $column->primaryKey
+        ) {
             $parts[] = 'PRIMARY KEY';
         }
 
@@ -672,7 +709,10 @@ class SqliteGenerator implements SqlGeneratorInterface
     ): void {
         $timezone = $this->databaseTimezoneConfig->timezone->getName();
 
-        if ($timezone !== self::UTC && $timezone !== '+00:00') {
+        if (
+            $timezone !== self::UTC
+            && $timezone !== '+00:00'
+        ) {
             throw MigrationException::nonUtcCurrentTimeDefault(
                 $table,
                 $column->name,

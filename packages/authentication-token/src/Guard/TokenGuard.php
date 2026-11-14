@@ -88,7 +88,10 @@ class TokenGuard implements StatelessGuardInterface, AbilityScopedGuardInterface
     {
         $header = $this->currentRequest->get()?->header('Authorization');
 
-        if ($header === null || !str_starts_with($header, self::BEARER_PREFIX)) {
+        if (
+            $header === null
+            || !str_starts_with($header, self::BEARER_PREFIX)
+        ) {
             return null;
         }
 
@@ -105,7 +108,10 @@ class TokenGuard implements StatelessGuardInterface, AbilityScopedGuardInterface
 
         $user = $this->provider->retrieveById($tokenEntity->tokenableId);
 
-        if ($user === null || !is_a($user, $tokenEntity->tokenableType)) {
+        if (
+            $user === null
+            || !is_a($user, $tokenEntity->tokenableType)
+        ) {
             return null;
         }
 
@@ -200,7 +206,10 @@ class TokenGuard implements StatelessGuardInterface, AbilityScopedGuardInterface
             return false;
         }
 
-        if ($abilities === [] || in_array(self::WILDCARD_ABILITY, $abilities, true)) {
+        if (
+            $abilities === []
+            || in_array(self::WILDCARD_ABILITY, $abilities, true)
+        ) {
             return true;
         }
 
@@ -214,7 +223,10 @@ class TokenGuard implements StatelessGuardInterface, AbilityScopedGuardInterface
     {
         $request = $this->currentRequest->get();
 
-        if ($this->tokenResolved && $this->resolvedFor === $request) {
+        if (
+            $this->tokenResolved
+            && $this->resolvedFor === $request
+        ) {
             return $this->resolvedToken;
         }
 
@@ -230,7 +242,10 @@ class TokenGuard implements StatelessGuardInterface, AbilityScopedGuardInterface
     ): ?PersonalAccessToken {
         $rawToken = $this->extractToken();
 
-        if ($request === null || $rawToken === null) {
+        if (
+            $request === null
+            || $rawToken === null
+        ) {
             return null;
         }
 
@@ -242,9 +257,12 @@ class TokenGuard implements StatelessGuardInterface, AbilityScopedGuardInterface
             return null;
         }
 
-        if ($token->expiresAt !== null && $this->databaseTimezoneConfig->parse(
-            $token->expiresAt,
-        ) < $this->clock->now()) {
+        if (
+            $token->expiresAt !== null
+            && $this->databaseTimezoneConfig->parse(
+                $token->expiresAt,
+            ) < $this->clock->now()
+        ) {
             $this->reportFailure($request, TokenFailureReason::Expired, $token->id);
 
             return null;

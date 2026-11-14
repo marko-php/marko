@@ -18,16 +18,22 @@ readonly class SizeRotation implements RotationStrategyInterface
         $baseFile = "$basePath/$channel.log";
 
         // If file doesn't exist or is under max size, use it
-        if (!file_exists($baseFile) || $this->getFileSize($baseFile) < $this->maxSize) {
+        if (
+            !file_exists($baseFile)
+            || $this->getFileSize($baseFile) < $this->maxSize
+        ) {
             return $baseFile;
         }
 
         // Find the next available rotated file number
         $i = 1;
 
-        while (file_exists("$basePath/$channel.$i.log") && $this->getFileSize(
-            "$basePath/$channel.$i.log",
-        ) >= $this->maxSize) {
+        while (
+            file_exists("$basePath/$channel.$i.log")
+            && $this->getFileSize(
+                "$basePath/$channel.$i.log",
+            ) >= $this->maxSize
+        ) {
             $i++;
         }
 

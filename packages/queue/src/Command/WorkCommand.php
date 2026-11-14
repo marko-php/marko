@@ -107,7 +107,10 @@ class WorkCommand implements CommandInterface
         foreach ($queues as $queue) {
             $retryAfter = $this->config->retryAfter($queue);
 
-            if ($options->timeout > 0 && $options->timeout >= $retryAfter) {
+            if (
+                $options->timeout > 0
+                && $options->timeout >= $retryAfter
+            ) {
                 throw QueueException::timeoutNotBelowRetryAfter(
                     $options->timeout,
                     $retryAfter,

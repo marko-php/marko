@@ -221,7 +221,10 @@ class RabbitmqQueue implements QueueInterface
     ): bool {
         $jobId = $job->id;
 
-        if ($jobId === null || !isset($this->deliveryTags[$jobId])) {
+        if (
+            $jobId === null
+            || !isset($this->deliveryTags[$jobId])
+        ) {
             return false;
         }
 
@@ -307,7 +310,10 @@ class RabbitmqQueue implements QueueInterface
 
         $jobId = $headers->getNativeData()['job_id'] ?? null;
 
-        if (!is_string($jobId) || $jobId === '') {
+        if (
+            !is_string($jobId)
+            || $jobId === ''
+        ) {
             throw RabbitmqException::malformedMessage(
                 $queueName,
                 'its job_id header is missing or not a non-empty string',

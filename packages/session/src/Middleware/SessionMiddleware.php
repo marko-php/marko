@@ -55,7 +55,8 @@ readonly class SessionMiddleware implements MiddlewareInterface
             $this->prepare($inboundId);
         }
 
-        $resumed = $inboundId !== null && $this->session->getId() === $inboundId;
+        $resumed = $inboundId !== null
+            && $this->session->getId() === $inboundId;
         $persisted = false;
 
         try {
@@ -65,7 +66,7 @@ readonly class SessionMiddleware implements MiddlewareInterface
         }
 
         if (!$persisted) {
-            return $inboundId !== null && !$resumed
+            return ($inboundId !== null && !$resumed)
                 ? $response->withCookie($this->expiredCookie())
                 : $response;
         }
@@ -80,7 +81,10 @@ readonly class SessionMiddleware implements MiddlewareInterface
     private function close(
         bool $resumed,
     ): bool {
-        if (!$resumed && !$this->session->isModified()) {
+        if (
+            !$resumed
+            && !$this->session->isModified()
+        ) {
             $this->session->discard();
 
             return false;
@@ -96,7 +100,9 @@ readonly class SessionMiddleware implements MiddlewareInterface
     ): ?string {
         $value = $request->cookie($this->sessionConfig->cookieName());
 
-        return is_string($value) && $value !== '' ? $value : null;
+        return (is_string($value) && $value !== '')
+            ? $value
+            : null;
     }
 
     /**
@@ -109,7 +115,10 @@ readonly class SessionMiddleware implements MiddlewareInterface
     private function prepare(
         ?string $inboundId,
     ): void {
-        if ($inboundId === null || !$this->seedSessionId($inboundId)) {
+        if (
+            $inboundId === null
+            || !$this->seedSessionId($inboundId)
+        ) {
             $this->session->arm();
 
             return;

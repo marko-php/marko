@@ -64,7 +64,10 @@ readonly class DateComparison
         $timestamp = DateValue::timestamp($value);
         $reference = $this->referenceTimestamp($data);
 
-        if ($timestamp === null || $reference === null) {
+        if (
+            $timestamp === null
+            || $reference === null
+        ) {
             return null;
         }
 

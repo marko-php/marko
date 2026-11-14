@@ -17,7 +17,8 @@ describe('WebhookResponse', function (): void {
         $response = new WebhookResponse(
             statusCode: $status,
             body: '',
-            successful: $status >= 200 && $status < 300,
+            successful: $status >= 200
+            && $status < 300,
         );
 
         expect($response->isRetryable())->toBeFalse();

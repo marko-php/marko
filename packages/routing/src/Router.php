@@ -243,7 +243,10 @@ readonly class Router
     ): mixed {
         $name = $param->getName();
         $type = $param->getType();
-        if ($type instanceof ReflectionNamedType && $type->getName() === Request::class) {
+        if (
+            $type instanceof ReflectionNamedType
+            && $type->getName() === Request::class
+        ) {
             return $request;
         }
 
@@ -276,7 +279,10 @@ readonly class Router
             return $this->coerce($routeParams[$name], $type, $name, $controller, $action);
         }
 
-        if ($type instanceof ReflectionNamedType && !$type->isBuiltin()) {
+        if (
+            $type instanceof ReflectionNamedType
+            && !$type->isBuiltin()
+        ) {
             return $this->resolveDependency($param, $type->getName());
         }
 
@@ -358,23 +364,28 @@ readonly class Router
         string $controller,
         string $action,
     ): mixed {
-        if (!$type instanceof ReflectionNamedType || $type->getName() === 'mixed') {
+        if (
+            !$type instanceof ReflectionNamedType
+            || $type->getName() === 'mixed'
+        ) {
             return $value;
         }
 
         $typeName = $type->getName();
 
         $coerced = match ($typeName) {
-            'int' => is_string($value) || is_int($value)
+            'int' => (is_string($value) || is_int($value))
                 ? filter_var($value, FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE)
                 : null,
-            'float' => is_string($value) || is_int($value) || is_float($value)
+            'float' => (is_string($value) || is_int($value) || is_float($value))
                 ? filter_var($value, FILTER_VALIDATE_FLOAT, FILTER_NULL_ON_FAILURE)
                 : null,
-            'bool' => is_string($value) || is_int($value) || is_bool($value)
+            'bool' => (is_string($value) || is_int($value) || is_bool($value))
                 ? filter_var($value, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE)
                 : null,
-            'string' => is_string($value) || is_int($value) || is_float($value) ? (string) $value : null,
+            'string' => (is_string($value) || is_int($value) || is_float($value))
+                ? (string) $value
+                : null,
             'array' => is_array($value) ? $value : null,
             default => throw RouteException::unsupportedParameterType(
                 controller: $controller,

@@ -21,7 +21,13 @@ readonly class Uuid implements RuleInterface
     public function __construct(
         private ?int $version = null,
     ) {
-        if ($version !== null && ($version < 1 || $version > 8)) {
+        if (
+            $version !== null
+            && (
+                $version < 1
+                || $version > 8
+            )
+        ) {
             throw new InvalidArgumentException("UUID version must be from 1 to 8, $version given");
         }
     }
@@ -31,7 +37,10 @@ readonly class Uuid implements RuleInterface
         mixed $value,
         array $data,
     ): bool {
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return true;
         }
 

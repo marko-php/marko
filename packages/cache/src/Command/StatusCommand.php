@@ -28,7 +28,10 @@ readonly class StatusCommand implements CommandInterface
         $output->writeLine("Cache Driver: $driver");
         $output->writeLine("Cache Path: $path");
 
-        if ($driver === 'file' && is_dir($path)) {
+        if (
+            $driver === 'file'
+            && is_dir($path)
+        ) {
             $stats = $this->getFileStats($path);
             $output->writeLine("Items: {$stats['count']}");
             $output->writeLine("Total Size: {$stats['size']}");

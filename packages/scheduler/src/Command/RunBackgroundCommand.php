@@ -54,7 +54,10 @@ readonly class RunBackgroundCommand implements CommandInterface
     ): int {
         $mutexName = $input->getOption(self::MUTEX_OPTION);
 
-        if ($mutexName === null || $mutexName === 'true') {
+        if (
+            $mutexName === null
+            || $mutexName === 'true'
+        ) {
             throw SchedulerException::backgroundMutexOptionMissing(self::NAME, self::MUTEX_OPTION);
         }
 
@@ -88,7 +91,10 @@ readonly class RunBackgroundCommand implements CommandInterface
     ): int {
         $value = $input->getOption(self::EXPIRY_OPTION) ?? '';
 
-        if (!ctype_digit($value) || (int) $value < 1) {
+        if (
+            !ctype_digit($value)
+            || (int) $value < 1
+        ) {
             throw SchedulerException::invalidMutexExpiry(self::NAME, self::EXPIRY_OPTION, $value);
         }
 

@@ -65,7 +65,10 @@ readonly class InstallCommand implements CommandInterface
             $context = $this->buildContextFromDetection($detected, $force, $gitignoreArg, $skipLspDeps, $output);
         }
 
-        if (!$context->skipLspDeps && $this->declinesGlobalLspInstall($context, $input->hasOption('yes'), $output)) {
+        if (
+            !$context->skipLspDeps
+            && $this->declinesGlobalLspInstall($context, $input->hasOption('yes'), $output)
+        ) {
             $context = new InstallationContext(
                 selectedAgents: $context->selectedAgents,
                 force: $context->force,

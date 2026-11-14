@@ -68,7 +68,10 @@ readonly class TwoFactorChallenge
         $guardName = $challengeableGuard->getName();
         $user = $challengeableGuard->pendingChallengeUser();
 
-        if ($user === null || $challengeableGuard->pendingChallengeName() !== TwoFactorLoginChallenge::NAME) {
+        if (
+            $user === null
+            || $challengeableGuard->pendingChallengeName() !== TwoFactorLoginChallenge::NAME
+        ) {
             throw TwoFactorException::noPendingTwoFactorChallenge($guardName);
         }
 

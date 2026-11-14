@@ -15,7 +15,10 @@ beforeEach(function (): void {
 
 afterEach(function (): void {
     $remove = function (string $path) use (&$remove): void {
-        if (is_dir($path) && !is_link($path)) {
+        if (
+            is_dir($path)
+            && !is_link($path)
+        ) {
             chmod($path, 0o700);
 
             foreach (array_diff(scandir($path), ['.', '..']) as $entry) {
@@ -93,7 +96,10 @@ it('refuses a cache path that exists as a file', function (): void {
 });
 
 it('throws loudly when the cache directory cannot be created', function (): void {
-    if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+    if (
+        function_exists('posix_geteuid')
+        && posix_geteuid() === 0
+    ) {
         $this->markTestSkipped('root can create directories inside read-only parents');
     }
 

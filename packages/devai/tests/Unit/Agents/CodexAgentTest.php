@@ -101,7 +101,11 @@ it('does not modify MCP registration or skill distribution behavior', function (
 
         $addCall = null;
         foreach ($runner->calls as $call) {
-            if ($call['command'] === 'codex' && ($call['args'][0] ?? '') === 'mcp' && ($call['args'][1] ?? '') === 'add') {
+            if (
+                $call['command'] === 'codex'
+                && ($call['args'][0] ?? '') === 'mcp'
+                && ($call['args'][1] ?? '') === 'add'
+            ) {
                 $addCall = $call;
             }
         }
@@ -125,7 +129,11 @@ it('registers marko-mcp via codex mcp add with the correct argument separator', 
 
         $addCall = null;
         foreach ($runner->calls as $call) {
-            if ($call['command'] === 'codex' && ($call['args'][0] ?? '') === 'mcp' && ($call['args'][1] ?? '') === 'add') {
+            if (
+                $call['command'] === 'codex'
+                && ($call['args'][0] ?? '') === 'mcp'
+                && ($call['args'][1] ?? '') === 'add'
+            ) {
                 $addCall = $call;
             }
         }

@@ -25,7 +25,10 @@ abstract readonly class AbstractFileRule implements RuleInterface
         mixed $value,
         array $data,
     ): bool {
-        if (!$value instanceof UploadedFileInterface || !$value->isValid()) {
+        if (
+            !$value instanceof UploadedFileInterface
+            || !$value->isValid()
+        ) {
             return false;
         }
 

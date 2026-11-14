@@ -107,7 +107,10 @@ readonly class ModuleDiscovery
         foreach ($moduleNames as $moduleName) {
             $modulePath = $appDir . '/' . $moduleName;
 
-            if (is_dir($modulePath) && $this->isMarkoModule($modulePath)) {
+            if (
+                is_dir($modulePath)
+                && $this->isMarkoModule($modulePath)
+            ) {
                 $manifest = $this->parser->parse($modulePath);
                 $modules[] = $this->withPathAndSource($manifest, $modulePath, 'app');
             }
@@ -231,6 +234,7 @@ readonly class ModuleDiscovery
             return [];
         }
 
-        return array_filter($items, fn (string $item) => $item !== '.' && $item !== '..');
+        return array_filter($items, fn (string $item) => $item !== '.'
+            && $item !== '..');
     }
 }

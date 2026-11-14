@@ -42,7 +42,10 @@ class DependencyResolver
         foreach ($enabledModules as $module) {
             foreach (array_keys($module->require) as $dependency) {
                 // If the dependency exists as a module but is disabled, that's an error
-                if (isset($allModulesByName[$dependency]) && !$allModulesByName[$dependency]->enabled) {
+                if (
+                    isset($allModulesByName[$dependency])
+                    && !$allModulesByName[$dependency]->enabled
+                ) {
                     throw MissingDependencyException::dependencyDisabled($module->name, $dependency);
                 }
             }
@@ -145,7 +148,10 @@ class DependencyResolver
                 }
 
                 foreach (array_keys($module->require) as $dependency) {
-                    if (isset($modulesByName[$dependency]) && !in_array($dependency, $sortedNames, true)) {
+                    if (
+                        isset($modulesByName[$dependency])
+                        && !in_array($dependency, $sortedNames, true)
+                    ) {
                         $unmet[] = "require:$dependency";
                     }
                 }

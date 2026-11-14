@@ -76,7 +76,11 @@ readonly class SecurityHeadersMiddleware implements MiddlewareInterface
     ): bool {
         $https = $request->server('HTTPS');
 
-        if ($https !== null && $https !== '' && strtolower($https) !== 'off') {
+        if (
+            $https !== null
+            && $https !== ''
+            && strtolower($https) !== 'off'
+        ) {
             return true;
         }
 

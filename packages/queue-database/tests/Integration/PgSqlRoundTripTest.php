@@ -53,7 +53,10 @@ function pgsqlQueueConnection(
 ): array {
     $host = getenv('DB_HOST');
 
-    if ($host === false || $host === '') {
+    if (
+        $host === false
+        || $host === ''
+    ) {
         return [
             'connection' => null,
             'skipReason' => 'PostgreSQL integration test: set DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME and DB_PASSWORD to run it',

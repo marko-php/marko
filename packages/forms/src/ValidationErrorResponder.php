@@ -104,6 +104,8 @@ readonly class ValidationErrorResponder implements HttpExceptionResponderInterfa
     ): string {
         $host = strtolower($host);
 
-        return $port === null || in_array($port, self::DEFAULT_PORTS, true) ? $host : "$host:$port";
+        return ($port === null || in_array($port, self::DEFAULT_PORTS, true))
+            ? $host
+            : "$host:$port";
     }
 }

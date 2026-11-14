@@ -70,7 +70,11 @@ readonly class AdminSectionDiscovery
             $filePath = $file->getPathname();
             $content = file_get_contents($filePath);
 
-            if ($content === false || !str_contains($content, '#[') || stripos($content, 'AdminSection') === false) {
+            if (
+                $content === false
+                || !str_contains($content, '#[')
+                || stripos($content, 'AdminSection') === false
+            ) {
                 continue;
             }
 

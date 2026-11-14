@@ -57,14 +57,20 @@ readonly class DestructiveCommandGuard
     ): ?int {
         $environment = $this->appEnvironment->name();
 
-        if ($this->appEnvironment->isProduction() && !$allowInProduction) {
+        if (
+            $this->appEnvironment->isProduction()
+            && !$allowInProduction
+        ) {
             $output->writeLine("Error: $command cannot be run in the '$environment' environment.");
             $output->writeLine("This command $effect and is never allowed in production, even with --force.");
 
             return 1;
         }
 
-        if ($this->appEnvironment->isDevelopment() || $this->appEnvironment->isTesting()) {
+        if (
+            $this->appEnvironment->isDevelopment()
+            || $this->appEnvironment->isTesting()
+        ) {
             if (!$confirmInDevelopment) {
                 return null;
             }

@@ -29,7 +29,8 @@ readonly class StdinConfirmationPrompter implements ConfirmationPrompterInterfac
 
     public function isInteractive(): bool
     {
-        return $this->input->isInteractive() && stream_isatty($this->stream());
+        return $this->input->isInteractive()
+            && stream_isatty($this->stream());
     }
 
     public function confirm(

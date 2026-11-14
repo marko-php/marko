@@ -80,7 +80,10 @@ class EnvLoader
 
         // Don't overwrite existing environment variables
         // This allows system env vars to take precedence
-        if (isset($_ENV[$name]) || getenv($name) !== false) {
+        if (
+            isset($_ENV[$name])
+            || getenv($name) !== false
+        ) {
             return;
         }
 

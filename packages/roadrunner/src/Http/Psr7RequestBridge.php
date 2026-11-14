@@ -95,7 +95,10 @@ class Psr7RequestBridge
             $normalized = strtoupper(str_replace('-', '_', $name));
             $value = implode(', ', $values);
 
-            if ($normalized === 'CONTENT_TYPE' || $normalized === 'CONTENT_LENGTH') {
+            if (
+                $normalized === 'CONTENT_TYPE'
+                || $normalized === 'CONTENT_LENGTH'
+            ) {
                 $server[$normalized] = $value;
                 continue;
             }
@@ -123,7 +126,11 @@ class Psr7RequestBridge
         $post = is_array($parsedBody) ? $parsedBody : [];
 
         $method = strtoupper($psr7Request->getMethod());
-        if ($post === [] && $body !== '' && in_array($method, self::FORM_ENCODED_BODY_METHODS, true)) {
+        if (
+            $post === []
+            && $body !== ''
+            && in_array($method, self::FORM_ENCODED_BODY_METHODS, true)
+        ) {
             $contentType = $server['CONTENT_TYPE'] ?? '';
             if (str_contains($contentType, 'application/x-www-form-urlencoded')) {
                 parse_str($body, $post);
@@ -191,7 +198,11 @@ class Psr7RequestBridge
         $stream = $uploadedFile->getStream();
         $uri = $stream->getMetadata('uri');
 
-        if ($stream->getMetadata('wrapper_type') === 'plainfile' && is_string($uri) && is_file($uri)) {
+        if (
+            $stream->getMetadata('wrapper_type') === 'plainfile'
+            && is_string($uri)
+            && is_file($uri)
+        ) {
             return $uri;
         }
 

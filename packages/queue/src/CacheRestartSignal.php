@@ -49,7 +49,10 @@ class CacheRestartSignal implements RestartSignalInterface
             return null;
         }
 
-        if (!is_string($token) || $token === '') {
+        if (
+            !is_string($token)
+            || $token === ''
+        ) {
             throw QueueException::restartSignalCacheValueInvalid(self::KEY, get_debug_type($token));
         }
 

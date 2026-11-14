@@ -31,7 +31,10 @@ class MailChannel implements ChannelInterface
         if ($message->to === []) {
             $route = $notifiable->routeNotificationFor('mail');
 
-            if ($route === null || $route === '') {
+            if (
+                $route === null
+                || $route === ''
+            ) {
                 throw ChannelException::routeMissing('mail', $notifiable->getNotifiableType());
             }
 

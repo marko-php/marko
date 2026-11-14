@@ -151,7 +151,8 @@ readonly class TwoFactorManager implements TwoFactorManagerInterface
     public function isEnabled(
         TwoFactorAuthenticatableInterface $user,
     ): bool {
-        return $user->getTwoFactorSecret() !== null && $user->getTwoFactorConfirmedAt() !== null;
+        return $user->getTwoFactorSecret() !== null
+            && $user->getTwoFactorConfirmedAt() !== null;
     }
 
     /**
@@ -191,7 +192,10 @@ readonly class TwoFactorManager implements TwoFactorManagerInterface
         $matched = false;
 
         foreach ($user->getTwoFactorRecoveryCodes() as $storedHash) {
-            if (hash_equals($storedHash, $hash) && !$matched) {
+            if (
+                hash_equals($storedHash, $hash)
+                && !$matched
+            ) {
                 $matched = true;
 
                 continue;
@@ -219,7 +223,10 @@ readonly class TwoFactorManager implements TwoFactorManagerInterface
     ): string {
         $secret = $user->getTwoFactorSecret();
 
-        if ($secret === null || $user->getTwoFactorConfirmedAt() === null) {
+        if (
+            $secret === null
+            || $user->getTwoFactorConfirmedAt() === null
+        ) {
             throw TwoFactorException::notEnabled($user->getAuthIdentifier());
         }
 

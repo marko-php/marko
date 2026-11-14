@@ -64,7 +64,10 @@ readonly class TokenManager
         $expirationDays = $this->config->expirationDays();
         $now = $this->clock->now();
 
-        if ($expiresAt === null && $expirationDays !== null) {
+        if (
+            $expiresAt === null
+            && $expirationDays !== null
+        ) {
             $expiresAt = $now->add(new DateInterval("P{$expirationDays}D"));
         }
 

@@ -105,7 +105,9 @@ class QueryException extends DatabaseException
     ): ?string {
         $sqlState = $exception->errorInfo[0] ?? $exception->getCode();
 
-        return is_string($sqlState) && $sqlState !== '' ? $sqlState : null;
+        return (is_string($sqlState) && $sqlState !== '')
+            ? $sqlState
+            : null;
     }
 
     /**
@@ -141,7 +143,10 @@ class QueryException extends DatabaseException
                 $value = json_encode($value, JSON_UNESCAPED_UNICODE);
             }
 
-            if (!is_string($value) || $value === '') {
+            if (
+                !is_string($value)
+                || $value === ''
+            ) {
                 continue;
             }
 

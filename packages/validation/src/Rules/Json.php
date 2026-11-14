@@ -16,11 +16,15 @@ readonly class Json implements RuleInterface
         mixed $value,
         array $data,
     ): bool {
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return true;
         }
 
-        return is_string($value) && json_validate($value);
+        return is_string($value)
+            && json_validate($value);
     }
 
     public function message(

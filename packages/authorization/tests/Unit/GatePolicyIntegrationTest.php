@@ -36,7 +36,8 @@ class ArticlePolicy
         ?AuthorizableInterface $user,
         Article $article,
     ): bool {
-        return $user !== null && $user->getAuthIdentifier() === $article->authorId;
+        return $user !== null
+            && $user->getAuthIdentifier() === $article->authorId;
     }
 
     public function delete(

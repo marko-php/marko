@@ -128,7 +128,10 @@ readonly class SqliteIntrospector implements IntrospectorInterface, ExpressionDe
             $name = (string) $row['name'];
             $declared = strtoupper(trim((string) $row['type']));
             $isPrimaryKey = in_array($name, $primaryKey, true);
-            $autoIncrement = $hasAutoIncrement && $isPrimaryKey && count($primaryKey) === 1 && $declared === 'INTEGER';
+            $autoIncrement = $hasAutoIncrement
+                && $isPrimaryKey
+                && count($primaryKey) === 1
+                && $declared === 'INTEGER';
 
             [$type, $length] = $autoIncrement
                 ? [$this->readMarkoType($createSql, $name), null]
@@ -138,7 +141,8 @@ readonly class SqliteIntrospector implements IntrospectorInterface, ExpressionDe
                 name: $name,
                 type: $type,
                 length: $length,
-                nullable: !$autoIncrement && (int) $row['notnull'] === 0,
+                nullable: !$autoIncrement
+                && (int) $row['notnull'] === 0,
                 default: $this->parseDefault($row['dflt_value'], $type),
                 primaryKey: $isPrimaryKey,
                 autoIncrement: $autoIncrement,
@@ -166,7 +170,10 @@ readonly class SqliteIntrospector implements IntrospectorInterface, ExpressionDe
             [$table, $column],
         )[0] ?? null;
 
-        if ($stored === null || $stored['dflt_value'] === null) {
+        if (
+            $stored === null
+            || $stored['dflt_value'] === null
+        ) {
             return false;
         }
 
@@ -193,7 +200,8 @@ readonly class SqliteIntrospector implements IntrospectorInterface, ExpressionDe
             $this->connection->execute('DROP TABLE IF EXISTS temp.' . $probe);
         }
 
-        return $probed !== null && trim((string) $probed) === trim((string) $stored['dflt_value']);
+        return $probed !== null
+            && trim((string) $probed) === trim((string) $stored['dflt_value']);
     }
 
     /**
@@ -349,11 +357,17 @@ readonly class SqliteIntrospector implements IntrospectorInterface, ExpressionDe
                 continue;
             }
 
-            if ($character === "'" || $character === '"') {
+            if (
+                $character === "'"
+                || $character === '"'
+            ) {
                 $quote = $character;
             } elseif ($character === '(') {
                 $depth++;
-            } elseif ($character === ')' && --$depth === 0) {
+            } elseif (
+                $character === ')'
+                && --$depth === 0
+            ) {
                 return $position === $length - 1;
             }
         }
@@ -415,7 +429,9 @@ readonly class SqliteIntrospector implements IntrospectorInterface, ExpressionDe
 
         $base = $matches[1] ?? $declared;
         $type = $this->typeMap[$base] ?? strtolower($base);
-        $length = $type === 'varchar' && isset($matches[2]) ? (int) $matches[2] : null;
+        $length = ($type === 'varchar' && isset($matches[2]))
+            ? (int) $matches[2]
+            : null;
 
         return [$type, $length];
     }
@@ -430,7 +446,10 @@ readonly class SqliteIntrospector implements IntrospectorInterface, ExpressionDe
 
         $default = trim((string) $default);
 
-        if (strtoupper($default) === 'NULL' || $default === '') {
+        if (
+            strtoupper($default) === 'NULL'
+            || $default === ''
+        ) {
             return null;
         }
 

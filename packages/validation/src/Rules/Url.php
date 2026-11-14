@@ -53,11 +53,17 @@ class Url implements RuleInterface
         mixed $value,
         array $data,
     ): bool {
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return true;
         }
 
-        if (!is_string($value) || filter_var($value, FILTER_VALIDATE_URL) === false) {
+        if (
+            !is_string($value)
+            || filter_var($value, FILTER_VALIDATE_URL) === false
+        ) {
             return false;
         }
 

@@ -45,7 +45,10 @@ class TransactionBackoff
     public function validate(
         int|Closure|null $backoff,
     ): void {
-        if (is_int($backoff) && $backoff < 0) {
+        if (
+            is_int($backoff)
+            && $backoff < 0
+        ) {
             throw TransactionException::invalidBackoff($backoff);
         }
     }
@@ -83,7 +86,10 @@ class TransactionBackoff
 
         $delay = $backoff($attempt, $conflict);
 
-        if (!is_int($delay) || $delay < 0) {
+        if (
+            !is_int($delay)
+            || $delay < 0
+        ) {
             throw TransactionException::invalidBackoffDelay($delay);
         }
 
@@ -95,7 +101,8 @@ class TransactionBackoff
     ): int {
         $bound = self::BASE_DELAY_MILLISECONDS;
 
-        for ($i = 1; $i < $attempt && $bound < self::MAX_DELAY_MILLISECONDS; $i++) {
+        for ($i = 1; $i < $attempt
+            && $bound < self::MAX_DELAY_MILLISECONDS; $i++) {
             $bound *= 2;
         }
 

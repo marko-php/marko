@@ -117,7 +117,8 @@ readonly class SmtpMailer implements MailerInterface
 
         $hasRegularAttachments = $regularAttachments !== [];
         $hasInlineAttachments = $inlineAttachments !== [];
-        $isAlternative = $html !== null && $text !== null;
+        $isAlternative = $html !== null
+            && $text !== null;
 
         // Determine boundaries
         $mixedBoundary = $hasRegularAttachments ? $this->generateBoundary() : null;
@@ -206,11 +207,20 @@ readonly class SmtpMailer implements MailerInterface
 
         // Content-Type depends on structure
         // Priority: mixed > related > alternative > single
-        if ($hasRegularAttachments && $mixedBoundary !== null) {
+        if (
+            $hasRegularAttachments
+            && $mixedBoundary !== null
+        ) {
             $headers[] = "Content-Type: multipart/mixed; boundary=\"$mixedBoundary\"";
-        } elseif ($hasInlineAttachments && $relatedBoundary !== null) {
+        } elseif (
+            $hasInlineAttachments
+            && $relatedBoundary !== null
+        ) {
             $headers[] = "Content-Type: multipart/related; boundary=\"$relatedBoundary\"";
-        } elseif ($isAlternative && $alternativeBoundary !== null) {
+        } elseif (
+            $isAlternative
+            && $alternativeBoundary !== null
+        ) {
             $headers[] = "Content-Type: multipart/alternative; boundary=\"$alternativeBoundary\"";
         } elseif ($message->html !== null) {
             $headers[] = 'Content-Type: text/html; charset=UTF-8';
@@ -248,7 +258,10 @@ readonly class SmtpMailer implements MailerInterface
         $html = $message->html;
         $text = $message->text;
 
-        if ($hasRegularAttachments && $mixedBoundary !== null) {
+        if (
+            $hasRegularAttachments
+            && $mixedBoundary !== null
+        ) {
             return $this->buildMixedBody(
                 $text,
                 $html,
@@ -260,11 +273,17 @@ readonly class SmtpMailer implements MailerInterface
             );
         }
 
-        if ($hasInlineAttachments && $relatedBoundary !== null) {
+        if (
+            $hasInlineAttachments
+            && $relatedBoundary !== null
+        ) {
             return $this->buildRelatedBody($text, $html, $inlineAttachments, $relatedBoundary, $alternativeBoundary);
         }
 
-        if ($isAlternative && $alternativeBoundary !== null) {
+        if (
+            $isAlternative
+            && $alternativeBoundary !== null
+        ) {
             return $this->buildAlternativeBody($text, $html, $alternativeBoundary);
         }
 
@@ -298,7 +317,10 @@ readonly class SmtpMailer implements MailerInterface
         // Content part
         $body[] = "--$mixedBoundary";
 
-        if ($hasInlineAttachments && $relatedBoundary !== null) {
+        if (
+            $hasInlineAttachments
+            && $relatedBoundary !== null
+        ) {
             // Nested related (for inline images)
             $body[] = "Content-Type: multipart/related; boundary=\"$relatedBoundary\"";
             $body[] = '';
@@ -309,7 +331,11 @@ readonly class SmtpMailer implements MailerInterface
                 $relatedBoundary,
                 $alternativeBoundary,
             );
-        } elseif ($text !== null && $html !== null && $alternativeBoundary !== null) {
+        } elseif (
+            $text !== null
+            && $html !== null
+            && $alternativeBoundary !== null
+        ) {
             // Nested alternative
             $body[] = "Content-Type: multipart/alternative; boundary=\"$alternativeBoundary\"";
             $body[] = '';
@@ -352,12 +378,16 @@ readonly class SmtpMailer implements MailerInterface
         ?string $alternativeBoundary,
     ): string {
         $body = [];
-        $isAlternative = $text !== null && $html !== null;
+        $isAlternative = $text !== null
+            && $html !== null;
 
         // Content part (HTML or alternative)
         $body[] = "--$relatedBoundary";
 
-        if ($isAlternative && $alternativeBoundary !== null) {
+        if (
+            $isAlternative
+            && $alternativeBoundary !== null
+        ) {
             $body[] = "Content-Type: multipart/alternative; boundary=\"$alternativeBoundary\"";
             $body[] = '';
             $body[] = $this->buildAlternativeBody($text, $html, $alternativeBoundary);
@@ -447,7 +477,11 @@ readonly class SmtpMailer implements MailerInterface
         string $field,
         string $value,
     ): void {
-        if (str_contains($value, "\r") || str_contains($value, "\n") || str_contains($value, "\x00")) {
+        if (
+            str_contains($value, "\r")
+            || str_contains($value, "\n")
+            || str_contains($value, "\x00")
+        ) {
             throw SmtpMessageException::headerInjection($field, $value);
         }
     }

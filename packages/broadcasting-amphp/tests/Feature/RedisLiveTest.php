@@ -39,7 +39,10 @@ function redisLiveSkipReason(): ?string
     $host = $_ENV['REDIS_HOST'] ?? getenv('REDIS_HOST');
     $reason = null;
 
-    if (!is_string($host) || $host === '') {
+    if (
+        !is_string($host)
+        || $host === ''
+    ) {
         $reason = 'REDIS_HOST is not set. Start Redis with `docker compose -f tests/Integration/compose.yml up -d` and '
             . 'run with REDIS_HOST=127.0.0.1.';
     } else {
@@ -55,7 +58,10 @@ function redisLiveSkipReason(): ?string
 
     $required = $_ENV['MARKO_INTEGRATION_REQUIRED'] ?? getenv('MARKO_INTEGRATION_REQUIRED');
 
-    if ($reason !== null && in_array(strtolower((string) $required), ['1', 'true', 'yes'], true)) {
+    if (
+        $reason !== null
+        && in_array(strtolower((string) $required), ['1', 'true', 'yes'], true)
+    ) {
         throw new RuntimeException("MARKO_INTEGRATION_REQUIRED is set but Redis is unusable: $reason");
     }
 

@@ -73,7 +73,11 @@ readonly class GateHookDiscovery
             $filePath = $file->getPathname();
             $content = file_get_contents($filePath);
 
-            if ($content === false || !str_contains($content, '#[') || stripos($content, 'GateHook') === false) {
+            if (
+                $content === false
+                || !str_contains($content, '#[')
+                || stripos($content, 'GateHook') === false
+            ) {
                 continue;
             }
 

@@ -57,7 +57,8 @@ $app->initialize();
             $name,
             ['PARATEST', 'TEST_TOKEN', 'UNIQUE_TEST_TOKEN', 'APP_ENV', 'MARKO_ENV'],
             true,
-        ) && !str_starts_with($name, 'PEST_PARALLEL'),
+        )
+            && !str_starts_with($name, 'PEST_PARALLEL'),
         ARRAY_FILTER_USE_BOTH,
     );
     $environment = array_merge($environment, $env);

@@ -32,7 +32,10 @@ class RecordingBackgroundCommandLauncher implements BackgroundCommandLauncherInt
         ?string $mutexName,
         ?int $mutexExpiresAfterSeconds,
     ): void {
-        if ($this->failWith !== null && in_array($command, $this->failFor, true)) {
+        if (
+            $this->failWith !== null
+            && in_array($command, $this->failFor, true)
+        ) {
             throw $this->failWith;
         }
 

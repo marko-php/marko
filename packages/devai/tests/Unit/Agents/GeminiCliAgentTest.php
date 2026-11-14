@@ -82,7 +82,10 @@ it('does not modify Gemini MCP registration or skill distribution behavior', fun
 
     $addCall = null;
     foreach ($runner->calls as $call) {
-        if ($call['command'] === 'gemini' && ($call['args'][0] ?? '') === 'mcp') {
+        if (
+            $call['command'] === 'gemini'
+            && ($call['args'][0] ?? '') === 'mcp'
+        ) {
             $addCall = $call;
         }
     }

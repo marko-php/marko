@@ -145,7 +145,8 @@ class ClassFileParser
             return true;
         }
 
-        return is_array($prevSignificant) && in_array($prevSignificant[0], [T_DOUBLE_COLON, T_NEW], true);
+        return is_array($prevSignificant)
+            && in_array($prevSignificant[0], [T_DOUBLE_COLON, T_NEW], true);
     }
 
     /**
@@ -205,7 +206,10 @@ class ClassFileParser
         } catch (Error $e) {
             $missingClass = MarkoException::extractMissingClass($e);
             $missingPackage = $missingClass !== null ? MarkoException::inferPackageName($missingClass) : null;
-            if ($missingClass !== null && $missingPackage !== null) {
+            if (
+                $missingClass !== null
+                && $missingPackage !== null
+            ) {
                 $this->recordSkip(new DiscoverySkip($filePath, $className, $missingClass, $missingPackage));
 
                 return false;
@@ -232,7 +236,10 @@ class ClassFileParser
         $this->skippedFiles[$skip->filePath] = $skip;
 
         // Several discovery passes load the same file; warn once per file per process.
-        if (DiscoverySkips::record($skip) && !$this->appEnvironment->isProduction()) {
+        if (
+            DiscoverySkips::record($skip)
+            && !$this->appEnvironment->isProduction()
+        ) {
             error_log('[marko] ' . $skip->message());
         }
     }
@@ -254,7 +261,10 @@ class ClassFileParser
         );
 
         foreach ($iterator as $file) {
-            if ($file->isDir() || $file->getExtension() !== 'php') {
+            if (
+                $file->isDir()
+                || $file->getExtension() !== 'php'
+            ) {
                 continue;
             }
 

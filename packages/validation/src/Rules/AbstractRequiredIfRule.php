@@ -39,7 +39,10 @@ abstract readonly class AbstractRequiredIfRule implements ImplicitRuleInterface,
         string $otherField,
         string|int|float|bool|null ...$values,
     ) {
-        if (trim($otherField) === '' || $values === []) {
+        if (
+            trim($otherField) === ''
+            || $values === []
+        ) {
             throw new InvalidArgumentException(
                 "The {$this->name()} rule needs a field and at least one value, e.g. {$this->name()}:type,video",
             );
@@ -54,7 +57,8 @@ abstract readonly class AbstractRequiredIfRule implements ImplicitRuleInterface,
         mixed $value,
         array $data,
     ): bool {
-        return !$this->requiresValue($field, $data) || !EmptyValue::is($value);
+        return !$this->requiresValue($field, $data)
+            || !EmptyValue::is($value);
     }
 
     public function message(
@@ -91,7 +95,10 @@ abstract readonly class AbstractRequiredIfRule implements ImplicitRuleInterface,
             return array_any($this->values, static fn (string $value): bool => in_array($value, $accepted, true));
         }
 
-        if ($actual !== null && !is_scalar($actual)) {
+        if (
+            $actual !== null
+            && !is_scalar($actual)
+        ) {
             return false;
         }
 

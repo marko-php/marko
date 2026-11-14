@@ -46,14 +46,20 @@ class OpenSslEncryptor implements EncryptorInterface
             throw EncryptionException::invalidCipher($cipher);
         }
 
-        if (!str_ends_with($cipher, '-gcm') && !str_ends_with($cipher, '-ccm')) {
+        if (
+            !str_ends_with($cipher, '-gcm')
+            && !str_ends_with($cipher, '-ccm')
+        ) {
             throw EncryptionException::nonAeadCipher($cipher);
         }
 
         $ivLength = openssl_cipher_iv_length($cipher);
         $keyLength = openssl_cipher_key_length($cipher);
 
-        if ($ivLength === false || $keyLength === false) {
+        if (
+            $ivLength === false
+            || $keyLength === false
+        ) {
             throw new EncryptionException(
                 message: "Failed to determine IV or key length for cipher '$cipher'",
                 context: 'Initializing OpenSSL encryptor at construction',
@@ -156,9 +162,13 @@ class OpenSslEncryptor implements EncryptorInterface
             throw DecryptionException::invalidPayload();
         }
 
-        if (!is_string($payload['iv'] ?? null) || !is_string($payload['value'] ?? null) || !is_string(
-            $payload['tag'] ?? null,
-        )) {
+        if (
+            !is_string($payload['iv'] ?? null)
+            || !is_string($payload['value'] ?? null)
+            || !is_string(
+                $payload['tag'] ?? null,
+            )
+        ) {
             throw DecryptionException::invalidPayload();
         }
 
@@ -166,7 +176,11 @@ class OpenSslEncryptor implements EncryptorInterface
         $value = base64_decode($payload['value'], true);
         $tag = base64_decode($payload['tag'], true);
 
-        if ($iv === false || $value === false || $tag === false) {
+        if (
+            $iv === false
+            || $value === false
+            || $tag === false
+        ) {
             throw DecryptionException::invalidPayload();
         }
 
@@ -178,7 +192,9 @@ class OpenSslEncryptor implements EncryptorInterface
             throw DecryptionException::invalidTagLength(strlen($tag), self::TAG_LENGTH);
         }
 
-        $aadCandidates = $aad !== '' && $this->aadFallback ? [$aad, ''] : [$aad];
+        $aadCandidates = ($aad !== '' && $this->aadFallback)
+            ? [$aad, '']
+            : [$aad];
 
         foreach ($aadCandidates as $candidateAad) {
             foreach ([$this->key, ...$this->previousKeys] as $key) {
@@ -202,6 +218,8 @@ class OpenSslEncryptor implements EncryptorInterface
     ): ?string {
         $key = base64_decode($encoded, true);
 
-        return $key !== false && strlen($key) === $length ? $key : null;
+        return ($key !== false && strlen($key) === $length)
+            ? $key
+            : null;
     }
 }

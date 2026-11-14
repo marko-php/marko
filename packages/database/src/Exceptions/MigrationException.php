@@ -22,7 +22,7 @@ class MigrationException extends MarkoException
         string $error,
         ?Throwable $previous = null,
     ): self {
-        $originalSuggestion = $previous instanceof MarkoException || $previous instanceof UnsupportedFeatureExceptionInterface
+        $originalSuggestion = ($previous instanceof MarkoException || $previous instanceof UnsupportedFeatureExceptionInterface)
             ? $previous->getSuggestion()
             : '';
 

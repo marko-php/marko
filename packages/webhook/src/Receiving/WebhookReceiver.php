@@ -55,7 +55,10 @@ class WebhookReceiver implements WebhookReceiverInterface
             throw InvalidSignatureException::missingTimestamp();
         }
 
-        if ($webhookId === null || $webhookId === '') {
+        if (
+            $webhookId === null
+            || $webhookId === ''
+        ) {
             throw InvalidSignatureException::missingWebhookId();
         }
 

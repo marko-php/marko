@@ -87,8 +87,10 @@ class FileRestartSignal implements RestartSignalInterface
         }
 
         // A concurrent creator winning the race is fine: mkdir() fails but the directory then exists
-        if (!ErrorCapture::run($reason, fn (): bool => mkdir($directory, 0755, recursive: true))
+        if (
+            !ErrorCapture::run($reason, fn (): bool => mkdir($directory, 0755, recursive: true))
             && !is_dir($directory)
+
         ) {
             throw QueueException::restartSignalNotWritable(
                 $this->path,

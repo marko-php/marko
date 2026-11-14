@@ -71,7 +71,10 @@ describe('Repository CRUD Operations', function (): void {
                 $this->queries[] = ['sql' => $sql, 'bindings' => $bindings, 'type' => 'query'];
 
                 // Simulate SELECT by ID
-                if (str_contains($sql, 'WHERE "id" = ?') && count($bindings) > 0) {
+                if (
+                    str_contains($sql, 'WHERE "id" = ?')
+                    && count($bindings) > 0
+                ) {
                     $id = $bindings[0];
                     foreach ($this->storage as $row) {
                         if ($row['id'] === $id) {
@@ -133,7 +136,10 @@ describe('Repository CRUD Operations', function (): void {
                 // Simulate DELETE
                 if (str_starts_with($sql, 'DELETE')) {
                     $id = $bindings[0] ?? null;
-                    if ($id && isset($this->storage[$id])) {
+                    if (
+                        $id
+                        && isset($this->storage[$id])
+                    ) {
                         unset($this->storage[$id]);
 
                         return 1;

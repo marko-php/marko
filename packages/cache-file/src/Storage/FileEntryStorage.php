@@ -69,7 +69,11 @@ readonly class FileEntryStorage
 
         $data = unserialize($serialized);
 
-        if (!is_array($data) || !array_key_exists('value', $data) || !isset($data['created_at'])) {
+        if (
+            !is_array($data)
+            || !array_key_exists('value', $data)
+            || !isset($data['created_at'])
+        ) {
             return null;
         }
 
@@ -150,15 +154,17 @@ readonly class FileEntryStorage
 
         try {
             $content = stream_get_contents($fh);
-            $serialized = $content !== '' && $content !== false
+            $serialized = ($content !== '' && $content !== false)
                 ? $this->cacheValueSigner->unwrap($content, $key)
                 : null;
             $data = $serialized !== null ? unserialize($serialized) : null;
 
-            if (!is_array($data)
+            if (
+                !is_array($data)
                 || !array_key_exists('value', $data)
                 || !isset($data['created_at'])
                 || $this->isExpired($data)
+
             ) {
                 $data = null;
             }
@@ -176,7 +182,9 @@ readonly class FileEntryStorage
 
                 $written = ErrorCapture::run(
                     $reason,
-                    fn (): int|false => ftruncate($fh, 0) && rewind($fh) ? fwrite($fh, $envelope) : false,
+                    fn (): int|false => (ftruncate($fh, 0) && rewind($fh))
+                        ? fwrite($fh, $envelope)
+                        : false,
                 );
 
                 if ($written !== strlen($envelope)) {
@@ -250,7 +258,10 @@ readonly class FileEntryStorage
 
             $stat = fstat($fh);
 
-            if ($stat !== false && $stat['nlink'] > 0) {
+            if (
+                $stat !== false
+                && $stat['nlink'] > 0
+            ) {
                 return $fh;
             }
 
@@ -274,7 +285,10 @@ readonly class FileEntryStorage
             return;
         }
 
-        if (!ErrorCapture::run($reason, fn (): bool => mkdir($path, 0755, recursive: true)) && !is_dir($path)) {
+        if (
+            !ErrorCapture::run($reason, fn (): bool => mkdir($path, 0755, recursive: true))
+            && !is_dir($path)
+        ) {
             throw FileCacheException::directoryNotCreatable($path, $reason);
         }
     }

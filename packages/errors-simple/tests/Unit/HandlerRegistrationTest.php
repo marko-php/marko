@@ -69,7 +69,10 @@ describe('SimpleErrorHandler Registration', function (): void {
             $current = set_exception_handler(fn () => null);
             restore_exception_handler();
 
-            if ($current === $this->originalExceptionHandler || $current === null) {
+            if (
+                $current === $this->originalExceptionHandler
+                || $current === null
+            ) {
                 break;
             }
 
@@ -81,7 +84,10 @@ describe('SimpleErrorHandler Registration', function (): void {
             $current = set_error_handler(fn () => true);
             restore_error_handler();
 
-            if ($current === $this->originalErrorHandler || $current === null) {
+            if (
+                $current === $this->originalErrorHandler
+                || $current === null
+            ) {
                 break;
             }
 

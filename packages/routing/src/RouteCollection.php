@@ -51,7 +51,10 @@ class RouteCollection
             );
         }
 
-        if ($route->name !== null && isset($this->names[$route->name])) {
+        if (
+            $route->name !== null
+            && isset($this->names[$route->name])
+        ) {
             $existing = $this->names[$route->name];
             throw RouteConflictException::duplicateName(
                 name: $route->name,
@@ -117,7 +120,9 @@ class RouteCollection
     ): ?RouteDefinition {
         $route = $this->get($method, $path);
 
-        return $route !== null && $route->isStatic ? $route : null;
+        return ($route !== null && $route->isStatic)
+            ? $route
+            : null;
     }
 
     public function count(): int

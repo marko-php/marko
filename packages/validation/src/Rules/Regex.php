@@ -17,11 +17,17 @@ readonly class Regex implements RuleInterface
         mixed $value,
         array $data,
     ): bool {
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return true;
         }
 
-        if (!is_string($value) && !is_numeric($value)) {
+        if (
+            !is_string($value)
+            && !is_numeric($value)
+        ) {
             return false;
         }
 

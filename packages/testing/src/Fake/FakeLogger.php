@@ -101,7 +101,10 @@ class FakeLogger implements LoggerInterface
         $found = array_any(
             $this->entries,
             fn (array $entry) => $entry['message'] === $message
-                && ($level === null || $entry['level'] === $level),
+                && (
+                    $level === null
+                    || $entry['level'] === $level
+                ),
         );
 
         if (!$found) {

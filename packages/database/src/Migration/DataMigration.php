@@ -149,6 +149,8 @@ abstract class DataMigration extends Migration
 
         $firstValue = reset($data);
 
-        return is_array($firstValue) && !empty($firstValue) && array_is_list($data);
+        return is_array($firstValue)
+            && !empty($firstValue)
+            && array_is_list($data);
     }
 }

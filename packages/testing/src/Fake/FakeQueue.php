@@ -236,7 +236,10 @@ class FakeQueue implements QueueInterface
         $matches = array_filter(
             $this->skipped,
             fn (array $entry) => $entry['job'] instanceof $jobClass
-                && ($callback === null || $callback($entry['job'])),
+                && (
+                    $callback === null
+                    || $callback($entry['job'])
+                ),
         );
 
         if ($matches === []) {

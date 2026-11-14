@@ -84,7 +84,10 @@ class MockQueueChannel extends AMQPChannel
     ): void {
         $this->calls[] = ['method' => 'wait_for_pending_acks', 'timeout' => $timeout];
 
-        if ($this->nackPublishes && is_callable($this->confirmNackHandler)) {
+        if (
+            $this->nackPublishes
+            && is_callable($this->confirmNackHandler)
+        ) {
             ($this->confirmNackHandler)(new AMQPMessage(''));
         }
     }
@@ -121,7 +124,10 @@ class MockQueueChannel extends AMQPChannel
         $arguments = [],
         $ticket = null,
     ): ?array {
-        if ($passive && $this->passiveDeclareThrows) {
+        if (
+            $passive
+            && $this->passiveDeclareThrows
+        ) {
             throw new RuntimeException('NOT_FOUND - no queue');
         }
 
@@ -651,7 +657,8 @@ test('it declares delay queue with dead letter exchange configuration', function
     // Find the delay queue declaration (not the main queue declaration)
     $queueDeclareCalls = array_values(array_filter(
         $channel->calls,
-        fn (array $call) => $call['method'] === 'queue_declare' && $call['queue'] === 'default_delay',
+        fn (array $call) => $call['method'] === 'queue_declare'
+            && $call['queue'] === 'default_delay',
     ));
 
     expect($queueDeclareCalls)->toHaveCount(1)
@@ -790,7 +797,8 @@ test('it releases job with delay via delay queue mechanism', function (): void {
     // Should declare the delay queue with DLX config
     $delayQueueCalls = array_values(array_filter(
         $channel->calls,
-        fn (array $call) => $call['method'] === 'queue_declare' && $call['queue'] === 'default_delay',
+        fn (array $call) => $call['method'] === 'queue_declare'
+            && $call['queue'] === 'default_delay',
     ));
 
     expect($delayQueueCalls)->toHaveCount(1);
@@ -805,7 +813,8 @@ test('it releases job with delay via delay queue mechanism', function (): void {
     // Should publish to delay queue with TTL
     $publishCalls = array_values(array_filter(
         $channel->calls,
-        fn (array $call) => $call['method'] === 'basic_publish' && $call['routing_key'] === 'default_delay',
+        fn (array $call) => $call['method'] === 'basic_publish'
+            && $call['routing_key'] === 'default_delay',
     ));
 
     expect($publishCalls)->toHaveCount(1);
@@ -859,7 +868,8 @@ test('it returns queue size via passive declare', function (): void {
 
     $passiveCalls = array_values(array_filter(
         $channel->calls,
-        fn (array $call) => $call['method'] === 'queue_declare' && $call['passive'] === true,
+        fn (array $call) => $call['method'] === 'queue_declare'
+            && $call['passive'] === true,
     ));
 
     expect($passiveCalls)->toHaveCount(1)
@@ -1372,7 +1382,8 @@ test('it derives the delay queue name from the originating queue when releasing 
 
     $delayQueueDeclareCalls = array_values(array_filter(
         $channel->calls,
-        fn (array $call) => $call['method'] === 'queue_declare' && str_ends_with($call['queue'], '_delay'),
+        fn (array $call) => $call['method'] === 'queue_declare'
+            && str_ends_with($call['queue'], '_delay'),
     ));
 
     expect($delayQueueDeclareCalls)->toHaveCount(1)
@@ -1405,7 +1416,8 @@ test('it declares each distinct queue (a second queue name triggers its own queu
 
     $queueDeclareCalls = array_values(array_filter(
         $channel->calls,
-        fn (array $call) => $call['method'] === 'queue_declare' && !($call['passive'] ?? false),
+        fn (array $call) => $call['method'] === 'queue_declare'
+            && !($call['passive'] ?? false),
     ));
 
     $declaredQueueNames = array_map(fn (array $call) => $call['queue'], $queueDeclareCalls);

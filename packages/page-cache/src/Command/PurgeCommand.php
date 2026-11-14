@@ -30,7 +30,10 @@ readonly class PurgeCommand implements CommandInterface
         if ($input->hasOption('tag')) {
             $tag = $input->getOption('tag');
 
-            if ($tag === 'true' || $tag === '') {
+            if (
+                $tag === 'true'
+                || $tag === ''
+            ) {
                 $output->writeLine('Error: --tag requires a value. Usage: page-cache:purge --tag <tag>');
 
                 return 1;

@@ -92,7 +92,8 @@ it('matches toHaveSentRequest against a callback', function () {
 
     $http->post('https://api.example.com/orders', ['json' => ['id' => 1]]);
 
-    expect($http)->toHaveSentRequest(fn (RecordedRequest $r) => $r->method === 'POST' && $r->json()['id'] === 1)
+    expect($http)->toHaveSentRequest(fn (RecordedRequest $r) => $r->method === 'POST'
+        && $r->json()['id'] === 1)
         ->not->toHaveSentRequest(fn (RecordedRequest $r) => $r->method === 'DELETE');
 });
 

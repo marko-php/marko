@@ -57,7 +57,10 @@ class FakeMailer implements MailerInterface
      */
     public function assertNothingSent(): void
     {
-        if ($this->sent !== [] || $this->sentRaw !== []) {
+        if (
+            $this->sent !== []
+            || $this->sentRaw !== []
+        ) {
             throw AssertionFailedException::expectedEmpty('messages');
         }
     }

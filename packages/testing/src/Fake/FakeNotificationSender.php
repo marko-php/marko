@@ -155,7 +155,8 @@ class FakeNotificationSender implements NotificationSenderInterface
     ): void {
         $actual = count(array_filter(
             $this->notifications,
-            fn (array $record): bool => !$record['queued'] && $record['notification'] instanceof $notificationClass,
+            fn (array $record): bool => !$record['queued']
+                && $record['notification'] instanceof $notificationClass,
         ));
 
         if ($actual !== $expected) {
@@ -203,7 +204,10 @@ class FakeNotificationSender implements NotificationSenderInterface
             fn (array $record): bool => $record['queued'] === $queued
                 && $record['notification'] instanceof $notificationClass
                 && self::sameNotifiable($record['notifiable'], $notifiable)
-                && ($filter === null || $filter($record['notification'], $record['channels'])),
+                && (
+                    $filter === null
+                    || $filter($record['notification'], $record['channels'])
+                ),
         ));
     }
 

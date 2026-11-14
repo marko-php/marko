@@ -52,7 +52,8 @@ class InMemoryTokenRepository implements TokenRepositoryInterface
     ): void {
         $this->tokens = array_filter(
             $this->tokens,
-            fn (PersonalAccessToken $token): bool => $token->tokenableType !== $type || $token->tokenableId !== $id,
+            fn (PersonalAccessToken $token): bool => $token->tokenableType !== $type
+                || $token->tokenableId !== $id,
         );
     }
 }

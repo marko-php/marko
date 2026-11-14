@@ -45,7 +45,10 @@ readonly class StatusCommand implements CommandInterface
         $totalPending = $schemaPendingCount + $dataPendingCount;
 
         // No migrations at all
-        if ($totalApplied === 0 && $totalPending === 0) {
+        if (
+            $totalApplied === 0
+            && $totalPending === 0
+        ) {
             $output->writeLine('No migrations found.');
 
             return 0;

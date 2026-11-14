@@ -109,7 +109,8 @@ readonly class PasswordResetBroker implements PasswordResetBrokerInterface
 
         $record = $this->matchingRecord($user, $token);
 
-        return $record !== null && !$this->isExpired($record);
+        return $record !== null
+            && !$this->isExpired($record);
     }
 
     /**
@@ -176,7 +177,10 @@ readonly class PasswordResetBroker implements PasswordResetBrokerInterface
     ): ?PasswordResetTokenRecord {
         $record = $this->passwordResetTokenRepository->find($user->getAuthIdentifier());
 
-        if ($record === null || !hash_equals($record->tokenHash, hash('sha256', $token))) {
+        if (
+            $record === null
+            || !hash_equals($record->tokenHash, hash('sha256', $token))
+        ) {
             return null;
         }
 

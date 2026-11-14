@@ -180,7 +180,8 @@ describe('FakeHttpClient', function (): void {
         $http->post('https://api.example.com/orders', ['json' => ['id' => 1]]);
 
         $http->assertSent();
-        $http->assertSent(fn (RecordedRequest $r) => $r->method === 'POST' && $r->json()['id'] === 1);
+        $http->assertSent(fn (RecordedRequest $r) => $r->method === 'POST'
+            && $r->json()['id'] === 1);
         $http->assertSentCount(1);
         $http->assertNotSent(fn (RecordedRequest $r) => str_contains($r->url, '/fail'));
 

@@ -28,7 +28,10 @@ readonly class TokenConfig
             return null;
         }
 
-        if (!is_int($days) || $days < 1) {
+        if (
+            !is_int($days)
+            || $days < 1
+        ) {
             throw new ConfigException(
                 message: 'Configuration key "authentication-token.token_expiration_days" must be a positive integer or null',
                 context: sprintf('Got %s', var_export($days, true)),

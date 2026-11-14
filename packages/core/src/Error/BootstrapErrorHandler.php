@@ -123,7 +123,10 @@ class BootstrapErrorHandler
         $development = $this->appEnvironment->isDevelopment();
         $json = $this->acceptsJson();
 
-        if (PHP_SAPI !== 'cli' && !headers_sent()) {
+        if (
+            PHP_SAPI !== 'cli'
+            && !headers_sent()
+        ) {
             http_response_code(500);
             header('Content-Type: ' . ($json ? 'application/json' : 'text/plain; charset=UTF-8'));
         }
@@ -162,6 +165,7 @@ class BootstrapErrorHandler
             return false;
         }
 
-        return str_contains($accept, 'application/json') || str_contains($accept, '+json');
+        return str_contains($accept, 'application/json')
+            || str_contains($accept, '+json');
     }
 }

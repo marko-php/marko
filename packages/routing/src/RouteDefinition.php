@@ -107,7 +107,8 @@ readonly class RouteDefinition
         $this->isStatic = $parameters === [];
         $this->staticSegmentCount = count(array_filter(
             explode('/', $skeleton),
-            fn (string $segment): bool => $segment !== '' && !str_contains($segment, '{'),
+            fn (string $segment): bool => $segment !== ''
+                && !str_contains($segment, '{'),
         ));
         $firstParameter = strpos($path, '{');
         $this->staticPrefixLength = $firstParameter === false ? strlen($path) : $firstParameter;
@@ -155,11 +156,16 @@ readonly class RouteDefinition
         }
 
         if ($parameter !== $this->catchAll) {
-            return !str_contains($value, '/') && $value !== '.' && $value !== '..';
+            return !str_contains($value, '/')
+                && $value !== '.'
+                && $value !== '..';
         }
 
         foreach (explode('/', $value) as $segment) {
-            if ($segment === '.' || $segment === '..') {
+            if (
+                $segment === '.'
+                || $segment === '..'
+            ) {
                 return false;
             }
         }
@@ -345,12 +351,17 @@ readonly class RouteDefinition
     ): void {
         $isLast = $index === array_key_last($tokens);
         $previous = $tokens[$index - 1] ?? null;
-        $startsSegment = $previous !== null && $previous['parameter'] === null && str_ends_with(
-            $previous['text'],
-            '/',
-        );
+        $startsSegment = $previous !== null
+            && $previous['parameter'] === null
+            && str_ends_with(
+                $previous['text'],
+                '/',
+            );
 
-        if (!$isLast || !$startsSegment) {
+        if (
+            !$isLast
+            || !$startsSegment
+        ) {
             throw RouteException::catchAllNotFinal($this->path, $name);
         }
     }

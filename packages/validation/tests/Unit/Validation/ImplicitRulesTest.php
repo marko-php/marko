@@ -107,7 +107,8 @@ describe('ImplicitRuleInterface', function (): void {
                 mixed $value,
                 array $data,
             ): bool {
-                return ($data['country'] ?? null) !== 'US' || $value !== null;
+                return ($data['country'] ?? null) !== 'US'
+                    || $value !== null;
             }
 
             public function message(

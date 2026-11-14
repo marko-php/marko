@@ -65,7 +65,10 @@ readonly class UniqueJobPushPlugin
     private function gate(
         JobInterface $job,
     ): ?PushResult {
-        if (!$job instanceof UniqueJobInterface || $this->uniqueJobLocks->acquire($job)) {
+        if (
+            !$job instanceof UniqueJobInterface
+            || $this->uniqueJobLocks->acquire($job)
+        ) {
             return null;
         }
 

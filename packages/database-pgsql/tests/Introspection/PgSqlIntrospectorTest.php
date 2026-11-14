@@ -85,7 +85,10 @@ describe('PgSqlIntrospector', function (): void {
             }
 
             // Primary key query
-            if (str_contains($sql, 'pg_constraint') && str_contains($sql, "'p'")) {
+            if (
+                str_contains($sql, 'pg_constraint')
+                && str_contains($sql, "'p'")
+            ) {
                 return [['column_name' => 'id']];
             }
 
@@ -304,7 +307,10 @@ describe('PgSqlIntrospector', function (): void {
                 ];
             }
 
-            if (str_contains($sql, 'pg_constraint') && str_contains($sql, "'p'")) {
+            if (
+                str_contains($sql, 'pg_constraint')
+                && str_contains($sql, "'p'")
+            ) {
                 return [['column_name' => 'id']];
             }
 
@@ -571,7 +577,10 @@ describe('PgSqlIntrospector', function (): void {
 
     it('checks table existence correctly', function (): void {
         $connection = createTestConnection(function (string $sql, array $bindings): array {
-            if (str_contains($sql, 'information_schema.tables') && in_array('users', $bindings, true)) {
+            if (
+                str_contains($sql, 'information_schema.tables')
+                && in_array('users', $bindings, true)
+            ) {
                 return [['table_name' => 'users']];
             }
 
@@ -643,11 +652,17 @@ describe('PgSqlIntrospector', function (): void {
                 ];
             }
 
-            if (str_contains($sql, 'pg_constraint') && str_contains($sql, "'p'")) {
+            if (
+                str_contains($sql, 'pg_constraint')
+                && str_contains($sql, "'p'")
+            ) {
                 return [['column_name' => 'id']];
             }
 
-            if (str_contains($sql, 'pg_constraint') && str_contains($sql, "'u'")) {
+            if (
+                str_contains($sql, 'pg_constraint')
+                && str_contains($sql, "'u'")
+            ) {
                 return [];
             }
 
@@ -703,11 +718,17 @@ describe('PgSqlIntrospector', function (): void {
                 ];
             }
 
-            if (str_contains($sql, 'pg_constraint') && str_contains($sql, "'p'")) {
+            if (
+                str_contains($sql, 'pg_constraint')
+                && str_contains($sql, "'p'")
+            ) {
                 return [['column_name' => 'id']];
             }
 
-            if (str_contains($sql, 'pg_constraint') && str_contains($sql, "'u'")) {
+            if (
+                str_contains($sql, 'pg_constraint')
+                && str_contains($sql, "'u'")
+            ) {
                 return [['column_name' => 'email']];
             }
 
@@ -730,7 +751,10 @@ describe('PgSqlIntrospector', function (): void {
                 ];
             }
 
-            if (str_contains($sql, 'pg_constraint') && str_contains($sql, "'p'")) {
+            if (
+                str_contains($sql, 'pg_constraint')
+                && str_contains($sql, "'p'")
+            ) {
                 return [['column_name' => 'id']];
             }
 

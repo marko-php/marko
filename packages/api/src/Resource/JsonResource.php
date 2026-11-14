@@ -87,7 +87,10 @@ abstract class JsonResource implements ResourceInterface
 
             if ($value instanceof self) {
                 $value = $value->resolve();
-            } elseif ($value instanceof ResourceInterface || $value instanceof ResourceCollectionInterface) {
+            } elseif (
+                $value instanceof ResourceInterface
+                || $value instanceof ResourceCollectionInterface
+            ) {
                 $value = $this->filterArray($value->toArray());
             } elseif (is_array($value)) {
                 $value = $this->filterArray($value);

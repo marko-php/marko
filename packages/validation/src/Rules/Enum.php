@@ -49,7 +49,8 @@ readonly class Enum implements RuleInterface
         $this->assertCasesOf($cases ?? []);
         $this->cases = $cases ?? $enum::cases();
         $type = new ReflectionEnum($enum)->getBackingType();
-        $this->intBacked = $type instanceof ReflectionNamedType && $type->getName() === 'int';
+        $this->intBacked = $type instanceof ReflectionNamedType
+            && $type->getName() === 'int';
     }
 
     /**
@@ -104,13 +105,17 @@ readonly class Enum implements RuleInterface
         mixed $value,
         array $data,
     ): bool {
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return true;
         }
 
         $case = $this->resolve($value);
 
-        return $case !== null && in_array($case, $this->cases, true);
+        return $case !== null
+            && in_array($case, $this->cases, true);
     }
 
     public function message(
@@ -135,7 +140,10 @@ readonly class Enum implements RuleInterface
         $enum = $this->enum;
 
         if ($this->intBacked) {
-            if (is_string($value) && preg_match('/^-?[0-9]+$/D', $value) === 1) {
+            if (
+                is_string($value)
+                && preg_match('/^-?[0-9]+$/D', $value) === 1
+            ) {
                 $value = (int) $value;
             }
 

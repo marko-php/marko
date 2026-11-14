@@ -29,7 +29,8 @@ readonly class JunieAgent implements AgentInterface
 
     public function isInstalled(): bool
     {
-        return is_dir($this->projectRoot . '/.idea') || is_dir($this->projectRoot . '/junie');
+        return is_dir($this->projectRoot . '/.idea')
+            || is_dir($this->projectRoot . '/junie');
     }
 
     public function install(

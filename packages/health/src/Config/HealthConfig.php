@@ -23,7 +23,10 @@ readonly class HealthConfig
     {
         $secret = $this->config->get('health.secret');
 
-        if ($secret === null || $secret === '') {
+        if (
+            $secret === null
+            || $secret === ''
+        ) {
             return null;
         }
 

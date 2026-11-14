@@ -163,11 +163,17 @@ class Message
         string $name,
         string $value,
     ): self {
-        if (str_contains($name, "\r") || str_contains($name, "\n")) {
+        if (
+            str_contains($name, "\r")
+            || str_contains($name, "\n")
+        ) {
             throw MessageException::headerInjection('header name', $name);
         }
 
-        if (str_contains($value, "\r") || str_contains($value, "\n")) {
+        if (
+            str_contains($value, "\r")
+            || str_contains($value, "\n")
+        ) {
             throw MessageException::headerInjection('header value', $value);
         }
 

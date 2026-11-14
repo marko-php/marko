@@ -232,7 +232,8 @@ test('DatabaseQueue size returns pending job count', function () {
         ->with(
             $this->stringContains('COUNT'),
             $this->callback(function (array $bindings) {
-                return isset($bindings['queue']) && $bindings['queue'] === 'default';
+                return isset($bindings['queue'])
+                    && $bindings['queue'] === 'default';
             }),
         )
         ->willReturn([['count' => 5]]);
@@ -251,7 +252,8 @@ test('DatabaseQueue clear removes all jobs', function () {
         ->with(
             $this->stringContains('DELETE'),
             $this->callback(function (array $bindings) {
-                return isset($bindings['queue']) && $bindings['queue'] === 'default';
+                return isset($bindings['queue'])
+                    && $bindings['queue'] === 'default';
             }),
         )
         ->willReturn(10);
@@ -270,7 +272,8 @@ test('DatabaseQueue delete removes specific job', function () {
         ->with(
             $this->stringContains('DELETE'),
             $this->callback(function (array $bindings) {
-                return isset($bindings['id']) && $bindings['id'] === 'job-123';
+                return isset($bindings['id'])
+                    && $bindings['id'] === 'job-123';
             }),
         )
         ->willReturn(1);

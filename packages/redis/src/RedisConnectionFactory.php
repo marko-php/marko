@@ -46,7 +46,9 @@ class RedisConnectionFactory implements RedisConnectionFactoryInterface
         return new RedisConnection(
             host: $this->config->getString("$key.host"),
             port: $this->config->getInt("$key.port"),
-            password: $password === null || $password === '' ? null : (string) $password,
+            password: ($password === null || $password === '')
+                ? null
+                : (string) $password,
             database: $this->config->getInt("$key.database"),
             scheme: $this->config->getString("$key.scheme"),
         );

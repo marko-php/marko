@@ -33,7 +33,10 @@ class FakeUserProvider implements UserProviderInterface
     public function retrieveByCredentials(
         array $credentials,
     ): ?AuthenticatableInterface {
-        if (isset($credentials['identifier']) && isset($this->users[$credentials['identifier']])) {
+        if (
+            isset($credentials['identifier'])
+            && isset($this->users[$credentials['identifier']])
+        ) {
             return $this->users[$credentials['identifier']];
         }
 

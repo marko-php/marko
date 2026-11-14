@@ -38,7 +38,8 @@ readonly class JarCookie
     public function isExpired(
         int $now,
     ): bool {
-        return $this->expiresAt !== null && $this->expiresAt <= $now;
+        return $this->expiresAt !== null
+            && $this->expiresAt <= $now;
     }
 
     /**
@@ -63,11 +64,15 @@ readonly class JarCookie
         string $path,
         bool $secure,
     ): bool {
-        if ($this->secure && !$secure) {
+        if (
+            $this->secure
+            && !$secure
+        ) {
             return false;
         }
 
-        return $this->matchesHost($host) && self::pathMatches($path, $this->path);
+        return $this->matchesHost($host)
+            && self::pathMatches($path, $this->path);
     }
 
     private function matchesHost(
@@ -95,7 +100,8 @@ readonly class JarCookie
             return true;
         }
 
-        return filter_var($host, FILTER_VALIDATE_IP) === false && str_ends_with($host, '.' . $domain);
+        return filter_var($host, FILTER_VALIDATE_IP) === false
+            && str_ends_with($host, '.' . $domain);
     }
 
     /**
@@ -113,7 +119,8 @@ readonly class JarCookie
             return false;
         }
 
-        return str_ends_with($cookiePath, '/') || $requestPath[strlen($cookiePath)] === '/';
+        return str_ends_with($cookiePath, '/')
+            || $requestPath[strlen($cookiePath)] === '/';
     }
 
     /**

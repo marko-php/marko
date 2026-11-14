@@ -33,7 +33,10 @@ class PgSqlPubSubConnection
         public readonly string $prefix = 'marko_',
         public readonly ?string $sslMode = null,
     ) {
-        if ($sslMode !== null && !in_array($sslMode, self::SSL_MODES, true)) {
+        if (
+            $sslMode !== null
+            && !in_array($sslMode, self::SSL_MODES, true)
+        ) {
             throw PubSubException::invalidConnectionOption('pubsub-pgsql.sslmode', $sslMode, self::SSL_MODES);
         }
     }

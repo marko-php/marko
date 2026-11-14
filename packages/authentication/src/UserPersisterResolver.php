@@ -92,7 +92,10 @@ class UserPersisterResolver
     ): UserPersisterInterface {
         $providersConfig = $this->config->providersOrNull();
 
-        if ($providersConfig !== null && !array_key_exists($providerName, $providersConfig)) {
+        if (
+            $providersConfig !== null
+            && !array_key_exists($providerName, $providersConfig)
+        ) {
             throw UserPersisterException::undefinedPersisterProvider(
                 $providerName,
                 array_map(strval(...), array_keys($providersConfig)),
@@ -111,7 +114,10 @@ class UserPersisterResolver
             return $this->container->get(UserPersisterInterface::class);
         }
 
-        if (!is_string($class) || !is_a($class, UserPersisterInterface::class, true)) {
+        if (
+            !is_string($class)
+            || !is_a($class, UserPersisterInterface::class, true)
+        ) {
             throw UserPersisterException::invalidPersisterClass(
                 $providerName,
                 is_string($class) ? $class : get_debug_type($class),

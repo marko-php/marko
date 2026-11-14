@@ -103,7 +103,10 @@ readonly class ScheduleRunner
 
             $command = $task->getCommand();
 
-            if ($command !== null && $task->runsInBackground()) {
+            if (
+                $command !== null
+                && $task->runsInBackground()
+            ) {
                 try {
                     $this->backgroundCommandLauncher->launch(
                         $command->name,
@@ -123,8 +126,10 @@ readonly class ScheduleRunner
 
             $mutexName = $task->preventsOverlapping() ? $task->mutexName() : null;
 
-            if ($mutexName !== null
+            if (
+                $mutexName !== null
                 && !$this->taskMutex->acquire($mutexName, (int) $task->getOverlapExpiresAfterMinutes() * 60)
+
             ) {
                 $output->writeLine("Skipped (still running): $description");
                 $skipped++;

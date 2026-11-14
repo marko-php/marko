@@ -109,7 +109,10 @@ readonly class AdminSectionCacheContributor implements DiscoveryCacheContributor
         int|string $index,
         string $field,
     ): string {
-        if (!isset($record[$field]) || !is_string($record[$field])) {
+        if (
+            !isset($record[$field])
+            || !is_string($record[$field])
+        ) {
             throw DiscoveryCacheException::malformedSection(
                 self::KEY,
                 "admin section $index.$field must be a string",

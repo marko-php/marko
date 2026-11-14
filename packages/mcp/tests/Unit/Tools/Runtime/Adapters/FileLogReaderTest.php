@@ -90,4 +90,5 @@ it('throws a loud error when the latest log cannot be read', function (): void {
     } finally {
         chmod($this->logsDir . '/app.log', 0o644);
     }
-})->skip(fn (): bool => function_exists('posix_getuid') && posix_getuid() === 0, 'root can read any file');
+})->skip(fn (): bool => function_exists('posix_getuid')
+    && posix_getuid() === 0, 'root can read any file');

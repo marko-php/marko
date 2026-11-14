@@ -116,7 +116,10 @@ class ManifestParser
         }
 
         foreach ($arguments as $class => $parameters) {
-            if (!is_string($class) || $class === '') {
+            if (
+                !is_string($class)
+                || $class === ''
+            ) {
                 throw ArgumentException::invalidShape($module, 'each key must be a non-empty class name string');
             }
 
@@ -128,7 +131,10 @@ class ManifestParser
             }
 
             foreach (array_keys($parameters) as $parameter) {
-                if (!is_string($parameter) || $parameter === '') {
+                if (
+                    !is_string($parameter)
+                    || $parameter === ''
+                ) {
                     throw ArgumentException::invalidShape(
                         $module,
                         "every key under '$class' must be a non-empty parameter name string",
@@ -176,7 +182,10 @@ class ManifestParser
             );
         }
 
-        if (!isset($data['name']) || !is_string($data['name'])) {
+        if (
+            !isset($data['name'])
+            || !is_string($data['name'])
+        ) {
             throw ModuleException::invalidManifest(
                 basename($modulePath),
                 "Missing required 'name' field in composer.json",

@@ -18,6 +18,8 @@ readonly class WebhookResponse
      */
     public function isRetryable(): bool
     {
-        return $this->statusCode === 408 || $this->statusCode === 429 || $this->statusCode >= 500;
+        return $this->statusCode === 408
+            || $this->statusCode === 429
+            || $this->statusCode >= 500;
     }
 }

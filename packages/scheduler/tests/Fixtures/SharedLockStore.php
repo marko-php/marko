@@ -61,7 +61,10 @@ class SharedLockStore implements LockStoreInterface
     ): ?string {
         $lock = $this->locks[$name] ?? null;
 
-        if ($lock === null || $lock['expires_at'] <= $this->now()) {
+        if (
+            $lock === null
+            || $lock['expires_at'] <= $this->now()
+        ) {
             return null;
         }
 

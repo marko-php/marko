@@ -98,7 +98,8 @@ class UploadedFile implements UploadedFileInterface
      */
     public function isValid(): bool
     {
-        return $this->error === UPLOAD_ERR_OK && !$this->moved;
+        return $this->error === UPLOAD_ERR_OK
+            && !$this->moved;
     }
 
     public function isMoved(): bool
@@ -211,7 +212,10 @@ class UploadedFile implements UploadedFileInterface
 
         $extensions = new finfo(FILEINFO_EXTENSION)->file($this->tempPath);
 
-        if ($extensions === false || $extensions === '???') {
+        if (
+            $extensions === false
+            || $extensions === '???'
+        ) {
             return null;
         }
 

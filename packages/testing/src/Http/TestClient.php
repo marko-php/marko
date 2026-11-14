@@ -419,7 +419,10 @@ class TestClient
     ): static {
         $segments = self::uploadFieldSegments($field);
 
-        if (!is_file($path) || !is_readable($path)) {
+        if (
+            !is_file($path)
+            || !is_readable($path)
+        ) {
             throw TestClientException::unreadableUpload($path);
         }
 
@@ -701,7 +704,10 @@ class TestClient
             $response = $this->application->router->handle($request);
         } finally {
             array_walk_recursive($files, static function (mixed $file): void {
-                if ($file instanceof UploadedFile && is_file($file->tempPath())) {
+                if (
+                    $file instanceof UploadedFile
+                    && is_file($file->tempPath())
+                ) {
                     unlink($file->tempPath());
                 }
             });
@@ -748,11 +754,15 @@ class TestClient
         $post = [];
         $files = [];
         $contentType = null;
-        $bodyless = $method === 'GET' || $method === 'HEAD';
+        $bodyless = $method === 'GET'
+            || $method === 'HEAD';
 
         if ($bodyless) {
             $query = [...$query, ...$data];
-        } elseif ($body !== null && $data !== []) {
+        } elseif (
+            $body !== null
+            && $data !== []
+        ) {
             throw TestClientException::bodyAndData($method, $uri);
         } elseif ($body === null) {
             $post = $data;
@@ -813,7 +823,10 @@ class TestClient
             $requestCookies[$cookie->name] ??= $cookie->value;
         }
 
-        if ($cookies !== [] && !array_key_exists('HTTP_COOKIE', $server)) {
+        if (
+            $cookies !== []
+            && !array_key_exists('HTTP_COOKIE', $server)
+        ) {
             $server['HTTP_COOKIE'] = implode('; ', array_map(
                 static fn (JarCookie $cookie): string => $cookie->name . '=' . rawurlencode($cookie->value),
                 $cookies,
@@ -846,7 +859,10 @@ class TestClient
         $cookies = array_values(array_filter(
             $this->cookies,
             static fn (JarCookie $cookie): bool => $cookie->matches($host, $path, $secure)
-                && ($crossSiteMethod === null || $cookie->allowsCrossSite($crossSiteMethod)),
+                && (
+                    $crossSiteMethod === null
+                    || $cookie->allowsCrossSite($crossSiteMethod)
+                ),
         ));
 
         usort($cookies, static fn (JarCookie $a, JarCookie $b): int => strlen($b->path) <=> strlen($a->path));
@@ -894,7 +910,10 @@ class TestClient
 
         $originHost = parse_url((string) $server['HTTP_ORIGIN'], PHP_URL_HOST);
 
-        if (!is_string($originHost) || $originHost === '') {
+        if (
+            !is_string($originHost)
+            || $originHost === ''
+        ) {
             return true;
         }
 
@@ -909,7 +928,8 @@ class TestClient
     ): bool {
         $https = $server['HTTPS'] ?? '';
 
-        return $https !== '' && strtolower((string) $https) !== 'off';
+        return $https !== ''
+            && strtolower((string) $https) !== 'off';
     }
 
     /**
@@ -954,7 +974,10 @@ class TestClient
 
             // RFC 6265 §5.3 step 5: a Domain that is a public suffix is ignored, unless it is
             // the request host itself, which makes the cookie host-only.
-            if ($domain !== '' && PublicSuffixList::isPublicSuffix($domain)) {
+            if (
+                $domain !== ''
+                && PublicSuffixList::isPublicSuffix($domain)
+            ) {
                 if ($domain !== $host) {
                     continue;
                 }
@@ -965,7 +988,10 @@ class TestClient
             $hostOnly = $domain === '';
             $domain = $hostOnly ? $host : $domain;
 
-            if (!$hostOnly && !JarCookie::domainMatches($host, $domain)) {
+            if (
+                !$hostOnly
+                && !JarCookie::domainMatches($host, $domain)
+            ) {
                 continue;
             }
 
@@ -977,7 +1003,10 @@ class TestClient
 
             $expiresAt = self::expiresAt($cookie, $now);
 
-            if ($expiresAt !== null && $expiresAt <= $now) {
+            if (
+                $expiresAt !== null
+                && $expiresAt <= $now
+            ) {
                 unset($this->cookies[$key]);
 
                 continue;
@@ -1065,7 +1094,9 @@ class TestClient
 
         $expires = $cookie->expires();
 
-        return $expires === null || $expires === 0 ? null : $expires;
+        return ($expires === null || $expires === 0)
+            ? null
+            : $expires;
     }
 
     /**
@@ -1142,7 +1173,9 @@ class TestClient
     ): string {
         $key = strtoupper(str_replace('-', '_', $name));
 
-        return $key === 'CONTENT_TYPE' || $key === 'CONTENT_LENGTH' ? $key : 'HTTP_' . $key;
+        return ($key === 'CONTENT_TYPE' || $key === 'CONTENT_LENGTH')
+            ? $key
+            : 'HTTP_' . $key;
     }
 
     /**

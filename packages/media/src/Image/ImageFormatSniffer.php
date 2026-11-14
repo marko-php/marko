@@ -50,7 +50,10 @@ class ImageFormatSniffer
     ): string {
         $this->assertSafePath($path);
 
-        if (!is_file($path) || !is_readable($path)) {
+        if (
+            !is_file($path)
+            || !is_readable($path)
+        ) {
             throw ImageFormatException::notReadable($path);
         }
 
@@ -81,7 +84,10 @@ class ImageFormatSniffer
             throw ImageFormatException::unsafePath($path, 'path contains a NUL byte');
         }
 
-        if (preg_match('/^[a-z0-9+.\-]+:/i', $path) === 1 && !$this->isWindowsDrivePath($path)) {
+        if (
+            preg_match('/^[a-z0-9+.\-]+:/i', $path) === 1
+            && !$this->isWindowsDrivePath($path)
+        ) {
             throw ImageFormatException::unsafePath($path, 'path starts with a coder prefix or stream wrapper');
         }
     }
@@ -89,7 +95,8 @@ class ImageFormatSniffer
     private function isWindowsDrivePath(
         string $path,
     ): bool {
-        return PHP_OS_FAMILY === 'Windows' && preg_match('/^[a-z]:[\\\\\/]/i', $path) === 1;
+        return PHP_OS_FAMILY === 'Windows'
+            && preg_match('/^[a-z]:[\\\\\/]/i', $path) === 1;
     }
 
     private function detect(
@@ -99,9 +106,11 @@ class ImageFormatSniffer
             str_starts_with($header, "\xFF\xD8\xFF") => self::JPEG,
             str_starts_with($header, "\x89PNG\r\n\x1A\n") => self::PNG,
             str_starts_with($header, 'GIF87a'), str_starts_with($header, 'GIF89a') => self::GIF,
-            str_starts_with($header, 'RIFF') && substr($header, 8, 4) === 'WEBP' => self::WEBP,
+            str_starts_with($header, 'RIFF')
+                && substr($header, 8, 4) === 'WEBP' => self::WEBP,
             str_starts_with($header, "II*\x00"), str_starts_with($header, "MM\x00*") => self::TIFF,
-            str_starts_with($header, 'BM') && strlen($header) >= 14 => self::BMP,
+            str_starts_with($header, 'BM')
+                && strlen($header) >= 14 => self::BMP,
             substr($header, 4, 4) === 'ftyp' => $this->detectIsoBaseMedia($header),
             default => null,
         };

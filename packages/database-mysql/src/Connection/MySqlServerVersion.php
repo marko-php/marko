@@ -37,7 +37,7 @@ readonly class MySqlServerVersion
         string $reported,
     ): self {
         $isMariaDb = str_contains(strtolower($reported), 'mariadb');
-        $unprefixed = $isMariaDb && str_starts_with($reported, self::MARIADB_HANDSHAKE_PREFIX)
+        $unprefixed = ($isMariaDb && str_starts_with($reported, self::MARIADB_HANDSHAKE_PREFIX))
             ? substr($reported, strlen(self::MARIADB_HANDSHAKE_PREFIX))
             : $reported;
 

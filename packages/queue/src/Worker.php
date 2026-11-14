@@ -135,7 +135,11 @@ class Worker implements WorkerInterface
         $error = null;
         $timeout = $job->timeout ?? $workerTimeout;
 
-        if ($job->timeout !== null && $job->timeout > 0 && !$this->guardJobTimeout($job, $job->timeout, $queue)) {
+        if (
+            $job->timeout !== null
+            && $job->timeout > 0
+            && !$this->guardJobTimeout($job, $job->timeout, $queue)
+        ) {
             return;
         }
 
@@ -336,7 +340,10 @@ class Worker implements WorkerInterface
         }
 
         foreach ($queues as $queue) {
-            if (!is_string($queue) || trim($queue) === '') {
+            if (
+                !is_string($queue)
+                || trim($queue) === ''
+            ) {
                 throw QueueException::invalidQueueName(
                     'every queue name must be a non-blank string; got ' . var_export($queue, true),
                 );

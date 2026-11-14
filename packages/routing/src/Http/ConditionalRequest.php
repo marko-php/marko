@@ -67,7 +67,8 @@ readonly class ConditionalRequest
 
         $since = strtotime($this->ifModifiedSince);
 
-        return $since !== false && $lastModified <= $since;
+        return $since !== false
+            && $lastModified <= $since;
     }
 
     /**
@@ -83,7 +84,10 @@ readonly class ConditionalRequest
 
         $ifRange = trim($this->ifRange);
 
-        if (str_starts_with($ifRange, '"') || str_starts_with($ifRange, 'W/')) {
+        if (
+            str_starts_with($ifRange, '"')
+            || str_starts_with($ifRange, 'W/')
+        ) {
             return !str_starts_with($ifRange, 'W/')
                 && !str_starts_with($etag, 'W/')
                 && $ifRange === $etag;
@@ -91,7 +95,8 @@ readonly class ConditionalRequest
 
         $date = strtotime($ifRange);
 
-        return $date !== false && $date === $lastModified;
+        return $date !== false
+            && $date === $lastModified;
     }
 
     private function matchesWeakly(

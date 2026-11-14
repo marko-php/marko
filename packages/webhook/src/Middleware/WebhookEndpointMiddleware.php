@@ -54,7 +54,9 @@ class WebhookEndpointMiddleware implements MiddlewareInterface
     ): Response {
         $controller = $request->controller();
         $action = $request->action();
-        $endpoint = $controller !== null && $action !== null ? $this->endpointFor($controller, $action) : null;
+        $endpoint = ($controller !== null && $action !== null)
+            ? $this->endpointFor($controller, $action)
+            : null;
 
         if ($endpoint === null) {
             return $next($request);

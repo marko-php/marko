@@ -476,10 +476,11 @@ it('issues exactly one permissions query for a user with multiple roles', functi
 
     $permissionQueries = array_filter(
         $queryHistory,
-        fn (array $entry): bool => str_contains($entry['sql'], 'role_permissions') && str_contains(
-            $entry['sql'],
-            'IN (',
-        ),
+        fn (array $entry): bool => str_contains($entry['sql'], 'role_permissions')
+            && str_contains(
+                $entry['sql'],
+                'IN (',
+            ),
     );
 
     expect($permissionQueries)->toHaveCount(1);

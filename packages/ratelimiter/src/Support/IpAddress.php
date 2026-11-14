@@ -31,7 +31,10 @@ class IpAddress
             return null;
         }
 
-        if (strlen($packed) === 16 && str_starts_with($packed, self::IPV4_MAPPED_PREFIX)) {
+        if (
+            strlen($packed) === 16
+            && str_starts_with($packed, self::IPV4_MAPPED_PREFIX)
+        ) {
             return substr($packed, 12);
         }
 

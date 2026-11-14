@@ -37,7 +37,10 @@ class AdminMenuBuilder implements AdminMenuBuilderInterface
             $activeItemId = null;
 
             foreach ($sortedItems as $item) {
-                if ($currentPath !== '' && $item->getUrl() === $currentPath) {
+                if (
+                    $currentPath !== ''
+                    && $item->getUrl() === $currentPath
+                ) {
                     $sectionActive = true;
                     $activeItemId = $item->getId();
                 }

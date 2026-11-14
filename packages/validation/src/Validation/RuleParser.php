@@ -92,7 +92,8 @@ class RuleParser
     ): array {
         $isNumeric = array_any(
             $rules,
-            static fn (RuleInterface $rule): bool => $rule instanceof Numeric || $rule instanceof Integer,
+            static fn (RuleInterface $rule): bool => $rule instanceof Numeric
+                || $rule instanceof Integer,
         );
 
         if (!$isNumeric) {
@@ -165,7 +166,10 @@ class RuleParser
         ?string $parameter,
         string $message,
     ): float {
-        if ($parameter === null || !is_numeric(trim($parameter))) {
+        if (
+            $parameter === null
+            || !is_numeric(trim($parameter))
+        ) {
             throw new InvalidArgumentException($message);
         }
 
@@ -179,7 +183,10 @@ class RuleParser
         ?string $parameter,
         string $message,
     ): int {
-        if ($parameter === null || preg_match('/^[0-9]+$/D', trim($parameter)) !== 1) {
+        if (
+            $parameter === null
+            || preg_match('/^[0-9]+$/D', trim($parameter)) !== 1
+        ) {
             throw new InvalidArgumentException($message);
         }
 

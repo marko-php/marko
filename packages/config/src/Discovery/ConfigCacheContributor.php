@@ -114,7 +114,9 @@ readonly class ConfigCacheContributor implements DiscoveryCacheContributorInterf
             return null;
         }
 
-        return $value === null || is_scalar($value) ? null : [$path, get_debug_type($value)];
+        return ($value === null || is_scalar($value))
+            ? null
+            : [$path, get_debug_type($value)];
     }
 
     /**
@@ -142,10 +144,16 @@ readonly class ConfigCacheContributor implements DiscoveryCacheContributorInterf
             $value = $this->loader->load($file);
 
             foreach (array_slice($path, 1) as $key) {
-                $value = is_array($value) && array_key_exists($key, $value) ? $value[$key] : null;
+                $value = (is_array($value) && array_key_exists($key, $value))
+                    ? $value[$key]
+                    : null;
             }
 
-            if ($value !== null && !is_scalar($value) && !is_array($value)) {
+            if (
+                $value !== null
+                && !is_scalar($value)
+                && !is_array($value)
+            ) {
                 $source = $file;
             }
         }

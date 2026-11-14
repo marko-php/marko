@@ -32,7 +32,8 @@ it('all required packages exist', function () {
     expect($composer)->toHaveKey('require');
 
     foreach ($composer['require'] as $package => $version) {
-        expect($package === 'php' || str_starts_with($package, 'marko/'))
+        expect($package === 'php'
+            || str_starts_with($package, 'marko/'))
             ->toBeTrue("Package '$package' must be 'php' or have 'marko/' prefix");
     }
 });

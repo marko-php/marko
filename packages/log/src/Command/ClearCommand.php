@@ -47,7 +47,10 @@ readonly class ClearCommand implements CommandInterface
         foreach ($files as $file) {
             $mtime = filemtime($file);
 
-            if ($mtime !== false && $mtime < $cutoff) {
+            if (
+                $mtime !== false
+                && $mtime < $cutoff
+            ) {
                 if (unlink($file)) {
                     $deletedCount++;
                 }

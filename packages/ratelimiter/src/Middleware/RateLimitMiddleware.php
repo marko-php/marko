@@ -55,7 +55,9 @@ class RateLimitMiddleware implements MiddlewareInterface
     ): Response {
         $controller = $request->controller();
         $action = $request->action();
-        $route = $controller !== null && $action !== null ? "$controller::$action" : null;
+        $route = ($controller !== null && $action !== null)
+            ? "$controller::$action"
+            : null;
         $rateLimit = $route !== null ? $this->rateLimitFor($route, $controller, $action) : null;
 
         $maxAttempts = $rateLimit?->maxAttempts ?? $this->rateLimiterConfig->defaultMaxAttempts();

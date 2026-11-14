@@ -31,7 +31,10 @@ readonly class LogConfig
         $handlers = [];
 
         foreach ($this->config->getArray('log.handlers') as $name) {
-            if (!is_string($name) || $name === '') {
+            if (
+                !is_string($name)
+                || $name === ''
+            ) {
                 throw InvalidLogConfigException::invalidHandlerName($name);
             }
 
@@ -137,7 +140,10 @@ readonly class LogConfig
         $keys = [];
 
         foreach ($this->config->getArray('log.redact_keys') as $key) {
-            if (!is_string($key) || $key === '') {
+            if (
+                !is_string($key)
+                || $key === ''
+            ) {
                 throw InvalidLogConfigException::invalidRedactKey($key);
             }
 
@@ -179,7 +185,10 @@ readonly class LogConfig
         $map = [];
 
         foreach ($this->config->getArray('log.handler_map') as $name => $class) {
-            if (!is_string($class) || !is_subclass_of($class, LogHandlerInterface::class)) {
+            if (
+                !is_string($class)
+                || !is_subclass_of($class, LogHandlerInterface::class)
+            ) {
                 throw InvalidLogConfigException::invalidHandlerClass((string) $name, $class);
             }
 
@@ -201,7 +210,10 @@ readonly class LogConfig
     ): int {
         $mode = $this->config->getInt($key);
 
-        if ($mode < 0 || $mode > 0777) {
+        if (
+            $mode < 0
+            || $mode > 0777
+        ) {
             throw InvalidLogConfigException::invalidMode($key, $mode);
         }
 

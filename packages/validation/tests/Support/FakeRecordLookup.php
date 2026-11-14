@@ -76,14 +76,19 @@ class FakeRecordLookup implements RecordLookupInterface
         array $where,
         bool $caseInsensitive,
     ): bool {
-        $normalize = static fn (mixed $v): mixed => $caseInsensitive && is_string($v) ? strtolower($v) : $v;
+        $normalize = static fn (mixed $v): mixed => ($caseInsensitive && is_string($v))
+            ? strtolower($v)
+            : $v;
 
         foreach ($this->records[$entityClass] ?? [] as $row) {
             if ($normalize($row[$property] ?? null) !== $normalize($value)) {
                 continue;
             }
 
-            if ($ignoreId !== null && $row[$this->primaryKey] === $ignoreId) {
+            if (
+                $ignoreId !== null
+                && $row[$this->primaryKey] === $ignoreId
+            ) {
                 continue;
             }
 

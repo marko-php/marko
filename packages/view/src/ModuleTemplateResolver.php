@@ -110,7 +110,10 @@ readonly class ModuleTemplateResolver implements TemplateResolverInterface
         foreach ($files as $file) {
             $relativePath = substr($file->getPathname(), strlen($viewsDirectory));
 
-            if (!$file->isFile() || !str_ends_with($relativePath, $extension)) {
+            if (
+                !$file->isFile()
+                || !str_ends_with($relativePath, $extension)
+            ) {
                 continue;
             }
 
@@ -236,7 +239,10 @@ readonly class ModuleTemplateResolver implements TemplateResolverInterface
                 throw InvalidTemplateException::invalidName($template, 'it contains an empty path segment');
             }
 
-            if ($segment === '.' || $segment === '..') {
+            if (
+                $segment === '.'
+                || $segment === '..'
+            ) {
                 throw InvalidTemplateException::invalidName(
                     $template,
                     "it contains a '$segment' path segment",

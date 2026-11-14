@@ -96,7 +96,8 @@ class HookedSoundPolicy
         ?AuthorizableInterface $user,
         HookedSound $sound,
     ): bool {
-        return $user !== null && $user->getAuthIdentifier() === $sound->ownerId;
+        return $user !== null
+            && $user->getAuthIdentifier() === $sound->ownerId;
     }
 }
 
@@ -116,11 +117,16 @@ class HookedTrackPolicy implements PolicyBeforeInterface
         string $ability,
         array $arguments,
     ): ?bool {
-        if ($user instanceof HookUser && $user->isAdmin) {
+        if (
+            $user instanceof HookUser
+            && $user->isAdmin
+        ) {
             return true;
         }
 
-        return $arguments[0] instanceof HookedTrack && $arguments[0]->locked ? false : null;
+        return ($arguments[0] instanceof HookedTrack && $arguments[0]->locked)
+            ? false
+            : null;
     }
 
     public function update(

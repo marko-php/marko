@@ -26,7 +26,10 @@ readonly class Max extends AbstractSizeRule
         mixed $value,
         array $data,
     ): bool {
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return true;
         }
 
@@ -37,7 +40,8 @@ readonly class Max extends AbstractSizeRule
 
         $size = $this->size($value);
 
-        return $size !== null && $size <= $this->maximum;
+        return $size !== null
+            && $size <= $this->maximum;
     }
 
     public function message(

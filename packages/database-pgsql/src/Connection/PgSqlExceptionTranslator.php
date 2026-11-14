@@ -87,7 +87,9 @@ class PgSqlExceptionTranslator
     ): string {
         $serverMessage = $exception->errorInfo[2] ?? null;
 
-        return is_string($serverMessage) && $serverMessage !== '' ? $serverMessage : $exception->getMessage();
+        return (is_string($serverMessage) && $serverMessage !== '')
+            ? $serverMessage
+            : $exception->getMessage();
     }
 
     /**

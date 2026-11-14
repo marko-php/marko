@@ -66,7 +66,14 @@ readonly class HmacUrlSigner implements UrlSignerInterface
         $key = $this->signingKeys()[0];
         $parts = parse_url($url);
 
-        if ($parts === false || (isset($parts['host']) && !isset($parts['scheme'])) || !isset($parts['path'])) {
+        if (
+            $parts === false
+            || (
+                isset($parts['host'])
+                && !isset($parts['scheme'])
+            )
+            || !isset($parts['path'])
+        ) {
             throw UrlSigningException::unparseableUrl($url);
         }
 
@@ -124,11 +131,20 @@ readonly class HmacUrlSigner implements UrlSignerInterface
         $signature = $query[self::SIGNATURE] ?? null;
         $expires = $query[self::EXPIRES] ?? null;
 
-        if (!is_string($signature) || $signature === '') {
+        if (
+            !is_string($signature)
+            || $signature === ''
+        ) {
             throw InvalidSignatureException::invalid();
         }
 
-        if ($expires !== null && (!is_string($expires) || !ctype_digit($expires))) {
+        if (
+            $expires !== null
+            && (
+                !is_string($expires)
+                || !ctype_digit($expires)
+            )
+        ) {
             throw InvalidSignatureException::invalid();
         }
 
@@ -143,7 +159,10 @@ readonly class HmacUrlSigner implements UrlSignerInterface
             throw InvalidSignatureException::invalid();
         }
 
-        if ($expires !== null && $this->clock->now()->getTimestamp() >= (int) $expires) {
+        if (
+            $expires !== null
+            && $this->clock->now()->getTimestamp() >= (int) $expires
+        ) {
             throw InvalidSignatureException::expired();
         }
     }
@@ -166,7 +185,10 @@ readonly class HmacUrlSigner implements UrlSignerInterface
         $keys = [$key];
 
         foreach ($this->routingConfig->signingPreviousKeys() as $previousKey) {
-            if (!is_string($previousKey) || $previousKey === '') {
+            if (
+                !is_string($previousKey)
+                || $previousKey === ''
+            ) {
                 throw UrlSigningException::invalidPreviousKey();
             }
 
@@ -200,7 +222,8 @@ readonly class HmacUrlSigner implements UrlSignerInterface
         $matched = false;
 
         foreach ($keys as $key) {
-            $matched = hash_equals(hash_hmac('sha256', $payload, $key), $signature) || $matched;
+            $matched = hash_equals(hash_hmac('sha256', $payload, $key), $signature)
+                || $matched;
         }
 
         return $matched;
@@ -217,7 +240,10 @@ readonly class HmacUrlSigner implements UrlSignerInterface
     ): array {
         $base = parse_url($this->routingConfig->url());
 
-        if ($base === false || !isset($base['scheme'], $base['host'])) {
+        if (
+            $base === false
+            || !isset($base['scheme'], $base['host'])
+        ) {
             throw UrlSigningException::missingBaseUrl($url);
         }
 
@@ -258,7 +284,10 @@ readonly class HmacUrlSigner implements UrlSignerInterface
             default => null,
         };
 
-        if ($defaultPort !== null && str_ends_with($host, $defaultPort)) {
+        if (
+            $defaultPort !== null
+            && str_ends_with($host, $defaultPort)
+        ) {
             $host = substr($host, 0, -strlen($defaultPort));
         }
 
@@ -298,7 +327,11 @@ readonly class HmacUrlSigner implements UrlSignerInterface
     ): string {
         $https = $request->server('HTTPS');
 
-        if ($https !== null && $https !== '' && strtolower($https) !== 'off') {
+        if (
+            $https !== null
+            && $https !== ''
+            && strtolower($https) !== 'off'
+        ) {
             return 'https';
         }
 

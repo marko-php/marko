@@ -137,7 +137,11 @@ class SmtpTransport
         string $command,
         string $address,
     ): void {
-        if (str_contains($address, "\r") || str_contains($address, "\n") || str_contains($address, "\x00")) {
+        if (
+            str_contains($address, "\r")
+            || str_contains($address, "\n")
+            || str_contains($address, "\x00")
+        ) {
             throw TransportException::commandInjection($command, $address);
         }
     }
@@ -202,7 +206,10 @@ class SmtpTransport
     ): void {
         $code = $this->parseResponseCode($response);
 
-        if ($code < 200 || $code >= 300) {
+        if (
+            $code < 200
+            || $code >= 300
+        ) {
             throw TransportException::unexpectedResponse($code, $response);
         }
     }

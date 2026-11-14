@@ -178,7 +178,9 @@ readonly class MySqlIntrospector implements IntrospectorInterface, ExpressionDef
         $rows = $this->connection->query($sql, [$this->database, $table]);
         $mariaDb = $this->server->isMariaDb();
         $hasLongtext = in_array('longtext', array_map(strtolower(...), array_column($rows, 'DATA_TYPE')), true);
-        $jsonColumns = $mariaDb && $hasLongtext ? $this->getMariaDbJsonColumns($table) : [];
+        $jsonColumns = ($mariaDb && $hasLongtext)
+            ? $this->getMariaDbJsonColumns($table)
+            : [];
         $columns = [];
 
         foreach ($rows as $row) {
@@ -190,7 +192,10 @@ readonly class MySqlIntrospector implements IntrospectorInterface, ExpressionDef
             $isPrimaryKey = in_array($columnName, $primaryKeyColumns, true);
             $isUnique = in_array($columnName, $uniqueColumns, true);
 
-            if (strtolower($row['DATA_TYPE']) === 'longtext' && in_array($columnName, $jsonColumns, true)) {
+            if (
+                strtolower($row['DATA_TYPE']) === 'longtext'
+                && in_array($columnName, $jsonColumns, true)
+            ) {
                 // MariaDB's JSON is an alias for LONGTEXT with a json_valid() check and utf8mb4_bin
                 $row = [...$row, 'DATA_TYPE' => 'json', 'COLUMN_TYPE' => 'json', 'COLLATION_NAME' => null];
                 $length = null;
@@ -247,7 +252,10 @@ readonly class MySqlIntrospector implements IntrospectorInterface, ExpressionDef
 
         $row = $this->connection->query($sql, [$this->database, $table, $column])[0] ?? null;
 
-        if ($row === null || $row['COLUMN_DEFAULT'] === null) {
+        if (
+            $row === null
+            || $row['COLUMN_DEFAULT'] === null
+        ) {
             return false;
         }
 
@@ -255,7 +263,8 @@ readonly class MySqlIntrospector implements IntrospectorInterface, ExpressionDef
         $stored = $this->server->isMariaDb() ? $stored : strtr($stored, ['\\\\' => '\\', "\\'" => "'"]);
         $probe = $this->probeDefault($table, $column, (string) $row['COLUMN_TYPE'], $expression);
 
-        return $probe !== null && Expression::unwrap($probe) === Expression::unwrap($stored);
+        return $probe !== null
+            && Expression::unwrap($probe) === Expression::unwrap($stored);
     }
 
     /**
@@ -336,11 +345,17 @@ readonly class MySqlIntrospector implements IntrospectorInterface, ExpressionDef
             return null;
         }
 
-        if (str_contains(strtoupper($extra), 'DEFAULT_GENERATED') && trim($default) !== '') {
+        if (
+            str_contains(strtoupper($extra), 'DEFAULT_GENERATED')
+            && trim($default) !== ''
+        ) {
             return new Expression($default);
         }
 
-        if (Expression::isShortcut($default) && preg_match(self::TIMESTAMP_KEYWORD_PATTERN, $default) !== 1) {
+        if (
+            Expression::isShortcut($default)
+            && preg_match(self::TIMESTAMP_KEYWORD_PATTERN, $default) !== 1
+        ) {
             return new Literal($default);
         }
 
@@ -357,7 +372,10 @@ readonly class MySqlIntrospector implements IntrospectorInterface, ExpressionDef
     private function parseMariaDbDefault(
         ?string $default,
     ): mixed {
-        if ($default === null || strtoupper($default) === 'NULL') {
+        if (
+            $default === null
+            || strtoupper($default) === 'NULL'
+        ) {
             return null;
         }
 
@@ -391,15 +409,27 @@ readonly class MySqlIntrospector implements IntrospectorInterface, ExpressionDef
             return $default;
         }
 
-        if ($type === 'boolean' && ($default === '0' || $default === '1')) {
+        if (
+            $type === 'boolean'
+            && (
+                $default === '0'
+                || $default === '1'
+            )
+        ) {
             return $default === '1';
         }
 
-        if (in_array($type, self::INTEGER_TYPES, true) && preg_match('/^-?\d+$/', $default) === 1) {
+        if (
+            in_array($type, self::INTEGER_TYPES, true)
+            && preg_match('/^-?\d+$/', $default) === 1
+        ) {
             return (int) $default;
         }
 
-        if (in_array($type, self::FLOAT_TYPES, true) && is_numeric($default)) {
+        if (
+            in_array($type, self::FLOAT_TYPES, true)
+            && is_numeric($default)
+        ) {
             return (float) $default;
         }
 
@@ -438,8 +468,10 @@ readonly class MySqlIntrospector implements IntrospectorInterface, ExpressionDef
         $columns = [];
 
         foreach ($this->connection->query($sql, [$this->database, $table]) as $row) {
-            if (preg_match('/^json_valid\(`((?:[^`]|``)+)`\)$/i', trim((string) $row['CHECK_CLAUSE']), $matches) === 1
-                && $matches[1] === $row['CONSTRAINT_NAME']) {
+            if (
+                preg_match('/^json_valid\(`((?:[^`]|``)+)`\)$/i', trim((string) $row['CHECK_CLAUSE']), $matches) === 1
+                && $matches[1] === $row['CONSTRAINT_NAME']
+            ) {
                 $columns[] = str_replace('``', '`', $matches[1]);
             }
         }

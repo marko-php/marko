@@ -66,7 +66,10 @@ function cleanupDir(
     }
 
     foreach ($items as $item) {
-        if ($item === '.' || $item === '..') {
+        if (
+            $item === '.'
+            || $item === '..'
+        ) {
             continue;
         }
 

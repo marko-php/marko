@@ -36,7 +36,10 @@ class DnsHostResolver implements HostResolverInterface
 
         if (is_array($records)) {
             foreach ($records as $record) {
-                if (isset($record['ipv6']) && is_string($record['ipv6'])) {
+                if (
+                    isset($record['ipv6'])
+                    && is_string($record['ipv6'])
+                ) {
                     $addresses[] = $record['ipv6'];
                 }
             }

@@ -24,7 +24,10 @@ readonly class ViewMailer implements MailerInterface
     public function send(
         Message $message,
     ): bool {
-        if ($this->view !== null && $message->view !== null) {
+        if (
+            $this->view !== null
+            && $message->view !== null
+        ) {
             $html = $this->view->render(
                 $message->view,
                 $message->viewData,

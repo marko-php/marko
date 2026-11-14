@@ -358,7 +358,10 @@ readonly class LocalFilesystem implements FilesystemInterface
         }
 
         foreach ($items as $item) {
-            if ($item === '.' || $item === '..') {
+            if (
+                $item === '.'
+                || $item === '..'
+            ) {
                 continue;
             }
 
@@ -483,7 +486,10 @@ readonly class LocalFilesystem implements FilesystemInterface
         $probe = $fullPath;
         $resolved = realpath($probe);
 
-        while ($resolved === false && $probe !== $this->basePath) {
+        while (
+            $resolved === false
+            && $probe !== $this->basePath
+        ) {
             $probe = dirname($probe);
             $resolved = realpath($probe);
         }
@@ -492,7 +498,10 @@ readonly class LocalFilesystem implements FilesystemInterface
             return;
         }
 
-        if ($resolved !== $root && !str_starts_with($resolved, rtrim($root, '/') . '/')) {
+        if (
+            $resolved !== $root
+            && !str_starts_with($resolved, rtrim($root, '/') . '/')
+        ) {
             throw PathException::outsideRoot($path);
         }
     }
@@ -507,7 +516,10 @@ readonly class LocalFilesystem implements FilesystemInterface
             return;
         }
 
-        if (!mkdir($directory, 0755, true) && !is_dir($directory)) {
+        if (
+            !mkdir($directory, 0755, true)
+            && !is_dir($directory)
+        ) {
             throw PermissionException::cannotWrite($directory);
         }
     }
@@ -554,7 +566,10 @@ readonly class LocalFilesystem implements FilesystemInterface
         }
 
         foreach ($items as $item) {
-            if ($item === '.' || $item === '..') {
+            if (
+                $item === '.'
+                || $item === '..'
+            ) {
                 continue;
             }
 

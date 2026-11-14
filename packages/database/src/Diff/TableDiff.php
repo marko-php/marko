@@ -71,7 +71,10 @@ readonly class TableDiff
             array_filter($this->columnsToAdd, static fn (Column $column): bool => $column->primaryKey),
         ));
 
-        if ($addedKeyColumns !== [] && $this->currentPrimaryKey !== []) {
+        if (
+            $addedKeyColumns !== []
+            && $this->currentPrimaryKey !== []
+        ) {
             throw MigrationException::primaryKeyAlreadyExists(
                 $this->tableName,
                 $this->currentPrimaryKey,
@@ -82,7 +85,10 @@ readonly class TableDiff
         $droppedColumns = array_map(static fn (Column $column): string => $column->name, $this->columnsToDrop);
         $droppedKeyColumns = array_values(array_intersect($this->currentPrimaryKey, $droppedColumns));
 
-        if ($droppedKeyColumns !== [] && $droppedKeyColumns !== $this->currentPrimaryKey) {
+        if (
+            $droppedKeyColumns !== []
+            && $droppedKeyColumns !== $this->currentPrimaryKey
+        ) {
             throw MigrationException::columnChangeNotSupported(
                 $this->tableName,
                 $droppedKeyColumns[0],

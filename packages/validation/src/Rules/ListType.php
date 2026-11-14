@@ -16,11 +16,15 @@ readonly class ListType implements RuleInterface
         mixed $value,
         array $data,
     ): bool {
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return true;
         }
 
-        return is_array($value) && array_is_list($value);
+        return is_array($value)
+            && array_is_list($value);
     }
 
     public function message(

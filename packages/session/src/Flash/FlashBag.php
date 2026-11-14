@@ -100,7 +100,8 @@ class FlashBag
     public function has(
         string $type,
     ): bool {
-        return isset($this->messages[$type]) && count($this->messages[$type]) > 0;
+        return isset($this->messages[$type])
+            && count($this->messages[$type]) > 0;
     }
 
     /**

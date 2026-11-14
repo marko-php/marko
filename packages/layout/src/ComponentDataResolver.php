@@ -33,7 +33,10 @@ readonly class ComponentDataResolver
             $name = $param->getName();
             $type = $param->getType();
 
-            if ($type instanceof ReflectionNamedType && $type->getName() === Request::class) {
+            if (
+                $type instanceof ReflectionNamedType
+                && $type->getName() === Request::class
+            ) {
                 $parameters[] = $request;
                 continue;
             }

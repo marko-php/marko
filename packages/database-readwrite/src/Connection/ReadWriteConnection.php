@@ -263,8 +263,10 @@ class ReadWriteConnection implements
             return $callback();
         } finally {
             $wroteInside = $this->wrote;
-            $this->wrote = $wroteBefore || $wroteInside;
-            $this->stickyWrite = $wasSticky || $wroteInside;
+            $this->wrote = $wroteBefore
+                || $wroteInside;
+            $this->stickyWrite = $wasSticky
+                || $wroteInside;
         }
     }
 
@@ -323,7 +325,10 @@ class ReadWriteConnection implements
         $trimmed = ltrim($sql);
 
         while (true) {
-            if (str_starts_with($trimmed, '--') || str_starts_with($trimmed, '#')) {
+            if (
+                str_starts_with($trimmed, '--')
+                || str_starts_with($trimmed, '#')
+            ) {
                 $newline = strpos($trimmed, "\n");
 
                 if ($newline === false) {

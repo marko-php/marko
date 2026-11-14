@@ -54,12 +54,14 @@ class FakeSession implements SessionInterface
 
     public function isAvailable(): bool
     {
-        return $this->started || $this->armed;
+        return $this->started
+            || $this->armed;
     }
 
     public function isModified(): bool
     {
-        return $this->regenerated || $this->data !== $this->startedData;
+        return $this->regenerated
+            || $this->data !== $this->startedData;
     }
 
     public function discard(): void
@@ -181,7 +183,10 @@ class FakeSession implements SessionInterface
      */
     private function startIfArmed(): void
     {
-        if ($this->armed && !$this->started) {
+        if (
+            $this->armed
+            && !$this->started
+        ) {
             $this->start();
         }
     }

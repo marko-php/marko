@@ -50,11 +50,15 @@ class CsrfTokenManager implements CsrfTokenManagerInterface, ResettableInterface
     ): bool {
         $stored = $this->session->get($this->sessionKey);
 
-        if ($stored !== null && hash_equals((string) $stored, $token)) {
+        if (
+            $stored !== null
+            && hash_equals((string) $stored, $token)
+        ) {
             return true;
         }
 
-        return $this->arrivedWith !== null && hash_equals($this->arrivedWith, $token);
+        return $this->arrivedWith !== null
+            && hash_equals($this->arrivedWith, $token);
     }
 
     public function regenerate(): string

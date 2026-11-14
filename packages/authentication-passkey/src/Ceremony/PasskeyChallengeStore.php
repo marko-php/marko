@@ -82,7 +82,10 @@ readonly class PasskeyChallengeStore
 
         $age = $this->clock->now()->getTimestamp() - $pending['issued_at'];
 
-        if ($age < 0 || $age > $this->config->timeoutSeconds()) {
+        if (
+            $age < 0
+            || $age > $this->config->timeoutSeconds()
+        ) {
             throw PasskeyVerificationException::because(
                 PasskeyFailureReason::ChallengeMismatch,
                 "the $ceremony challenge expired $age seconds after it was issued",

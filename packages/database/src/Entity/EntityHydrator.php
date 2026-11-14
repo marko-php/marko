@@ -137,7 +137,10 @@ class EntityHydrator
                         throw EntityException::decryptionFailed($extenderClass, $propName, $columnName, $e);
                     }
 
-                    if ($phpValue === null && !$propMeta->nullable) {
+                    if (
+                        $phpValue === null
+                        && !$propMeta->nullable
+                    ) {
                         continue;
                     }
 
@@ -180,7 +183,10 @@ class EntityHydrator
         foreach ($metadata->properties as $propName => $propMeta) {
             $property = $reflection->getProperty($propName);
 
-            if ($propMeta->isPrimaryKey && !$property->isInitialized($entity)) {
+            if (
+                $propMeta->isPrimaryKey
+                && !$property->isInitialized($entity)
+            ) {
                 continue;
             }
 
@@ -415,7 +421,10 @@ class EntityHydrator
         $cast = $this->castFor($meta);
         $dbValue = $cast !== null ? $cast->toDatabase($value, $meta) : $value;
 
-        if ($meta->encrypted && $dbValue !== null) {
+        if (
+            $meta->encrypted
+            && $dbValue !== null
+        ) {
             return $this->castResolver->resolve(EncryptedCast::class)->toDatabase($dbValue, $meta);
         }
 
@@ -428,7 +437,8 @@ class EntityHydrator
     private function tracksDatabaseValue(
         PropertyMetadata $meta,
     ): bool {
-        return $meta->castClass !== null || $meta->encrypted;
+        return $meta->castClass !== null
+            || $meta->encrypted;
     }
 
     /**
@@ -464,14 +474,18 @@ class EntityHydrator
         mixed $originalPhp,
         mixed $originalDatabase,
     ): bool {
-        if ($current === null || $originalPhp === null) {
+        if (
+            $current === null
+            || $originalPhp === null
+        ) {
             return $current === $originalPhp;
         }
 
         $cast = $this->castFor($meta);
 
         if ($cast instanceof EquatableCastInterface) {
-            return $current === $originalPhp || $cast->equals($current, $originalPhp, $meta);
+            return $current === $originalPhp
+                || $cast->equals($current, $originalPhp, $meta);
         }
 
         return $this->castOnlyDatabaseValue($current, $meta) === $originalDatabase;
@@ -496,7 +510,13 @@ class EntityHydrator
     private function builtInCastClass(
         PropertyMetadata $meta,
     ): ?string {
-        if ($meta->columnType === 'json' || ($meta->columnType === null && $meta->type === 'array')) {
+        if (
+            $meta->columnType === 'json'
+            || (
+                $meta->columnType === null
+                && $meta->type === 'array'
+            )
+        ) {
             return JsonCast::class;
         }
 
@@ -532,7 +552,10 @@ class EntityHydrator
             return true;
         }
 
-        if ($a === null || $b === null) {
+        if (
+            $a === null
+            || $b === null
+        ) {
             return false;
         }
 
@@ -542,11 +565,20 @@ class EntityHydrator
             return $cast->equals($a, $b, $meta);
         }
 
-        if ($cast !== null && (is_object($a) || is_object($b))) {
+        if (
+            $cast !== null
+            && (
+                is_object($a)
+                || is_object($b)
+            )
+        ) {
             return $cast->toDatabase($a, $meta) === $cast->toDatabase($b, $meta);
         }
 
-        if ($a instanceof DateTimeInterface && $b instanceof DateTimeInterface) {
+        if (
+            $a instanceof DateTimeInterface
+            && $b instanceof DateTimeInterface
+        ) {
             return $a->getTimestamp() === $b->getTimestamp();
         }
 

@@ -74,7 +74,11 @@ class AuthManager implements ResettableInterface
         $guardConfig = $guardsConfig[$name];
         $driver = is_array($guardConfig) ? ($guardConfig['driver'] ?? null) : null;
 
-        if (!is_array($guardConfig) || !is_string($driver) || $driver === '') {
+        if (
+            !is_array($guardConfig)
+            || !is_string($driver)
+            || $driver === ''
+        ) {
             throw AuthException::missingGuardDriver($name);
         }
 
@@ -124,7 +128,10 @@ class AuthManager implements ResettableInterface
                 throw AuthException::guardNameMismatch($name, $driver, $guard->getName());
             }
 
-            if (!empty($guardConfig['challenges']) && !$guard instanceof ChallengeableGuardInterface) {
+            if (
+                !empty($guardConfig['challenges'])
+                && !$guard instanceof ChallengeableGuardInterface
+            ) {
                 throw AuthException::challengesNotSupported($name, $driver);
             }
 

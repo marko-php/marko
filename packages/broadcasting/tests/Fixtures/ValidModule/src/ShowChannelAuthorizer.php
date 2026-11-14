@@ -16,6 +16,7 @@ class ShowChannelAuthorizer implements ChannelAuthorizerInterface
         ?AuthenticatableInterface $user,
         array $params,
     ): bool {
-        return $user !== null && $params === ['showId' => '42', 'seatId' => 'A1'];
+        return $user !== null
+            && $params === ['showId' => '42', 'seatId' => 'A1'];
     }
 }

@@ -47,7 +47,10 @@ class PluginRegistry
         ]);
 
         foreach ($hookedMethods as $hookedMethod) {
-            if ($reflection->hasMethod($hookedMethod) && $reflection->getMethod($hookedMethod)->isFinal()) {
+            if (
+                $reflection->hasMethod($hookedMethod)
+                && $reflection->getMethod($hookedMethod)->isFinal()
+            ) {
                 throw PluginException::cannotTargetFinalMethod(
                     pluginClass: $plugin->pluginClass,
                     targetClass: $targetClass,
@@ -63,7 +66,10 @@ class PluginRegistry
         foreach ($this->plugins[$targetClass] as $existing) {
             foreach ($plugin->beforeMethods as $targetMethod => $entry) {
                 foreach ($existing->beforeMethods as $existingTarget => $existingEntry) {
-                    if ($existingTarget === $targetMethod && $existingEntry['sortOrder'] === $entry['sortOrder']) {
+                    if (
+                        $existingTarget === $targetMethod
+                        && $existingEntry['sortOrder'] === $entry['sortOrder']
+                    ) {
                         throw PluginException::conflictingSortOrder(
                             targetClass: $targetClass,
                             targetMethod: $targetMethod,
@@ -78,7 +84,10 @@ class PluginRegistry
 
             foreach ($plugin->afterMethods as $targetMethod => $entry) {
                 foreach ($existing->afterMethods as $existingTarget => $existingEntry) {
-                    if ($existingTarget === $targetMethod && $existingEntry['sortOrder'] === $entry['sortOrder']) {
+                    if (
+                        $existingTarget === $targetMethod
+                        && $existingEntry['sortOrder'] === $entry['sortOrder']
+                    ) {
                         throw PluginException::conflictingSortOrder(
                             targetClass: $targetClass,
                             targetMethod: $targetMethod,
@@ -103,7 +112,8 @@ class PluginRegistry
     public function hasPluginsFor(
         string $targetClass,
     ): bool {
-        return isset($this->plugins[$targetClass]) && count($this->plugins[$targetClass]) > 0;
+        return isset($this->plugins[$targetClass])
+            && count($this->plugins[$targetClass]) > 0;
     }
 
     /**

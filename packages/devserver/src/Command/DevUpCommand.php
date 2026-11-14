@@ -54,11 +54,17 @@ readonly class DevUpCommand implements CommandInterface
         Output $output,
     ): int {
         $port = (int) ($input->getOption('port') ?? $input->getOption('p') ?? $this->config->getInt('dev.port'));
-        $foreground = $input->hasOption('foreground') || $input->hasOption('f');
+        $foreground = $input->hasOption('foreground')
+            || $input->hasOption('f');
         $host = ServerHost::fromString($input->getOption('host') ?? $this->config->getString('dev.host'));
-        $detach = !$foreground && ($input->hasOption('detach') || $input->hasOption('d') || $this->config->getBool(
-            'dev.detach',
-        ));
+        $detach = !$foreground
+            && (
+                $input->hasOption('detach')
+                || $input->hasOption('d')
+                || $this->config->getBool(
+                    'dev.detach',
+                )
+            );
 
         // Guard: check if services are already running
         $existingEntries = $this->pidFile->read();
@@ -196,7 +202,10 @@ readonly class DevUpCommand implements CommandInterface
 
         // In foreground mode, wait until the PHP server accepts connections.
         // In detached mode, startDetached() already fails on any exit during its probe window.
-        if (!$detach && !$this->processManager->waitUntilAccepting('php', $host->address, $port)) {
+        if (
+            !$detach
+            && !$this->processManager->waitUntilAccepting('php', $host->address, $port)
+        ) {
             throw $this->serverExitedException($host, $port);
         }
 

@@ -126,7 +126,8 @@ readonly class RouteCollector
     ): bool {
         $reflection = new ReflectionClass($className);
 
-        return $this->hasRouteAttributes($reflection) || $this->isPreferenceForController($reflection);
+        return $this->hasRouteAttributes($reflection)
+            || $this->isPreferenceForController($reflection);
     }
 
     /**

@@ -18,7 +18,7 @@ class AdminAuthException extends MarkoException
         ?string $existingClass = null,
         ?string $duplicateClass = null,
     ): self {
-        $message = $existingClass !== null && $duplicateClass !== null
+        $message = ($existingClass !== null && $duplicateClass !== null)
             ? "Permission with key '$key' is declared by both '$existingClass' and '$duplicateClass'"
             : "Permission with key '$key' is already registered";
 

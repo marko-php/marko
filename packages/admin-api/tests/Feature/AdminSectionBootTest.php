@@ -134,7 +134,10 @@ function removeSectionBootDirectory(
     }
 
     foreach (scandir($path) as $item) {
-        if ($item === '.' || $item === '..') {
+        if (
+            $item === '.'
+            || $item === '..'
+        ) {
             continue;
         }
 

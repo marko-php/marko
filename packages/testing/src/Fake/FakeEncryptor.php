@@ -59,7 +59,10 @@ class FakeEncryptor implements EncryptorInterface
         $encryptedAad = base64_decode($parts[1], true);
         $value = base64_decode($parts[2], true);
 
-        if ($encryptedAad === false || $value === false) {
+        if (
+            $encryptedAad === false
+            || $value === false
+        ) {
             throw DecryptionException::invalidPayload();
         }
 
@@ -145,8 +148,12 @@ class FakeEncryptor implements EncryptorInterface
 
         $found = array_any(
             $calls,
-            fn (array $call): bool => ($value === null || $call['value'] === $value)
-                && ($aad === null || $call['aad'] === $aad),
+            fn (array $call): bool => ($value === null
+                || $call['value'] === $value)
+                && (
+                    $aad === null
+                    || $call['aad'] === $aad
+                ),
         );
 
         if ($found) {

@@ -25,11 +25,17 @@ readonly class RateLimit
         public ?int $decaySeconds = null,
         public ?string $name = null,
     ) {
-        if ($maxAttempts !== null && $maxAttempts < 1) {
+        if (
+            $maxAttempts !== null
+            && $maxAttempts < 1
+        ) {
             throw RateLimitException::nonPositiveLimit('maxAttempts', $maxAttempts);
         }
 
-        if ($decaySeconds !== null && $decaySeconds < 1) {
+        if (
+            $decaySeconds !== null
+            && $decaySeconds < 1
+        ) {
             throw RateLimitException::nonPositiveLimit('decaySeconds', $decaySeconds);
         }
 

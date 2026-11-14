@@ -87,7 +87,10 @@ readonly class Expression
     private static function isWrappedInOneParenthesisPair(
         string $sql,
     ): bool {
-        if (!str_starts_with($sql, '(') || !str_ends_with($sql, ')')) {
+        if (
+            !str_starts_with($sql, '(')
+            || !str_ends_with($sql, ')')
+        ) {
             return false;
         }
 
@@ -101,7 +104,10 @@ readonly class Expression
                 $depth--;
             }
 
-            if ($depth === 0 && $index < $lastIndex) {
+            if (
+                $depth === 0
+                && $index < $lastIndex
+            ) {
                 return false;
             }
         }

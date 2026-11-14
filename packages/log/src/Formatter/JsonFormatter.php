@@ -99,8 +99,10 @@ readonly class JsonFormatter implements LogFormatterInterface
     ): mixed {
         return match (true) {
             is_array($value) => $this->normalizeArray($value, $depth),
-            is_float($value) && is_nan($value) => 'NAN',
-            is_float($value) && is_infinite($value) => $value > 0 ? 'INF' : '-INF',
+            is_float($value)
+                && is_nan($value) => 'NAN',
+            is_float($value)
+                && is_infinite($value) => $value > 0 ? 'INF' : '-INF',
             $value instanceof Throwable => $this->normalizeThrowable($value, $depth),
             $value instanceof Stringable => (string) $value,
             is_object($value) => $value::class,

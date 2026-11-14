@@ -36,7 +36,10 @@ class RouteMatcher implements RouteMatcherInterface
 
         $matched = $this->matchMethod($method, $normalizedPath);
 
-        if ($matched === null && $method === 'HEAD') {
+        if (
+            $matched === null
+            && $method === 'HEAD'
+        ) {
             $matched = $this->matchMethod('GET', $normalizedPath);
         }
 
@@ -124,7 +127,10 @@ class RouteMatcher implements RouteMatcherInterface
         string $path,
     ): string {
         // Remove trailing slash, except for root path
-        if ($path !== '/' && str_ends_with($path, '/')) {
+        if (
+            $path !== '/'
+            && str_ends_with($path, '/')
+        ) {
             return rtrim($path, '/');
         }
 

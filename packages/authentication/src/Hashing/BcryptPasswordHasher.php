@@ -80,7 +80,8 @@ class BcryptPasswordHasher implements PasswordHasherInterface
     private function isHashable(
         string $password,
     ): bool {
-        return strlen($password) <= self::MAX_PASSWORD_BYTES && !str_contains($password, "\0");
+        return strlen($password) <= self::MAX_PASSWORD_BYTES
+            && !str_contains($password, "\0");
     }
 
     private function dummyHash(): string

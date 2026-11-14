@@ -44,13 +44,19 @@ class JsonPathParser
         // Split on either ->> or -> (longest match first)
         $parts = preg_split('/->>/u', $expression, -1, PREG_SPLIT_NO_EMPTY);
 
-        if ($parts === false || count($parts) === 1) {
+        if (
+            $parts === false
+            || count($parts) === 1
+        ) {
             // No ->> found; split on ->
             $parts = preg_split('/(?<![>])->(?![>])/u', $expression, -1, PREG_SPLIT_NO_EMPTY);
             $operator = '->';
         }
 
-        if ($parts === false || count($parts) < 2) {
+        if (
+            $parts === false
+            || count($parts) < 2
+        ) {
             throw InvalidJsonPathException::invalidPath($expression);
         }
 

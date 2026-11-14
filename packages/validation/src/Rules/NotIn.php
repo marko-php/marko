@@ -24,14 +24,18 @@ class NotIn implements RuleInterface
         mixed $value,
         array $data,
     ): bool {
-        if ($value === null || $value === '') {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return true;
         }
 
         if (is_numeric($value)) {
             return !array_any(
                 $this->values,
-                fn (mixed $disallowed) => is_numeric($disallowed) && (float) $disallowed === (float) $value,
+                fn (mixed $disallowed) => is_numeric($disallowed)
+                    && (float) $disallowed === (float) $value,
             );
         }
 

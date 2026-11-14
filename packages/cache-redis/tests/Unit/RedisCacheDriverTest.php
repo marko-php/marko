@@ -99,7 +99,10 @@ class MockRedisClient extends Client
         $this->setArgs[] = $args;
         $options = array_map(fn ($arg) => is_string($arg) ? strtoupper($arg) : $arg, $args);
 
-        if (in_array('NX', $options, true) && isset($this->storage[$key])) {
+        if (
+            in_array('NX', $options, true)
+            && isset($this->storage[$key])
+        ) {
             return null;
         }
 
@@ -261,7 +264,13 @@ class MockRedisClient extends Client
         $new = $current + 1;
         $this->storage[$key] = (string) $new;
 
-        if ($ttl > 0 && ($new === 1 || !isset($this->ttls[$key]))) {
+        if (
+            $ttl > 0
+            && (
+                $new === 1
+                || !isset($this->ttls[$key])
+            )
+        ) {
             $this->ttls[$key] = $ttl;
         }
 

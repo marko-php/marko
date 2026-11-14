@@ -255,7 +255,11 @@ class PgSqlGenerator implements SqlGeneratorInterface
         }
 
         // NOT NULL constraint (not needed for PRIMARY KEY or nullable columns)
-        if (!$column->nullable && !$column->primaryKey && !$column->autoIncrement) {
+        if (
+            !$column->nullable
+            && !$column->primaryKey
+            && !$column->autoIncrement
+        ) {
             $parts[] = 'NOT NULL';
         }
 
@@ -265,12 +269,18 @@ class PgSqlGenerator implements SqlGeneratorInterface
         }
 
         // UNIQUE constraint
-        if ($column->unique && !$column->primaryKey) {
+        if (
+            $column->unique
+            && !$column->primaryKey
+        ) {
             $parts[] = 'UNIQUE';
         }
 
         // PRIMARY KEY (only in CREATE TABLE context, not ALTER)
-        if ($column->primaryKey && !$forAlter) {
+        if (
+            $column->primaryKey
+            && !$forAlter
+        ) {
             $parts[] = 'PRIMARY KEY';
         }
 
@@ -327,7 +337,10 @@ class PgSqlGenerator implements SqlGeneratorInterface
             return $value ? 'TRUE' : 'FALSE';
         }
 
-        if (is_int($value) || is_float($value)) {
+        if (
+            is_int($value)
+            || is_float($value)
+        ) {
             return (string) $value;
         }
 
@@ -568,7 +581,9 @@ class PgSqlGenerator implements SqlGeneratorInterface
 
         // The old default goes before the type changes, so one that cannot be cast to the new type never
         // blocks the migration; the target default is set again after it
-        $dropsDefaultForType = $typeChanges && $manageDefault && $oldColumn->default !== null;
+        $dropsDefaultForType = $typeChanges
+            && $manageDefault
+            && $oldColumn->default !== null;
         $columnName = $this->quote($column->name);
 
         if ($dropsDefaultForType) {
@@ -582,7 +597,10 @@ class PgSqlGenerator implements SqlGeneratorInterface
         }
 
         // A primary key column is always NOT NULL, whatever the PHP property allows
-        if ($column->nullable !== $oldColumn->nullable && !$column->primaryKey) {
+        if (
+            $column->nullable !== $oldColumn->nullable
+            && !$column->primaryKey
+        ) {
             $nullability = $column->nullable ? 'DROP NOT NULL' : 'SET NOT NULL';
             $alterations[] = "ALTER COLUMN $columnName $nullability";
         }
@@ -592,7 +610,10 @@ class PgSqlGenerator implements SqlGeneratorInterface
                 $alterations[] = "ALTER COLUMN $columnName SET DEFAULT "
                     . $this->formatDefaultValue($column->default);
             }
-        } elseif ($manageDefault && !$column->hasSameDefaultAs($oldColumn)) {
+        } elseif (
+            $manageDefault
+            && !$column->hasSameDefaultAs($oldColumn)
+        ) {
             $alterations[] = $column->default === null
                 ? "ALTER COLUMN $columnName DROP DEFAULT"
                 : "ALTER COLUMN $columnName SET DEFAULT " . $this->formatDefaultValue($column->default);
@@ -604,7 +625,11 @@ class PgSqlGenerator implements SqlGeneratorInterface
 
         $alterTable = 'ALTER TABLE ' . $this->quote($table) . ' ' . implode(', ', $alterations);
 
-        if ($typeChanges && $column->autoIncrement && in_array($newType, self::SEQUENCE_TYPES, true)) {
+        if (
+            $typeChanges
+            && $column->autoIncrement
+            && in_array($newType, self::SEQUENCE_TYPES, true)
+        ) {
             return $this->generateSequenceFollowingTypeChange($table, $column->name, $newType, $alterTable);
         }
 

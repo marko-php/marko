@@ -39,7 +39,10 @@ readonly class CurlSsrTransport implements SsrTransportInterface
             $response = curl_exec($handle);
             $httpCode = (int) curl_getinfo($handle, CURLINFO_HTTP_CODE);
 
-            if ($response === false || $httpCode !== 200) {
+            if (
+                $response === false
+                || $httpCode !== 200
+            ) {
                 return null;
             }
 

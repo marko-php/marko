@@ -33,7 +33,10 @@ class ResourceChunkReader
 
             $remaining = $length;
 
-            while ($remaining === null || $remaining > 0) {
+            while (
+                $remaining === null
+                || $remaining > 0
+            ) {
                 $chunk = fread($handle, $remaining === null ? self::CHUNK_SIZE : min(self::CHUNK_SIZE, $remaining));
 
                 if ($chunk === false) {
@@ -67,13 +70,19 @@ class ResourceChunkReader
             return;
         }
 
-        if (stream_get_meta_data($handle)['seekable'] && fseek($handle, $offset) === 0) {
+        if (
+            stream_get_meta_data($handle)['seekable']
+            && fseek($handle, $offset) === 0
+        ) {
             return;
         }
 
         $toSkip = $offset;
 
-        while ($toSkip > 0 && !feof($handle)) {
+        while (
+            $toSkip > 0
+            && !feof($handle)
+        ) {
             $skipped = fread($handle, min(self::CHUNK_SIZE, $toSkip));
 
             if ($skipped === false) {
