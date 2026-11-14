@@ -9,7 +9,7 @@ The config package provides a centralized configuration system for Marko applica
 
 **Use marko/config when:**
 
-- **Installing modules with default config** — Modules ship sensible defaults in `vendor/*/config/`, and you override just what you need in `app/config/`
+- **Installing modules with default config** — Modules ship sensible defaults in `vendor/*/config/`, and you override just what you need in your project-root `config/` (or an app module's `config/`)
 - **Managing environment-specific settings** — Different database credentials, API keys, or feature flags for dev/staging/prod via `$_ENV`
 - **Building multi-tenant applications** — Each tenant needs different settings (currency, locale, pricing) while sharing common defaults
 - **Centralizing config access** — Inject `ConfigRepositoryInterface` anywhere instead of loading files directly
@@ -192,7 +192,7 @@ How values are read:
 A rejected value throws `ConfigException`. The message names the variable, the context shows the value and the suggestion lists the accepted forms. When the rejection happens while a config file loads, `ConfigLoader` rethrows it as a `ConfigLoadException` (a `ConfigException` subclass) whose message also names the file that read the variable. The original exception is its `getPrevious()`:
 
 ```text
-Environment variable "PAGE_CACHE_TTL" must be an integer [file: /app/config/page-cache.php]
+Environment variable "PAGE_CACHE_TTL" must be an integer [file: /var/www/config/page-cache.php]
 Got "1h"
 Set PAGE_CACHE_TTL to a whole number written with digits only (no units, decimals or exponents) of 0 or greater, or remove it to use the default (3600).
 ```
@@ -326,10 +326,11 @@ public function getPostsPerPage(): int
 Config files are merged in order of increasing priority:
 
 1. **Vendor modules** (lowest priority) — `vendor/*/config/*.php`
-2. **Local modules** — `modules/*/config/*.php`
-3. **App config** (highest priority) — `app/config/*.php`
+2. **Local modules** — `modules/**/config/*.php`
+3. **App modules** — `app/*/config/*.php`
+4. **Project config** (highest priority) — `config/*.php`
 
-Later sources override earlier ones. For associative arrays, values are recursively merged. For indexed arrays, later values replace earlier ones entirely.
+Later sources override earlier ones. Within one of the first three tiers, modules merge in load order. For associative arrays, values are recursively merged. For indexed arrays, later values replace earlier ones entirely.
 
 ```php title="vendor/acme/blog/config/blog.php"
 <?php
@@ -339,7 +340,7 @@ return [
 ];
 ```
 
-```php title="app/config/blog.php"
+```php title="config/blog.php"
 <?php
 return [
     'posts_per_page' => 20, // Overrides vendor value
@@ -351,7 +352,7 @@ return [
 
 To remove a key defined by a lower-priority config, set it to `new RemoveKey()`:
 
-```php title="app/config/blog.php"
+```php title="config/blog.php"
 <?php
 
 use Marko\Config\RemoveKey;
@@ -375,10 +376,10 @@ There's no separate `config:cache` command. Run `discovery:cache` on every deplo
 The cache is written with `var_export()`, so config values may only be strings, numbers, booleans, `null` and arrays. A closure or object anywhere in the merged config makes `discovery:cache` fail with a `ConfigCacheException` naming the config key and the file it came from:
 
 ```text
-Config value 'payments.resolver' in /app/config/payments.php is a Closure and cannot be stored in the discovery cache
+Config value 'payments.resolver' in /var/www/config/payments.php is a Closure and cannot be stored in the discovery cache
 ```
 
-Store a class name instead and resolve it through the container where you use it. A closure in a module's config file is fine when a later file (your app config, say) replaces it with a plain value.
+Store a class name instead and resolve it through the container where you use it. A closure in a module's config file is fine when a later file (your project `config/` file, say) replaces it with a plain value.
 
 ### Environment variables are fixed when the cache is built
 
@@ -566,7 +567,7 @@ public function files(
 ): array
 ```
 
-`files()` lists every config file in merge order: each module's `config/*.php` in module load order, then the root config directory. `discover()` loads and merges them in that order.
+`files()` lists every config file in merge order: each module's `config/*.php`, then the root config directory. `discover()` loads and merges them in that order. Pass `$modulePaths` already ordered; `Marko\Config\ConfigModuleOrder::paths()` takes the enabled modules in load order and returns their paths sorted by source tier (vendor, then `modules/`, then `app/`), keeping load order within a tier. The config module and `ConfigCacheContributor` both use it, so live and cached boots merge identically.
 
 ### ConfigServiceProvider
 

@@ -53,10 +53,10 @@ namespace App\Blog\Events\Post;
 use App\Blog\Entity\PostInterface;
 use Marko\Core\Event\Event;
 
-readonly class PostCreated extends Event
+class PostCreated extends Event
 {
     public function __construct(
-        private PostInterface $post,
+        private readonly PostInterface $post,
     ) {}
 
     public function getPost(): PostInterface

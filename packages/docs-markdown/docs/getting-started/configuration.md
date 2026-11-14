@@ -94,12 +94,13 @@ This keeps environment variables in one place and makes your application testabl
 
 ## Where Config Defaults Go
 
-Config defaults go in each module's `config/` directory. When multiple modules provide the same config key, higher-priority modules win, so app-level config overrides the defaults that ship with a module:
+Config defaults go in each module's `config/` directory. When several files provide the same config key, the later one wins: vendor modules, then `modules/`, then `app/` modules, then your project-root `config/` directory. Your own config overrides the defaults that ship with a module:
 
 ```
 vendor/marko/cache/config/cache.php     → Base defaults
 modules/acme/cache/config/cache.php     → Third-party overrides
-app/my-app/config/cache.php             → Your overrides (wins)
+app/my-app/config/cache.php             → Your module overrides
+config/cache.php                        → Project overrides (wins)
 ```
 
 ## Next Steps

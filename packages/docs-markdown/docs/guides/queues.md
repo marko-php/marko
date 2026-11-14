@@ -26,11 +26,11 @@ namespace App\Blog\Job;
 
 use Marko\Queue\Job;
 
-readonly class SendWelcomeEmail extends Job
+class SendWelcomeEmail extends Job
 {
     public function __construct(
-        private string $email,
-        private string $name,
+        private readonly string $email,
+        private readonly string $name,
     ) {}
 
     public function handle(): void

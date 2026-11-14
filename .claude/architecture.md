@@ -365,6 +365,8 @@ When the same thing is defined in multiple places, later directories win:
 2. `modules/` (middle priority)
 3. `app/` (highest priority - always wins)
 
+Config has one more tier: the project-root `config/` directory sits above `app/` and wins over every module's config (see Module Configuration).
+
 ### Module Internal Structure
 
 Each module follows the same structure:
@@ -846,7 +848,7 @@ Events decouple "something happened" from "react to it." Unlike plugins (which m
 
 ### Dispatching Events
 
-Any code can dispatch an event. Events can be string-based (simple) or class-based (type-safe).
+Any code can dispatch an event. An event is a class extending `Marko\Core\Event\Event`, dispatched through `EventDispatcherInterface::dispatch()`. Observers subscribe to an event class, so events are type-safe; there are no string-named events.
 
 ### Observers
 
@@ -976,7 +978,7 @@ $perPage = $config->getInt('blog.posts_per_page', 10);
 
 ### Module Configuration
 
-Each module can have configuration files in its `config/` directory. These are PHP files that return arrays.
+Each module can have configuration files in its `config/` directory. These are PHP files that return arrays. Config merges in four steps, later winning: vendor module `config/`, then `modules/` module `config/`, then `app/` module `config/`, then the project-root `config/` (highest). Within a tier, modules merge in load order.
 
 ### Environment Variables
 

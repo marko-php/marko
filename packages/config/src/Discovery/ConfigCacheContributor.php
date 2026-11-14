@@ -6,6 +6,7 @@ namespace Marko\Config\Discovery;
 
 use Marko\Config\ConfigDiscovery;
 use Marko\Config\ConfigLoader;
+use Marko\Config\ConfigModuleOrder;
 use Marko\Config\Env;
 use Marko\Config\Exceptions\ConfigCacheException;
 use Marko\Config\Exceptions\ConfigException;
@@ -34,6 +35,7 @@ readonly class ConfigCacheContributor implements DiscoveryCacheContributorInterf
         private ConfigLoader $loader,
         private ProjectPaths $projectPaths,
         private ConfigCacheSection $section = new ConfigCacheSection(),
+        private ConfigModuleOrder $configModuleOrder = new ConfigModuleOrder(),
     ) {}
 
     public function key(): string
@@ -50,7 +52,7 @@ readonly class ConfigCacheContributor implements DiscoveryCacheContributorInterf
     public function compile(
         array $modules,
     ): array {
-        $modulePaths = array_map(fn (ModuleManifest $module): string => $module->path, array_values($modules));
+        $modulePaths = $this->configModuleOrder->paths($modules);
 
         Env::startRecording();
 

@@ -54,7 +54,7 @@ afterEach(function (): void {
     rmdir($this->basePath);
 });
 
-it('module.php binds ConfigRepositoryInterface to a factory closure', function () {
+it('module.php binds ConfigRepositoryInterface to a factory closure', function (): void {
     $moduleConfig = require __DIR__ . '/../../module.php';
 
     expect($moduleConfig['bindings'])->toHaveKey(ConfigRepositoryInterface::class)
@@ -85,6 +85,26 @@ it('loads config files only once across resolves', function (): void {
     $container->get(ConfigRepositoryInterface::class);
 
     expect($GLOBALS['marko_config_counter_loads'])->toBe(1);
+});
+
+it('builds the live config repository in source priority order', function (): void {
+    $fixtures = __DIR__ . '/fixtures/order';
+    $container = configModuleContainer($this->basePath);
+    $container->instance(ModuleRepositoryInterface::class, new ModuleRepository([
+        new ModuleManifest(name: 'app/my-app', version: '1.0.0', path: $fixtures . '/app-module', source: 'app'),
+        new ModuleManifest(
+            name: 'marko/cache',
+            version: '1.0.0',
+            path: $fixtures . '/vendor-module',
+            source: 'vendor',
+        ),
+    ]));
+    $container->instance(CachedDiscovery::class, new CachedDiscovery());
+
+    $config = $container->get(ConfigRepositoryInterface::class);
+
+    expect($config->get('cache.driver'))->toBe('app')
+        ->and($config->get('cache.ttl'))->toBe(60);
 });
 
 it('declares the config discovery cache contributor', function (): void {

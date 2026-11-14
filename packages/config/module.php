@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Config\ConfigModuleOrder;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Config\ConfigServiceProvider;
 use Marko\Config\Discovery\ConfigCacheContributor;
@@ -17,13 +18,8 @@ return [
             $modules = $container->get(ModuleRepositoryInterface::class);
             $paths = $container->get(ProjectPaths::class);
 
-            $modulePaths = array_map(
-                fn ($module) => $module->path,
-                $modules->all(),
-            );
-
             return $provider->createRepository(
-                modulePaths: $modulePaths,
+                modulePaths: $container->get(ConfigModuleOrder::class)->paths($modules->all()),
                 rootConfigPath: $paths->config,
                 cachedDiscovery: $container->get(CachedDiscovery::class),
             );
