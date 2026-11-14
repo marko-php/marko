@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<ruleset name="Marko">
+    <description>Marko's custom sniffs</description>
+
+    <!--
+        PHPCS adds a standard's directory to its autoloader only when the standard is named
+        on the command line. Referenced from phpcs.xml, only the sniff files load, so include
+        the helpers they share explicitly.
+    -->
+    <autoload>./Helpers/LineLayout.php</autoload>
+    <autoload>./Helpers/TernaryCondition.php</autoload>
+</ruleset>

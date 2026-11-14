@@ -11,8 +11,12 @@ use Rector\Php80\Rector\NotIdentical\StrContainsRector;
 return RectorConfig::configure()
     ->withPaths([
         __DIR__ . '/packages',
-        __DIR__ . '/demo/app',
-        __DIR__ . '/demo/modules',
+    ])
+    ->withSkip([
+        // Deliberate syntax errors, also excluded in .php-cs-fixer.php
+        __DIR__ . '/packages/config/tests/Unit/fixtures/syntax-error.php',
+        __DIR__ . '/packages/codeindexer/tests/Fixtures/AttributeFixtures/src/Broken/SyntaxError.php',
+        __DIR__ . '/packages/codeindexer/tests/Fixtures/ConfigFixtures/module-d/config/broken.php',
     ])
     ->withRules([
         ClassPropertyAssignToConstructorPromotionRector::class,
