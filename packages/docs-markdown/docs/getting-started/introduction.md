@@ -20,7 +20,7 @@ Magento's extensibility + Laravel's DX + Loud errors = Marko
 
 From **Magento**, Marko takes the extensibility primitives: Preferences (interface swapping), Plugins (method interception), Events & Observers, and a layered module system. Coming from Magento? [Coming From Magento](/docs/guides/coming-from-magento/) maps each Magento concept to its Marko equivalent.
 
-From **Laravel**, Marko takes the developer experience: clean APIs, sensible defaults, Composer-native package management, and attribute-based routing.
+From **Laravel**, Marko takes the developer experience: clean APIs, sensible defaults, Composer-native package management, and attribute-based routing. Coming from Laravel? [Coming From Laravel](/docs/guides/coming-from-laravel/) maps each Laravel feature to its Marko equivalent.
 
 From **neither**, Marko adds loud errors — a philosophy that every failure should help you fix it.
 
@@ -56,3 +56,4 @@ You code against the interface. Swap implementations by changing a single bindin
 - [Understand the project structure](/docs/getting-started/project-structure/)
 - [Learn about modularity](/docs/concepts/modularity/) — the foundation of everything in Marko
 - [Coming from Magento?](/docs/guides/coming-from-magento/) — see how each Magento concept maps to Marko
+- [Coming from Laravel?](/docs/guides/coming-from-laravel/) — see how each Laravel feature maps to Marko
