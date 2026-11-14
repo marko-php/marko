@@ -328,7 +328,22 @@ if (
 ) {
 ```
 
-Don't fold a compound condition into a ternary. Use an `if` with early returns instead.
+A ternary is the exception. When its condition has more than one check, wrap the whole condition in parentheses and keep it on one line, then put `?` and `:` each on their own line, so the two possible results stand out. A ternary with a single-check condition stays on one line.
+
+```php
+// WRONG
+return $userAgent === null || $userAgent === '' ? null : mb_substr($userAgent, 0, 255);
+
+return $userAgent === null
+    || $userAgent === ''
+    ? null
+    : mb_substr($userAgent, 0, 255);
+
+// CORRECT
+return ($userAgent === null || $userAgent === '')
+    ? null
+    : mb_substr($userAgent, 0, 255);
+```
 
 ## Attribute Standards
 

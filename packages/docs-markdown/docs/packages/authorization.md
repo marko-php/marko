@@ -140,14 +140,9 @@ class AdminBypass implements GateHookInterface
         array $arguments,
     ): ?bool {
         // null means "no opinion": the next hook, closure or policy decides
-        if (
-            $user instanceof User
-            && $user->isAdmin()
-        ) {
-            return true;
-        }
-
-        return null;
+        return ($user instanceof User && $user->isAdmin())
+            ? true
+            : null;
     }
 }
 ```
@@ -183,14 +178,9 @@ class SoundPolicy implements PolicyBeforeInterface
         array $arguments,
     ): ?bool {
         // Default-library sounds are never editable here
-        if (
-            $arguments[0] instanceof Sound
-            && $arguments[0]->isDefaultLibrary
-        ) {
-            return false;
-        }
-
-        return null;
+        return ($arguments[0] instanceof Sound && $arguments[0]->isDefaultLibrary)
+            ? false
+            : null;
     }
 
     public function update(
