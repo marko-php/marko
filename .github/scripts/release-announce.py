@@ -38,6 +38,7 @@ import urllib.request
 import anthropic
 
 MODEL = "claude-opus-5-5"
+SENDER_NAME = "The Marko Knight"
 SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
 URL = re.compile(r"https?://[^\s)>\]]+")
 PRE_CHUNK = 2500
@@ -261,16 +262,43 @@ def linkified(text: str) -> list[dict]:
     return elements
 
 
+def changelog_sections(section: str) -> list[list[str]]:
+    sections: list[list[str]] = [[]]
+    for line in section.splitlines():
+        if line.startswith("### ") and sections[-1]:
+            sections.append([])
+        sections[-1].append(line)
+    return sections
+
+
+def split_by_line(lines: list[str]) -> list[list[str]]:
+    if len("\n".join(lines)) <= PRE_CHUNK:
+        return [lines]
+    pieces: list[list[str]] = [[]]
+    size = 0
+    for line in lines:
+        if pieces[-1] and size + 1 + len(line) > PRE_CHUNK:
+            pieces.append([])
+            size = 0
+        size = size + 1 + len(line) if pieces[-1] else len(line)
+        pieces[-1].append(line)
+    return pieces
+
+
 def preformatted_chunks(section: str) -> list[str]:
     chunks: list[str] = []
-    current = ""
-    for line in section.splitlines():
-        if current and len(current) + len(line) + 1 > PRE_CHUNK:
-            chunks.append(current)
-            current = ""
-        current = f"{current}\n{line}" if current else line
+    current: list[str] = []
+    size = 0
+    for lines in changelog_sections(section):
+        for piece in split_by_line(lines):
+            length = len("\n".join(piece))
+            if current and size + 1 + length > PRE_CHUNK:
+                chunks.append("\n".join(current))
+                current, size = [], 0
+            size = size + 1 + length if current else length
+            current.extend(piece)
     if current:
-        chunks.append(current)
+        chunks.append("\n".join(current))
     return chunks
 
 
@@ -302,7 +330,13 @@ def message(version: str, summary: str, section: str, mention: bool) -> dict:
         )
 
     fallback = f"{'<!channel> ' if mention else ''}{headline(version)}\n\n{summary}"
-    return {"text": fallback, "blocks": blocks, "unfurl_links": False, "unfurl_media": False}
+    return {
+        "text": fallback,
+        "blocks": blocks,
+        "unfurl_links": False,
+        "unfurl_media": False,
+        "username": SENDER_NAME,
+    }
 
 
 def already_posted(channel: str, bot_user: str, version: str) -> bool:
