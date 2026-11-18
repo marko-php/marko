@@ -40,11 +40,14 @@ jobs:
       - name: Install dependencies
         uses: ramsey/composer-install@v4
 
-      # Without this, packages/roadrunner's end-to-end suite finds no `rr`
-      # binary on this runner and every one of its security-critical
-      # isolation assertions silently skips — the exact failure mode
-      # tests/CiWorkflowTest.php guards against below.
+      # The CI Integration job runs packages/roadrunner's end-to-end suite on
+      # every PR; the full run here includes it too. Without the binary on this
+      # runner its security-critical isolation assertions silently skip — the
+      # exact failure mode tests/CiWorkflowTest.php guards against below.
+      # GITHUB_TOKEN avoids the anonymous GitHub API rate limit.
       - name: Install the RoadRunner binary
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: vendor/bin/rr get-binary --no-config --no-interaction
 
       - name: Run full test suite

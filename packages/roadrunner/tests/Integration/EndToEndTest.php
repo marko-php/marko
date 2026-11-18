@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Marko\Roadrunner\Tests\Integration;
 
-use function Marko\Roadrunner\Tests\locateRoadRunnerBinary;
-
 use function Marko\Roadrunner\Tests\roadRunnerSkipReason;
+use function Marko\Roadrunner\Tests\roadRunnerUnavailable;
 use function Marko\Roadrunner\Tests\sharedRoadRunnerServer;
 
 use Marko\Roadrunner\Tests\Support\SharedRoadRunnerServer;
@@ -24,25 +23,13 @@ use Marko\Roadrunner\Tests\Support\SharedRoadRunnerServer;
  *
  * No PSR-7 bridging is faked here: the binary, the goridge wire protocol,
  * and the HTTP server are all real. On a machine (or CI job) without the
- * `rr` binary, every test below skips with a clear explanation instead of
- * failing — see 'skips with a clear message...' below, and
- * {@see roadRunnerSkipReason()}.
+ * `rr` binary, every test below skips with a clear explanation; under
+ * `MARKO_INTEGRATION_REQUIRED=1` (the CI Integration job) it fails instead, so
+ * the suite can never pass by skipping — see {@see roadRunnerUnavailable()}
+ * and {@see roadRunnerSkipReason()}.
  */
 afterAll(function (): void {
     SharedRoadRunnerServer::stopIfStarted();
-});
-
-it('skips with a clear message when the roadrunner binary is unavailable', function (): void {
-    $binary = locateRoadRunnerBinary();
-
-    expect(roadRunnerSkipReason())
-        ->toContain('RoadRunner binary not found')
-        ->toContain('rr get-binary')
-        ->and($binary === null
-        || (
-            is_file($binary)
-            && is_executable($binary)
-        ))->toBeTrue();
 });
 
 it('serves a successful http response through a real roadrunner process', function (): void {
@@ -50,10 +37,10 @@ it('serves a successful http response through a real roadrunner process', functi
 
     expect($response->statusCode)->toBe(200)
         ->and($response->body)->toContain('visits=0')
-        ->and($response->body)->toContain('user=guest');
+        ->toContain('user=guest');
 })
-    ->skip(fn (): bool => locateRoadRunnerBinary() === null, roadRunnerSkipReason())
-    ->group('integration-destructive');
+    ->skip(fn (): bool => roadRunnerUnavailable(), roadRunnerSkipReason())
+    ->group('integration-services');
 
 it('preserves a session across two requests from the same client', function (): void {
     $client = sharedRoadRunnerServer()->client();
@@ -66,8 +53,8 @@ it('preserves a session across two requests from the same client', function (): 
         ->and($first->body)->toContain('visits=1')
         ->and($second->body)->toContain('visits=1');
 })
-    ->skip(fn (): bool => locateRoadRunnerBinary() === null, roadRunnerSkipReason())
-    ->group('integration-destructive');
+    ->skip(fn (): bool => roadRunnerUnavailable(), roadRunnerSkipReason())
+    ->group('integration-services');
 
 it('does not leak session state between two different clients', function (): void {
     $client = sharedRoadRunnerServer()->client();
@@ -83,8 +70,8 @@ it('does not leak session state between two different clients', function (): voi
         ->and($anonymous->body)->toContain('visits=0')
         ->and($userB->body)->toContain('visits=1');
 })
-    ->skip(fn (): bool => locateRoadRunnerBinary() === null, roadRunnerSkipReason())
-    ->group('integration-destructive');
+    ->skip(fn (): bool => roadRunnerUnavailable(), roadRunnerSkipReason())
+    ->group('integration-services');
 
 it('does not leak the authenticated user into an anonymous request', function (): void {
     $client = sharedRoadRunnerServer()->client();
@@ -97,8 +84,8 @@ it('does not leak the authenticated user into an anonymous request', function ()
         ->and($anonymous->body)->toContain('user=guest')
         ->and($userB->body)->toContain('user=1');
 })
-    ->skip(fn (): bool => locateRoadRunnerBinary() === null, roadRunnerSkipReason())
-    ->group('integration-destructive');
+    ->skip(fn (): bool => roadRunnerUnavailable(), roadRunnerSkipReason())
+    ->group('integration-services');
 
 it('does not leak the authenticated user between two different clients', function (): void {
     $client = sharedRoadRunnerServer()->client();
@@ -112,8 +99,8 @@ it('does not leak the authenticated user between two different clients', functio
         ->and($userB->body)->toContain('user=1')
         ->and($userA->body)->not->toBe($userB->body);
 })
-    ->skip(fn (): bool => locateRoadRunnerBinary() === null, roadRunnerSkipReason())
-    ->group('integration-destructive');
+    ->skip(fn (): bool => roadRunnerUnavailable(), roadRunnerSkipReason())
+    ->group('integration-services');
 
 it('sets a session cookie on the first write and not on the next request', function (): void {
     $client = sharedRoadRunnerServer()->client();
@@ -128,8 +115,8 @@ it('sets a session cookie on the first write and not on the next request', funct
         ->and($cookie)->not->toBeNull()
         ->and($second->sessionCookie())->toBeNull();
 })
-    ->skip(fn (): bool => locateRoadRunnerBinary() === null, roadRunnerSkipReason())
-    ->group('integration-destructive');
+    ->skip(fn (): bool => roadRunnerUnavailable(), roadRunnerSkipReason())
+    ->group('integration-services');
 
 it('sets no session cookie for a request that only reads an absent session', function (): void {
     $client = sharedRoadRunnerServer()->client();
@@ -137,10 +124,10 @@ it('sets no session cookie for a request that only reads an absent session', fun
     $response = $client->get('/session/read');
 
     expect($response->statusCode)->toBe(200)
-        ->and($response->setCookies)->toBe([]);
+        ->and($response->setCookies)->toBeEmpty();
 })
-    ->skip(fn (): bool => locateRoadRunnerBinary() === null, roadRunnerSkipReason())
-    ->group('integration-destructive');
+    ->skip(fn (): bool => roadRunnerUnavailable(), roadRunnerSkipReason())
+    ->group('integration-services');
 
 it('passes a csrf protected form submission', function (): void {
     $client = sharedRoadRunnerServer()->client();
@@ -153,8 +140,8 @@ it('passes a csrf protected form submission', function (): void {
         ->and($submission->statusCode)->toBe(200)
         ->and($submission->body)->toBe('csrf-ok');
 })
-    ->skip(fn (): bool => locateRoadRunnerBinary() === null, roadRunnerSkipReason())
-    ->group('integration-destructive');
+    ->skip(fn (): bool => roadRunnerUnavailable(), roadRunnerSkipReason())
+    ->group('integration-services');
 
 it('returns a five hundred and keeps serving after a request throws', function (): void {
     $client = sharedRoadRunnerServer()->client();
@@ -165,5 +152,5 @@ it('returns a five hundred and keeps serving after a request throws', function (
     expect($failed->statusCode)->toBe(500)
         ->and($recovered->statusCode)->toBe(200);
 })
-    ->skip(fn (): bool => locateRoadRunnerBinary() === null, roadRunnerSkipReason())
-    ->group('integration-destructive');
+    ->skip(fn (): bool => roadRunnerUnavailable(), roadRunnerSkipReason())
+    ->group('integration-services');

@@ -56,7 +56,7 @@ it(
     'runs the integration-services group in its own job against postgres and redis services',
     function () use ($ci): void {
         $job = substr($ci, (int) strpos($ci, 'name: Integration'));
-    
+
         expect($ci)->toContain('name: Integration')
             ->and($job)
             ->toContain('services:')
@@ -68,7 +68,7 @@ it(
             ->toContain('DB_HOST: 127.0.0.1')
             ->toContain('REDIS_HOST: 127.0.0.1')
             ->toContain('run: composer test:integration');
-    }
+    },
 );
 
 it('health-checks the integration services before running the suite', function () use ($ci): void {
@@ -263,7 +263,23 @@ it('installs the roadrunner binary in the nightly workflow', function () use ($n
         ->and($binaryInstalledAt)->not->toBeFalse()
         ->and($testsRunAt)->not->toBeFalse()
         ->and($binaryInstalledAt)->toBeGreaterThan($dependenciesInstalledAt)
-        ->and($binaryInstalledAt)->toBeLessThan($testsRunAt);
+        ->and($binaryInstalledAt)->toBeLessThan($testsRunAt)
+        ->and($nightly)->toContain('GITHUB_TOKEN: ${{ github.token }}');
+});
+
+it('installs the roadrunner binary in the integration job before the suite runs', function () use ($ci): void {
+    $job = substr($ci, (int) strpos($ci, 'name: Integration'));
+
+    $dependenciesInstalledAt = strpos($job, 'ramsey/composer-install');
+    $binaryInstalledAt = strpos($job, 'run: vendor/bin/rr get-binary');
+    $suiteRunAt = strpos($job, 'run: composer test:integration');
+
+    expect($dependenciesInstalledAt)->not->toBeFalse()
+        ->and($binaryInstalledAt)->not->toBeFalse()
+        ->and($suiteRunAt)->not->toBeFalse()
+        ->and($binaryInstalledAt)->toBeGreaterThan($dependenciesInstalledAt)
+        ->and($binaryInstalledAt)->toBeLessThan($suiteRunAt)
+        ->and($job)->toContain('GITHUB_TOKEN: ${{ github.token }}');
 });
 
 it('exposes composer phpstan and composer ci scripts the workflow depends on', function (): void {
