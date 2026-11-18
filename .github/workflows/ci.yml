@@ -76,6 +76,10 @@ jobs:
         if: ${{ !cancelled() }}
         run: composer docs:lint
 
+      - name: Release script unit tests
+        if: ${{ !cancelled() }}
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py'
+
   static:
     name: Static analysis
     runs-on: ubuntu-latest

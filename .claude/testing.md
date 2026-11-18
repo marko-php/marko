@@ -258,6 +258,8 @@ No test may open, assert on, or depend on documentation: docs pages under `packa
 
 Docs accuracy is checked outside the test suite: `composer docs:lint` (run by the CI `Lint` job on every PR) fails when a PHP example in a README or docs page references a `Marko\...` class that does not exist; the `doc-updater` agent and PR review cover the rest.
 
+The CI `Lint` job also runs the Python unit tests for the release announcement script: `python3 -m unittest discover -s .github/scripts -p 'test_*.py'`. They cover `valid_paragraph()` in `.github/scripts/release-announce.py` (the check on the announcement text), and live in `.github/scripts/test_release_announce.py`.
+
 ## Coverage Requirements
 - Minimum: 80%
 - All new code must have tests

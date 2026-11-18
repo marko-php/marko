@@ -34,3 +34,5 @@ vendor/
 
 # hcf plans are ephemeral working files; the code is the source of truth
 /.claude/plans/
+
+__pycache__/
