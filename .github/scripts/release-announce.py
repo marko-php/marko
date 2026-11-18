@@ -44,33 +44,35 @@ PRE_CHUNK = 2500
 
 STYLE_EXAMPLE = (
     "Marko now has a built-in SQLite driver, so you can start an app or run tests without "
-    "setting up a separate database server. Remember-me sign-ins now work reliably: the "
-    "remember cookie used to get dropped. You can also turn on \"keep me signed in\" in one "
+    "setting up a separate database server. You can also turn on \"keep me signed in\" in one "
     "step when someone logs in, and an app can check that a password reset link is still "
     "valid before asking for a new password. Queues are easier to tune and monitor, with each "
-    "queue able to set its own time limits. Large file uploads now get a clear \"too large\" "
-    "response instead of crashing the request, and commands no longer quietly ignore options "
-    "they don't recognize: --help now shows help instead of running the command. A few of "
-    "these changes need small code updates in existing apps, listed under Breaking Changes "
-    "below."
+    "queue able to set its own time limits.\n\n"
+    "Remember-me sign-ins now work reliably: the remember cookie used to get dropped. "
+    "Large file uploads now get a clear \"too large\" response instead of crashing the "
+    "request, and commands no longer quietly ignore options they don't recognize: --help now "
+    "shows help instead of running the command.\n\n"
+    "A few of these changes need small code updates in existing apps, listed under Breaking "
+    "Changes below."
 )
 
-SYSTEM_PROMPT = f"""You write the opening paragraph of the release announcement for Marko, a modular PHP framework, posted in the project's Slack community.
+SYSTEM_PROMPT = f"""You write the opening of the release announcement for Marko, a modular PHP framework, posted in the project's Slack community.
 
-Readers are PHP developers who use or follow Marko. They want to know, in plain language, what this release lets them do and what got fixed, without reading the changelog. The full changelog is posted directly below your paragraph.
+Readers are PHP developers who use or follow Marko. They want to know, in plain language, what this release lets them do and what got fixed, without reading the changelog. The full changelog is posted directly below your text.
 
-Write exactly one paragraph of 3 to 6 sentences:
-- Lead with the most useful additions, then the fixes people would notice. Group related changes rather than listing every PR.
+Write 2 to 3 short paragraphs, each of 1 to 3 sentences, separated by one blank line. Split where the topic changes:
+- First paragraph: the most useful additions. Second paragraph: the fixes people would notice. Group related changes rather than listing every PR.
 - Describe effects for app developers, not implementation details. Avoid class names, method names and jargon unless a reader needs the name to act on it.
-- If the changelog has a Breaking Changes section, end with one sentence saying some changes need small code updates in existing apps and are listed under Breaking Changes below. If it has none, do not mention breaking changes.
+- If the changelog has a Breaking Changes section, end with its own short final paragraph of one sentence saying some changes need small code updates in existing apps and are listed under Breaking Changes below. If it has none, do not mention breaking changes.
 - Only state what the changelog and PR descriptions support. Do not invent features, numbers or dates.
 - Plain text only: no markdown, no backticks, no bullet points, no headings, no emoji, no greeting and no sign-off. Do not repeat the version number or say "this release" more than once.
+- Inside a paragraph never break the line; only a blank line between paragraphs.
 
-This paragraph, written for 0.13.0, shows the tone and length the maintainer approved:
+This text, written for 0.13.0, shows the tone, length and paragraph breaks the maintainer approved:
 
 {STYLE_EXAMPLE}
 
-Reply with the paragraph and nothing else."""
+Reply with the paragraphs and nothing else."""
 
 
 def fail(message: str) -> None:
@@ -197,14 +199,17 @@ def pr_context(section: str) -> str:
 
 
 def valid_paragraph(text: str) -> str | None:
-    if not 200 <= len(text) <= 1500:
-        return f"length {len(text)} is outside 200-1500 characters"
-    if "\n" in text:
-        return "it is more than one paragraph"
+    if not 200 <= len(text) <= 1800:
+        return f"length {len(text)} is outside 200-1800 characters"
+    paragraphs = text.split("\n\n")
+    if len(paragraphs) > 3:
+        return "it is more than three paragraphs"
+    if any("\n" in block for block in paragraphs):
+        return "paragraphs must be separated by exactly one blank line, with no line breaks inside a paragraph"
     # Backticks and asterisks (code, bold, emphasis), a leading "# " heading or a
     # leading bullet. "#[Attribute]" and "#709" are plain text and stay allowed;
     # underscores stay allowed because snake_case names are common.
-    if re.search(r"[`*]|^\s*#+\s|^\s*[-•]", text):
+    if re.search(r"[`*]|^\s*#+\s|^\s*[-•]", text, re.MULTILINE):
         return "it contains markdown"
     return None
 
@@ -232,8 +237,8 @@ def summarize(version: str, section: str, context: str) -> str:
         if response.stop_reason != "end_turn":
             problem = f"generation stopped with {response.stop_reason}"
             continue
-        text = " ".join(
-            block.text.strip() for block in response.content if block.type == "text"
+        text = "\n\n".join(
+            block.text.replace("\r\n", "\n").strip() for block in response.content if block.type == "text"
         ).strip()
         problem = valid_paragraph(text) or ""
         if not problem:
@@ -286,7 +291,7 @@ def message(version: str, summary: str, section: str, mention: bool) -> dict:
             "type": "rich_text",
             "elements": [
                 {"type": "rich_text_section", "elements": heading},
-                {"type": "rich_text_section", "elements": [{"type": "text", "text": f"\n{summary}\n"}]},
+                {"type": "rich_text_section", "elements": [{"type": "text", "text": f"\n{summary}\n\n"}]},
                 {"type": "rich_text_preformatted", "elements": linkified(chunks[0])},
             ],
         }
