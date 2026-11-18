@@ -201,7 +201,10 @@ def valid_paragraph(text: str) -> str | None:
         return f"length {len(text)} is outside 200-1500 characters"
     if "\n" in text:
         return "it is more than one paragraph"
-    if re.search(r"[`*#]|^\s*[-•]", text):
+    # Backticks and asterisks (code, bold, emphasis), a leading "# " heading or a
+    # leading bullet. "#[Attribute]" and "#709" are plain text and stay allowed;
+    # underscores stay allowed because snake_case names are common.
+    if re.search(r"[`*]|^\s*#+\s|^\s*[-•]", text):
         return "it contains markdown"
     return None
 

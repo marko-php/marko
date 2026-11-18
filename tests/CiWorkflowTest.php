@@ -45,6 +45,13 @@ it('runs docs:lint in the required Lint job on every pull request', function () 
     expect($lintJob)->toContain('run: composer docs:lint');
 });
 
+it('runs the release script unit tests in the lint job', function () use ($ci): void {
+    $start = (int) strpos($ci, 'name: Lint');
+    $lintJob = substr($ci, $start, (int) strpos($ci, 'name: Static analysis') - $start);
+
+    expect($lintJob)->toContain('python3 -m unittest discover -s .github/scripts');
+});
+
 it('includes docs:lint in composer ci', function (): void {
     $composer = json_decode((string) file_get_contents(dirname(__DIR__) . '/composer.json'), true);
 
