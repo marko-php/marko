@@ -14,7 +14,7 @@ use Marko\Database\Entity\Entity;
  * writes the table with its own SQL, not through this entity.
  */
 #[Table('jobs')]
-#[Index('idx_queue_available', ['queue', 'available_at'])]
+#[Index(['queue', 'available_at'])]
 class DatabaseJob extends Entity
 {
     #[Column(type: 'varchar', length: 36, primaryKey: true)]

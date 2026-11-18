@@ -35,7 +35,7 @@ use Marko\Database\Attributes\Index;
 use Marko\Database\Entity\Entity;
 
 #[Table('blog_posts')]
-#[Index('idx_status_created', ['status', 'created_at'])]
+#[Index(['status', 'created_at'])]
 class Post extends Entity
 {
     #[Column(primaryKey: true, autoIncrement: true)]
@@ -70,7 +70,8 @@ class Post extends Entity
 |-----------|---------|
 | `#[Table]` | Defines table name (`name:`) or marks an extender (`extends:`); `unmanagedIndexes:` lists hand-made indexes the diff never drops (see [Hand-Made Indexes](#hand-made-indexes)) |
 | `#[Column]` | Column configuration (name, primaryKey, autoIncrement, length, type, unique, default, references, onDelete, onUpdate, nullable, generated) |
-| `#[Index]` | Composite and unique indexes; `where:` makes a partial index (see [Partial Indexes](#partial-indexes)) |
+| `#[Index]` | Composite and unique indexes: `#[Index(array $columns, bool $unique = false, ?string $where = null, ?string $name = null)]`. `where:` makes a partial index (see [Partial Indexes](#partial-indexes)); the name is derived unless you pass `name:` (see [Index and Foreign Key Names](#index-and-foreign-key-names)) |
+| `#[ForeignKey]` | Composite foreign keys, or a single-column key with a custom name: `#[ForeignKey(array $columns, string $references, array $referencedColumns, ?string $onDelete = null, ?string $onUpdate = null, ?string $name = null)]` (see [Composite and Named Foreign Keys](#composite-and-named-foreign-keys)) |
 | `#[Cast]` | Converts a property with a custom cast class (see [Casts](#casts)) |
 | `#[Encrypted]` | Stores a property encrypted (see [Encrypted Columns](#encrypted-columns)) |
 | `#[Timestamps]` | Fills `createdAt`/`updatedAt` automatically (see [Automatic Timestamps](#automatic-timestamps)) |
@@ -635,7 +636,8 @@ $userRepo->save($loaded);
 - Specify exactly one of `name:` or `extends:` on `#[Table]`.
 - An extender may not redeclare the parent's primary key, may not set `autoIncrement` on any column, and may not declare its own `name:`.
 - The parent itself may not be an extender — chained extension is not supported in v1.
-- Two extenders may not add the same column name or index name to a table. This fails loudly at registration with both class-strings in the error.
+- Two extenders may not add the same column name, index name or foreign key name to a table. This fails loudly at registration with both class-strings in the error.
+- An extender may declare `#[Index]` and `#[ForeignKey]` on the parent's table. Their columns may name the parent's columns or any extender's, and the check runs once every extender is merged, so it never depends on discovery order (see [Composite and Named Foreign Keys](#composite-and-named-foreign-keys)).
 - Extenders have no primary key of their own and cannot have a standalone `Repository`. Use the parent's `Repository`.
 - `insertBatch()` does not support entities with companions attached in v1.
 
@@ -1919,13 +1921,13 @@ When the diff reports a change to a table but the SQL generator produces no stat
 
 Index and constraint names are limited to 63 bytes, the lower of the two drivers' limits: PostgreSQL silently truncates a longer name to 63 bytes, and MySQL rejects names over 64 characters. The limit is in bytes, so a multibyte character counts more than once.
 
-Marko derives three names from the table and column:
+Marko derives these names from the table and its columns. Several columns are joined with `_`:
 
 | Name | Used for |
 |---|---|
-| `fk_<table>_<column>` | The foreign key of every `references:` column |
-| `<table>_<column>_unique` | The unique index added when an existing column becomes `unique: true` |
-| `<table>_<column>_index` | The plain index kept on a foreign key column whose unique index is dropped |
+| `fk_<table>_<columns>` | The foreign key of every `references:` column, and of every `#[ForeignKey]` without `name:` |
+| `<table>_<columns>_unique` | A `#[Index(..., unique: true)]` without `name:`, and the unique index added when an existing column becomes `unique: true` |
+| `<table>_<columns>_index` | A non-unique `#[Index]` without `name:`, and the plain index kept on a foreign key column whose unique index is dropped |
 
 A derived name that fits in 63 bytes is used as is. A longer one keeps its prefix and suffix, cuts the middle, and adds the 8-character crc32b hash of the full name:
 
@@ -1936,7 +1938,103 @@ customer_subscription_events_external_billing_r_5e024629_unique      (63 bytes)
 
 The shortened name is the same on every run and on both drivers, and two long names that start the same still get different hashes. `ignore_indexes` and `unmanagedIndexes` patterns see the shortened name, so match against that.
 
-Names you declare with `#[Index]` are never shortened, since renaming your identifier behind your back would hide what the database holds. A declared name over 63 bytes throws `EntityException` when the schema is built (`db:diff`, `db:migrate`), naming the entity, the index and its length in bytes. Give the index a shorter name. If PostgreSQL already holds the truncated form of a name that is now rejected, the next migration after the rename drops the truncated index and creates the new one.
+`name:` is optional on `#[Index]` and `#[ForeignKey]`, and it is the last parameter. Leave it out and Marko derives the name above, scoped to the table, so two entities never collide by accident:
+
+```php
+#[Table('posts')]
+#[Index(['status', 'created_at'])]                  // posts_status_created_at_index
+#[Index(['slug'], unique: true)]                    // posts_slug_unique
+#[Index(['title'], name: 'posts_title_lookup')]     // posts_title_lookup
+class Post extends Entity
+{
+    // ...
+}
+```
+
+A name you pass with `name:` is used literally and is never shortened, since renaming your identifier behind your back would hide what the database holds. A declared name over 63 bytes throws `EntityException` when the schema is built (`db:diff`, `db:migrate`), naming the entity, the index or foreign key and its length in bytes. Give it a shorter name. If PostgreSQL already holds the truncated form of a name that is now rejected, the next migration after the rename drops the truncated index and creates the new one.
+
+Names must be unique within a table, and an index name (or foreign key name) may not be reused on another table, because PostgreSQL and SQLite keep index names per schema or database, and MySQL keeps foreign key names per database. Index names and foreign key names are checked separately, so an index and a foreign key on different tables may share a name. Registration throws `EntityException` naming both tables and both entities. When both names are derived, give one of them an explicit `name:`.
+
+### Composite and Named Foreign Keys
+
+Use `#[Column(references:)]` for the common case, a single column that points at one column of another table. It takes `table.column` exactly, and the foreign key is named `fk_<table>_<column>`:
+
+```php
+#[Column(references: 'users.id', onDelete: 'cascade')]
+public int $authorId;
+```
+
+Use the class-level `#[ForeignKey]` when the key spans several columns, or when you want to choose the constraint's name. `columns` and `referencedColumns` list **database column names** (the same names `#[Index]` takes), in matching order:
+
+```php title="app/billing/src/Entity/InvoiceLine.php"
+<?php
+
+declare(strict_types=1);
+
+namespace App\Billing\Entity;
+
+use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\ForeignKey;
+use Marko\Database\Attributes\Table;
+use Marko\Database\Entity\Entity;
+
+#[Table('invoice_lines')]
+#[ForeignKey(
+    columns: ['invoice_id', 'invoice_revision'],
+    references: 'invoices',
+    referencedColumns: ['id', 'revision'],
+    onDelete: 'cascade',
+)]
+class InvoiceLine extends Entity
+{
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public int $id;
+
+    #[Column]
+    public int $invoiceId;
+
+    #[Column]
+    public int $invoiceRevision;
+}
+```
+
+This builds `fk_invoice_lines_invoice_id_invoice_revision`. Pass `name:` to pick another, or to give a single-column key a name of your own:
+
+```php
+#[ForeignKey(['author_id'], 'users', ['id'], name: 'fk_posts_author')]
+```
+
+An unnamed single-column `#[ForeignKey]` gets the same name as the equivalent `references:` column, so the two forms build the same constraint. Declare a column's key one way only.
+
+An extender may declare `#[ForeignKey]` too. It is added to the parent's table, named after the parent table, and the columns may belong to the parent or to any extender (see [Table Extension](#table-extension)).
+
+On MySQL a foreign key needs an index that starts with its columns, and MySQL creates one named after the constraint when none exists. The diff leaves that index alone, and when the entity declares its own `#[Index]` on the same columns, the old copy is dropped once the new one exists. The replacement is created before anything is dropped, because InnoDB refuses to drop the last index a foreign key uses. See [marko/database-mysql](/docs/packages/database-mysql/).
+
+**Declaration errors.** These fail loudly with `EntityException` when the schema is built, naming the entity and the declaration, instead of being skipped:
+
+| Mistake | Error |
+|---|---|
+| A column in `#[Index]` or `#[ForeignKey]` the entity does not have | Names the column. If you passed a property name (`authorId`), the suggestion gives the column name (`author_id`) |
+| `#[ForeignKey]` with an empty `columns` list | Asks you to list the local columns |
+| `columns` and `referencedColumns` of different lengths | Names both counts |
+| `references:` on a column that is not exactly `table.column` | Shows the value and an example such as `users.id` |
+| Two indexes, or two foreign keys, of one table resolving to the same name | Asks for an explicit `name:` on one |
+| The same column given a foreign key by both `references:` and `#[ForeignKey]` | Asks you to keep one |
+| A name reused on another table | Names both tables and entities |
+| A foreign key and an index on one table sharing a name while covering different columns | Asks you to rename one |
+| A declared name over 63 bytes | Names the length |
+
+A foreign key and an index on one table may share a name when they cover the same columns.
+
+### Renaming Indexes
+
+Indexes are matched by name, so changing a name (or switching an explicit `name:` to a derived one) makes `db:diff` drop the old index and create the new one. A rename drops an index, so `db:migrate` asks for `--force` outside development, like any destructive change.
+
+The entities that ship with Marko (`marko/admin-auth`, `marko/authentication-database`, `marko/authentication-passkey` and `marko/queue-database`) now use derived index names instead of hand-picked ones such as `idx_queue_available`. In an existing app, the next `db:diff` after upgrading renames those indexes, and `db:migrate` needs `--force`. Old copies of indexes on foreign key columns are removed when the entity now declares an index on the same columns. MySQL's own index for a foreign key, which it names after the constraint, is left to MySQL.
+
+:::note
+**PostgreSQL: renaming an index another table references.** On PostgreSQL a foreign key depends on the unique index it references. Renaming such an index, including switching it to a derived name, fails at `DROP INDEX` because the foreign key still needs it. Keep an explicit `name:` on every unique index that another table's foreign key references.
+:::
 
 ### Partial Indexes
 
@@ -1944,7 +2042,7 @@ Add `where:` to `#[Index]` to create a partial index. The predicate is raw SQL, 
 
 ```php title="app/catalog/src/Entity/Show.php"
 #[Table('shows')]
-#[Index('shows_live_idx', ['status'], where: "status = 'live'")]
+#[Index(['status'], where: "status = 'live'", name: 'shows_live_idx')]
 class Show extends Entity
 {
     // ...

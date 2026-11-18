@@ -889,6 +889,7 @@ describe('MySqlGenerator', function (): void {
             expect($statements)->toBe(["ALTER TABLE `posts` MODIFY COLUMN `status` enum('draft','live') NULL"]);
         });
     });
+
     it('adds the replacement index before dropping the unique index it replaces', function (): void {
         $diff = new SchemaDiff(tablesToAlter: ['users' => new TableDiff(
             tableName: 'users',
@@ -914,6 +915,84 @@ describe('MySqlGenerator', function (): void {
             'DROP INDEX `users_team_id_index` ON `users`',
         ]);
     });
+
+    it(
+        'creates an added index with different columns before dropping the index it supersedes in MySQL alter statements',
+        function (): void {
+            $diff = new SchemaDiff(tablesToAlter: ['role_permissions' => new TableDiff(
+                tableName: 'role_permissions',
+                indexesToAdd: [new Index(
+                    name: 'role_permissions_role_id_tenant_id_unique',
+                    columns: ['role_id', 'tenant_id'],
+                    type: IndexType::Unique,
+                )],
+                indexesToDrop: [new Index(
+                    name: 'role_permission',
+                    columns: ['role_id', 'permission_id'],
+                    type: IndexType::Unique,
+                )],
+            )]);
+
+            expect(new MySqlGenerator()->generateUp($diff))->toBe([
+                'CREATE UNIQUE INDEX `role_permissions_role_id_tenant_id_unique` ON `role_permissions` (`role_id`, `tenant_id`)',
+                'DROP INDEX `role_permission` ON `role_permissions`',
+            ]);
+        },
+    );
+
+    it('drops before re-adding an index redefined under the same name in MySQL alter statements', function (): void {
+        $diff = new SchemaDiff(tablesToAlter: ['users' => new TableDiff(
+            tableName: 'users',
+            indexesToAdd: [new Index(name: 'users_email', columns: ['email'])],
+            indexesToDrop: [new Index(name: 'users_email', columns: ['email'], type: IndexType::Unique)],
+        )]);
+
+        expect(new MySqlGenerator()->generateUp($diff))->toBe([
+            'DROP INDEX `users_email` ON `users`',
+            'CREATE INDEX `users_email` ON `users` (`email`)',
+        ]);
+    });
+
+    it('restores dropped indexes before dropping added ones in MySQL down statements', function (): void {
+        $diff = new SchemaDiff(tablesToAlter: ['role_permissions' => new TableDiff(
+            tableName: 'role_permissions',
+            indexesToAdd: [new Index(
+                name: 'role_permissions_role_id_tenant_id_unique',
+                columns: ['role_id', 'tenant_id'],
+                type: IndexType::Unique,
+            )],
+            indexesToDrop: [new Index(
+                name: 'role_permission',
+                columns: ['role_id', 'permission_id'],
+                type: IndexType::Unique,
+            )],
+        )]);
+
+        expect(new MySqlGenerator()->generateDown($diff))->toBe([
+            'CREATE UNIQUE INDEX `role_permission` ON `role_permissions` (`role_id`, `permission_id`)',
+            'DROP INDEX `role_permissions_role_id_tenant_id_unique` ON `role_permissions`',
+        ]);
+    });
+
+    it(
+        'creates an index on a modified column after the column is modified in MySQL alter statements',
+        function (): void {
+            $diff = new SchemaDiff(tablesToAlter: ['posts' => new TableDiff(
+                tableName: 'posts',
+                columnsToModify: ['slug' => new Column(name: 'slug', type: 'varchar', length: 100)],
+                indexesToAdd: [new Index(name: 'posts_slug_index', columns: ['slug'])],
+                indexesToDrop: [new Index(name: 'old_slug', columns: ['slug'])],
+                columnsToModifyFrom: ['slug' => new Column(name: 'slug', type: 'text')],
+            )]);
+
+            $statements = new MySqlGenerator()->generateUp($diff);
+
+            expect($statements)->toHaveCount(3)
+                ->and($statements[0])->toBe('DROP INDEX `old_slug` ON `posts`')
+                ->and($statements[1])->toStartWith('ALTER TABLE `posts` MODIFY COLUMN `slug`')
+                ->and($statements[2])->toBe('CREATE INDEX `posts_slug_index` ON `posts` (`slug`)');
+        },
+    );
 
     it('keeps dropping indexes before dropping columns and adding indexes after adding columns', function (): void {
         $diff = new SchemaDiff(tablesToAlter: ['users' => new TableDiff(
@@ -1038,9 +1117,11 @@ function mysqlLongNameDiff(): SchemaDiff
         (new #[TableAttribute('customer_subscription_event_ledger')]
         class () extends Entity
         {
+            /** @noinspection PhpUnused - Entity property for structural definition */
             #[ColumnAttribute(primaryKey: true, autoIncrement: true)]
             public int $id;
 
+            /** @noinspection PhpUnused - Entity property for structural definition */
             #[ColumnAttribute(unique: true, references: 'billing_accounts.id')]
             public int $externalBillingReferenceId;
         })::class,

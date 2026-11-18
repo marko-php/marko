@@ -57,8 +57,8 @@ use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
 
 #[Table('page_views')]
-#[Index('idx_page_views_path', ['path'])]
-#[Index('idx_page_views_user_id', ['user_id'])]
+#[Index(['path'])]
+#[Index(['user_id'])]
 class PageView extends Entity
 {
     #[Column(primaryKey: true, autoIncrement: true)]

@@ -17,7 +17,8 @@ use Marko\Database\Schema\IndexType;
 
 /*
  * A fresh install of marko/admin-auth on a real PostgreSQL server. db:migrate runs in a temporary project whose
- * vendor/marko/admin-auth links to this package, so the tables come from the entities exactly as in an application (#336: admin_user_roles had no entity and was never created).
+ * vendor/marko/admin-auth links to this package, so the tables come from the entities exactly as in an application
+ * (#336: admin_user_roles had no entity and was never created).
  * Set MARKO_TEST_PGSQL_HOST (and optionally _PORT, _DATABASE, _USERNAME, _PASSWORD) to enable; the tests skip
  * otherwise. The tests create and drop the admin-auth tables and the migrations table.
  *
@@ -73,10 +74,10 @@ describe('db:migrate for marko/admin-auth on PostgreSQL', function (): void {
 
         expect($result['exitCode'])->toBe(0)
             ->and($result['output'])->toContain('Applied 6 schema migration(s).')
-            ->and($missing)->toBe([])
-            ->and($uniqueIndexColumns('role_permissions', 'idx_role_permissions_unique'))
+            ->and($missing)->toBeEmpty()
+            ->and($uniqueIndexColumns('role_permissions', 'role_permissions_role_id_permission_id_unique'))
             ->toBe(['role_id', 'permission_id'])
-            ->and($uniqueIndexColumns('admin_user_roles', 'idx_admin_user_roles_unique'))
+            ->and($uniqueIndexColumns('admin_user_roles', 'admin_user_roles_user_id_role_id_unique'))
             ->toBe(['user_id', 'role_id']);
     });
 

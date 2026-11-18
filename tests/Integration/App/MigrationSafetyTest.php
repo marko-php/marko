@@ -48,10 +48,11 @@ it('never generates migrations when db:migrate runs in production', function ():
     $result = withIntegrationAppEnv('production', fn (): array => runIntegrationCommand($this->app, 'db:migrate'));
 
     expect($result['exitCode'])->toBe(0, $result['output'])
-        ->and($result['output'])->toContain('Applied 6 schema migration(s).')
-        ->and($result['output'])->toContain('Warning: Entity schema differs from database.')
-        ->and($result['output'])->toContain('CREATE INDEX "books_titled_idx" ON "books" ("title") WHERE title <> \'\'')
-        ->and($result['output'])->not->toContain('Generated:')
+        ->and($result['output'])
+        ->toContain('Applied 6 schema migration(s).')
+        ->toContain('Warning: Entity schema differs from database.')
+        ->toContain('CREATE INDEX "books_title_index" ON "books" ("title") WHERE title <> \'\'')
+        ->not->toContain('Generated:')
         ->and(integrationMigrationFiles($this->project))->toBe($before);
 })->issue(170);
 
@@ -59,10 +60,11 @@ it('reports no drift for jobs, failed_jobs and sessions created from the documen
     $result = withIntegrationAppEnv('production', fn (): array => runIntegrationCommand($this->app, 'db:migrate'));
 
     expect($result['exitCode'])->toBe(0, $result['output'])
-        ->and($result['output'])->toContain('Warning: Entity schema differs from database.')
-        ->and($result['output'])->not->toContain('"jobs"')
-        ->and($result['output'])->not->toContain('"failed_jobs"')
-        ->and($result['output'])->not->toContain('"sessions"');
+        ->and($result['output'])
+        ->toContain('Warning: Entity schema differs from database.')
+        ->not->toContain('"jobs"')
+        ->not->toContain('"failed_jobs"')
+        ->not->toContain('"sessions"');
 })->issue(337);
 
 it('keeps a hand-made partial index when db:migrate runs', function (): void {
@@ -95,11 +97,12 @@ it('round-trips an entity partial index through db:migrate on postgres', functio
 
     expect($first['exitCode'])->toBe(0, $first['output'])
         ->and($first['output'])->toContain('Generated:')
-        ->and($indexes)->toHaveKey('books_titled_idx')
-        ->and($indexes['books_titled_idx'])->toContain('WHERE')
+        ->and($indexes)->toHaveKey('books_title_index')
+        ->and($indexes['books_title_index'])->toContain('WHERE')
         ->and($second['exitCode'])->toBe(0, $second['output'])
-        ->and($second['output'])->not->toContain('Generated:')
-        ->and($second['output'])->toContain('Nothing to migrate.')
+        ->and($second['output'])
+        ->not->toContain('Generated:')
+        ->toContain('Nothing to migrate.')
         ->and(integrationMigrationFiles($this->project))->toBe($filesAfterFirst);
 })->issue(170);
 

@@ -24,6 +24,15 @@ readonly class PgSqlIntrospector implements IntrospectorInterface, ExpressionDef
 {
     private const string DEFAULT_SCHEMA = 'public';
 
+    /** pg_constraint.confdeltype and confupdtype codes mapped to the rule names SQL uses */
+    private const array FOREIGN_KEY_RULES = [
+        'a' => 'NO ACTION',
+        'r' => 'RESTRICT',
+        'c' => 'CASCADE',
+        'n' => 'SET NULL',
+        'd' => 'SET DEFAULT',
+    ];
+
     /**
      * The temporary table and column matchesStoredDefault() declares an expression default on.
      */
@@ -353,26 +362,27 @@ readonly class PgSqlIntrospector implements IntrospectorInterface, ExpressionDef
     ): array {
         $sql = <<<'SQL'
             SELECT
-                tc.constraint_name,
-                kcu.column_name,
-                ccu.table_name AS referenced_table,
-                ccu.column_name AS referenced_column,
-                rc.delete_rule,
-                rc.update_rule
-            FROM information_schema.table_constraints tc
-            JOIN information_schema.key_column_usage kcu
-                ON tc.constraint_name = kcu.constraint_name
-                AND tc.table_schema = kcu.table_schema
-            JOIN information_schema.constraint_column_usage ccu
-                ON ccu.constraint_name = tc.constraint_name
-                AND ccu.table_schema = tc.table_schema
-            JOIN information_schema.referential_constraints rc
-                ON rc.constraint_name = tc.constraint_name
-                AND rc.constraint_schema = tc.table_schema
-            WHERE tc.constraint_type = 'FOREIGN KEY'
-              AND tc.table_name = ?
-              AND tc.table_schema = ?
-            ORDER BY tc.constraint_name, kcu.ordinal_position
+                con.conname AS constraint_name,
+                local_att.attname AS column_name,
+                referenced_class.relname AS referenced_table,
+                referenced_att.attname AS referenced_column,
+                con.confdeltype AS delete_type,
+                con.confupdtype AS update_type
+            FROM pg_constraint con
+            JOIN pg_class local_class ON local_class.oid = con.conrelid
+            JOIN pg_namespace n ON n.oid = local_class.relnamespace
+            JOIN pg_class referenced_class ON referenced_class.oid = con.confrelid
+            CROSS JOIN LATERAL unnest(con.conkey, con.confkey) WITH ORDINALITY AS cols(local_num, referenced_num, ord)
+            JOIN pg_attribute local_att
+                ON local_att.attrelid = con.conrelid
+                AND local_att.attnum = cols.local_num
+            JOIN pg_attribute referenced_att
+                ON referenced_att.attrelid = con.confrelid
+                AND referenced_att.attnum = cols.referenced_num
+            WHERE con.contype = 'f'
+              AND local_class.relname = ?
+              AND n.nspname = ?
+            ORDER BY con.conname, cols.ord
             SQL;
 
         $rows = $this->connection->query($sql, [$table, $this->schema]);
@@ -386,8 +396,8 @@ readonly class PgSqlIntrospector implements IntrospectorInterface, ExpressionDef
                     'columns' => [],
                     'referenced_columns' => [],
                     'referenced_table' => $row['referenced_table'],
-                    'delete_rule' => $row['delete_rule'],
-                    'update_rule' => $row['update_rule'],
+                    'delete_rule' => self::FOREIGN_KEY_RULES[$row['delete_type']],
+                    'update_rule' => self::FOREIGN_KEY_RULES[$row['update_type']],
                 ];
             }
             $grouped[$constraintName]['columns'][] = $row['column_name'];
@@ -570,11 +580,6 @@ readonly class PgSqlIntrospector implements IntrospectorInterface, ExpressionDef
     }
 
     /**
-     * Parse column names from an index definition.
-     *
-     * @return array<string>
-     */
-    /**
      * Extract the predicate of a partial index from its definition, without the
      * outer parentheses PostgreSQL adds, or null for a full index.
      */
@@ -620,6 +625,11 @@ readonly class PgSqlIntrospector implements IntrospectorInterface, ExpressionDef
         return false;
     }
 
+    /**
+     * Parse column names from an index definition.
+     *
+     * @return array<string>
+     */
     private function parseIndexColumns(
         string $indexDef,
     ): array {

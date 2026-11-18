@@ -25,6 +25,7 @@ readonly class EntityMetadata
      * @param ?string $createdAtProperty Property maintained as the creation timestamp via #[Timestamps]
      * @param ?string $updatedAtProperty Property maintained as the update timestamp via #[Timestamps]
      * @param list<string> $unmanagedIndexes Index names (or patterns) the entity diff never drops
+     * @param array<ForeignKeyMetadata> $foreignKeys
      */
     public function __construct(
         public string $entityClass,
@@ -39,6 +40,7 @@ readonly class EntityMetadata
         public ?string $createdAtProperty = null,
         public ?string $updatedAtProperty = null,
         public array $unmanagedIndexes = [],
+        public array $foreignKeys = [],
     ) {}
 
     /**
@@ -78,6 +80,7 @@ readonly class EntityMetadata
             createdAtProperty: $this->createdAtProperty,
             updatedAtProperty: $this->updatedAtProperty,
             unmanagedIndexes: $this->unmanagedIndexes,
+            foreignKeys: $this->foreignKeys,
         );
     }
 

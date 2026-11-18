@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Marko\Database\Tests\Entity;
 
 use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\ForeignKey;
 use Marko\Database\Attributes\Index;
 use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
 use Marko\Database\Entity\EntityMetadata;
 use Marko\Database\Entity\EntityMetadataFactory;
+use Marko\Database\Entity\ForeignKeyMetadata;
 use Marko\Database\Exceptions\EntityException;
 use Marko\Database\Exceptions\MissingPrimaryKeyException;
 use Marko\Database\Tests\Entity\Fixtures\ExtenderFactory\BasicExtenderEntity;
@@ -75,8 +77,8 @@ it('extracts #[Column] attributes from all public properties', function (): void
 
 it('extracts #[Index] attributes from class', function (): void {
     $entity = new #[Table('posts')]
-    #[Index('idx_title', ['title'])]
-    #[Index('idx_slug_status', ['slug', 'status'], unique: true)]
+    #[Index(['title'])]
+    #[Index(['slug', 'status'], unique: true)]
     class () extends Entity
     {
         #[Column(primaryKey: true)]
@@ -96,10 +98,10 @@ it('extracts #[Index] attributes from class', function (): void {
 
     expect($metadata->indexes)
         ->toHaveCount(2)
-        ->and($metadata->indexes[0]->name)->toBe('idx_title')
+        ->and($metadata->indexes[0]->name)->toBeNull()
         ->and($metadata->indexes[0]->columns)->toBe(['title'])
         ->and($metadata->indexes[0]->unique)->toBeFalse()
-        ->and($metadata->indexes[1]->name)->toBe('idx_slug_status')
+        ->and($metadata->indexes[1]->name)->toBeNull()
         ->and($metadata->indexes[1]->columns)->toBe(['slug', 'status'])
         ->and($metadata->indexes[1]->unique)->toBeTrue();
 });
@@ -527,7 +529,7 @@ it('allows extender to declare its own indexes', function (): void {
     $metadata = $this->factory->parse(ExtenderWithIndexEntity::class);
 
     expect($metadata->indexes)->toHaveCount(1)
-        ->and($metadata->indexes[0]->name)->toBe('idx_extra');
+        ->and($metadata->indexes[0]->name)->toBeNull();
 });
 
 it('allows extender to declare relationships', function (): void {
@@ -588,7 +590,7 @@ it('linkExtendersFrom ignores entities without extends', function (): void {
 
     $parentMetadata = $this->factory->parse(ExtenderParentEntity::class);
 
-    expect($parentMetadata->extenders)->toBe([]);
+    expect($parentMetadata->extenders)->toBeEmpty();
 });
 
 it('linkExtendersFrom throws when an extender references a parent class that cannot be autoloaded', function (): void {
@@ -673,5 +675,233 @@ describe('generated primary keys', function (): void {
 
         expect(fn () => $this->factory->parse($entity::class))
             ->toThrow(EntityException::class, 'has no default');
+    });
+});
+
+describe('foreign keys', function (): void {
+    it('parses a ForeignKey attribute into foreign key metadata', function (): void {
+        $entity = new #[Table('posts')]
+        #[ForeignKey(['user_id'], 'users', ['id'], 'CASCADE', 'RESTRICT', 'fk_posts_author')]
+        class () extends Entity
+        {
+            #[Column(primaryKey: true)]
+            public int $id;
+
+            #[Column]
+            public int $userId;
+        };
+
+        $metadata = $this->factory->parse($entity::class);
+
+        expect($metadata->foreignKeys)
+            ->toHaveCount(1)
+            ->and($metadata->foreignKeys[0])->toBeInstanceOf(ForeignKeyMetadata::class)
+            ->and($metadata->foreignKeys[0]->columns)->toBe(['user_id'])
+            ->and($metadata->foreignKeys[0]->referencedTable)->toBe('users')
+            ->and($metadata->foreignKeys[0]->referencedColumns)->toBe(['id'])
+            ->and($metadata->foreignKeys[0]->onDelete)->toBe('CASCADE')
+            ->and($metadata->foreignKeys[0]->onUpdate)->toBe('RESTRICT')
+            ->and($metadata->foreignKeys[0]->name)->toBe('fk_posts_author');
+    });
+
+    it('parses multiple ForeignKey attributes on one entity in declaration order', function (): void {
+        $entity = new #[Table('posts')]
+        #[ForeignKey(columns: ['user_id'], references: 'users', referencedColumns: ['id'])]
+        #[ForeignKey(columns: ['category_id'], references: 'categories', referencedColumns: ['id'])]
+        class () extends Entity
+        {
+            #[Column(primaryKey: true)]
+            public int $id;
+
+            #[Column]
+            public int $userId;
+
+            #[Column]
+            public int $categoryId;
+        };
+
+        $metadata = $this->factory->parse($entity::class);
+
+        expect($metadata->foreignKeys)
+            ->toHaveCount(2)
+            ->and($metadata->foreignKeys[0]->referencedTable)->toBe('users')
+            ->and($metadata->foreignKeys[0]->name)->toBeNull()
+            ->and($metadata->foreignKeys[1]->referencedTable)->toBe('categories');
+    });
+
+    it('parses a composite ForeignKey keeping column order', function (): void {
+        $entity = new #[Table('order_lines')]
+        #[ForeignKey(columns: ['tenant_id', 'order_id'], references: 'orders', referencedColumns: ['tenant_id', 'id'])]
+        class () extends Entity
+        {
+            #[Column(primaryKey: true)]
+            public int $id;
+
+            #[Column]
+            public int $orderId;
+
+            #[Column]
+            public int $tenantId;
+        };
+
+        $metadata = $this->factory->parse($entity::class);
+
+        expect($metadata->foreignKeys[0]->columns)->toBe(['tenant_id', 'order_id'])
+            ->and($metadata->foreignKeys[0]->referencedColumns)->toBe(['tenant_id', 'id']);
+    });
+
+    it('throws when a ForeignKey declares no columns', function (): void {
+        $entity = new #[Table('posts')]
+        #[ForeignKey(columns: [], references: 'users', referencedColumns: [])]
+        class () extends Entity
+        {
+            #[Column(primaryKey: true)]
+            public int $id;
+        };
+
+        $parse = fn () => $this->factory->parse($entity::class);
+
+        expect($parse)->toThrow(EntityException::class, 'declares no columns');
+    });
+
+    it('throws when a ForeignKey column count differs from its referenced column count', function (): void {
+        $entity = new #[Table('posts')]
+        #[ForeignKey(columns: ['user_id', 'tenant_id'], references: 'users', referencedColumns: ['id'])]
+        class () extends Entity
+        {
+            #[Column(primaryKey: true)]
+            public int $id;
+
+            #[Column]
+            public int $userId;
+
+            #[Column]
+            public int $tenantId;
+        };
+
+        $parse = fn () => $this->factory->parse($entity::class);
+
+        expect($parse)->toThrow(EntityException::class, '2 column(s)');
+    });
+
+    it('throws when a ForeignKey names a column the entity does not have', function (): void {
+        $entity = new #[Table('posts')]
+        #[ForeignKey(columns: ['author_id'], references: 'users', referencedColumns: ['id'])]
+        class () extends Entity
+        {
+            #[Column(primaryKey: true)]
+            public int $id;
+
+            #[Column]
+            public int $userId;
+        };
+
+        $parse = fn () => $this->factory->parse($entity::class);
+
+        expect($parse)->toThrow(EntityException::class, "'author_id'");
+    });
+
+    it('suggests the column name when a ForeignKey names a property instead', function (): void {
+        $entity = new #[Table('posts')]
+        #[ForeignKey(columns: ['userId'], references: 'users', referencedColumns: ['id'])]
+        class () extends Entity
+        {
+            #[Column(primaryKey: true)]
+            public int $id;
+
+            #[Column]
+            public int $userId;
+        };
+
+        try {
+            $this->factory->parse($entity::class);
+            $exception = null;
+        } catch (EntityException $caught) {
+            $exception = $caught;
+        }
+
+        expect($exception)->toBeInstanceOf(EntityException::class)
+            ->and($exception->getMessage())->toContain("'userId'")
+            ->and($exception->getSuggestion())->toContain("use the column name 'user_id'");
+    });
+
+    it('throws when an Index names a column the entity does not have', function (): void {
+        $entity = new #[Table('posts')]
+        #[Index(['slug'])]
+        class () extends Entity
+        {
+            #[Column(primaryKey: true)]
+            public int $id;
+
+            #[Column]
+            public string $title;
+        };
+
+        $parse = fn () => $this->factory->parse($entity::class);
+
+        expect($parse)->toThrow(EntityException::class, "'slug'");
+    });
+
+    it('suggests the column name when an Index names a property instead', function (): void {
+        $entity = new #[Table('posts')]
+        #[Index(['userId'])]
+        class () extends Entity
+        {
+            #[Column(primaryKey: true)]
+            public int $id;
+
+            #[Column]
+            public int $userId;
+        };
+
+        try {
+            $this->factory->parse($entity::class);
+            $exception = null;
+        } catch (EntityException $caught) {
+            $exception = $caught;
+        }
+
+        expect($exception)->toBeInstanceOf(EntityException::class)
+            ->and($exception->getMessage())->toContain("'userId'")
+            ->and($exception->getSuggestion())->toContain("use the column name 'user_id'");
+    });
+
+    it('accepts an Index on existing columns', function (): void {
+        $entity = new #[Table('posts')]
+        #[Index(['user_id', 'title'], unique: true)]
+        class () extends Entity
+        {
+            #[Column(primaryKey: true)]
+            public int $id;
+
+            #[Column]
+            public int $userId;
+
+            #[Column]
+            public string $title;
+        };
+
+        $metadata = $this->factory->parse($entity::class);
+
+        expect($metadata->indexes)->toHaveCount(1)
+            ->and($metadata->indexes[0]->columns)->toBe(['user_id', 'title']);
+    });
+
+    it('keeps foreign key metadata when extenders are linked', function (): void {
+        $foreignKey = new ForeignKeyMetadata(
+            columns: ['user_id'],
+            referencedTable: 'users',
+            referencedColumns: ['id'],
+        );
+        $original = new EntityMetadata(
+            entityClass: 'App\Entity\Post',
+            tableName: 'posts',
+            primaryKey: 'id',
+            foreignKeys: [$foreignKey],
+        );
+
+        $linked = $original->withExtenders(['App\Entity\ExtPost']);
+
+        expect($linked->foreignKeys)->toBe([$foreignKey]);
     });
 });

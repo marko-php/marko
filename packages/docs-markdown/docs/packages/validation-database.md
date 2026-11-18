@@ -73,7 +73,7 @@ Without `caseInsensitive()`, text is compared by the column's collation, and tha
 
 ### Unique Is Not a Guarantee
 
-`Unique` is a usability check that gives the user a helpful message before saving. It cannot prevent a race: two requests can both pass validation before either one saves. Keep a unique index on the column (`#[Column(unique: true)]` or `#[Index(..., unique: true)]`), and handle the [`UniqueConstraintViolationException`](/docs/packages/database/) the repository throws when the second insert hits it.
+`Unique` is a usability check that gives the user a helpful message before saving. It cannot prevent a race: two requests can both pass validation before either one saves. Keep a unique index on the column (`#[Column(unique: true)]` or `#[Index([...], unique: true)]`), and handle the [`UniqueConstraintViolationException`](/docs/packages/database/) the repository throws when the second insert hits it.
 
 ## Errors
 

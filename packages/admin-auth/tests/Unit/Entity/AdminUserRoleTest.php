@@ -54,7 +54,7 @@ it('references admin_users and roles with cascading deletes', function (): void 
 it('declares a unique index on user_id and role_id', function (): void {
     $index = array_find(
         adminUserRoleTable()->indexes,
-        fn (Index $index): bool => $index->name === 'idx_admin_user_roles_unique',
+        fn (Index $index): bool => $index->name === 'admin_user_roles_user_id_role_id_unique',
     );
 
     expect($index?->columns)->toBe(['user_id', 'role_id'])
@@ -64,7 +64,7 @@ it('declares a unique index on user_id and role_id', function (): void {
 it('indexes role_id for role lookups and cascading role deletes', function (): void {
     $index = array_find(
         adminUserRoleTable()->indexes,
-        fn (Index $index): bool => $index->name === 'idx_admin_user_roles_role_id',
+        fn (Index $index): bool => $index->name === 'admin_user_roles_role_id_index',
     );
 
     expect($index?->columns)->toBe(['role_id'])

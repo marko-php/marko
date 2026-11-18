@@ -24,12 +24,13 @@ it('defines the password_reset_tokens table db:migrate creates', function (): vo
         ->and($columns['created_at'][2])->toBeFalse();
 });
 
-it('indexes one token per provider and user, and the creation time deleteExpired() scans', function (): void {
+it('derives the password reset token index names', function (): void {
     $indexes = array_map(
         fn (Index $index): array => [$index->name, $index->columns, $index->type->name],
         PasswordResetTokenTable::entityTable()->indexes,
     );
 
-    expect($indexes)->toContain(['idx_password_reset_tokens_provider_user_id', ['provider', 'user_id'], 'Unique'])
-        ->and($indexes)->toContain(['idx_password_reset_tokens_created_at', ['created_at'], 'Btree']);
+    expect($indexes)
+        ->toContain(['password_reset_tokens_provider_user_id_unique', ['provider', 'user_id'], 'Unique'])
+        ->toContain(['password_reset_tokens_created_at_index', ['created_at'], 'Btree']);
 });

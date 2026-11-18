@@ -409,6 +409,57 @@ class EntityException extends MarkoException
     /**
      * @param class-string $entityClass
      */
+    public static function foreignKeyWithoutColumns(
+        string $entityClass,
+        string $referencedTable,
+    ): self {
+        return new self(
+            message: "#[ForeignKey] on entity '$entityClass' referencing table '$referencedTable' declares no columns",
+            context: "While parsing #[ForeignKey] attributes of entity '$entityClass'",
+            suggestion: "List the local columns, for example #[ForeignKey(columns: ['user_id'], references: '$referencedTable', referencedColumns: ['id'])]",
+        );
+    }
+
+    /**
+     * @param class-string $entityClass
+     */
+    public static function foreignKeyColumnCountMismatch(
+        string $entityClass,
+        string $foreignKeyName,
+        int $columnCount,
+        int $referencedColumnCount,
+    ): self {
+        return new self(
+            message: "Foreign key $foreignKeyName on entity '$entityClass' lists $columnCount column(s) but references $referencedColumnCount column(s)",
+            context: "While parsing #[ForeignKey] attributes of entity '$entityClass'. Each local column pairs with one referenced column",
+            suggestion: "Make 'columns' and 'referencedColumns' the same length, in matching order",
+        );
+    }
+
+    /**
+     * @param class-string $entityClass
+     */
+    public static function unknownAttributeColumn(
+        string $entityClass,
+        string $attribute,
+        string $declarationName,
+        string $column,
+        ?string $suggestedColumn,
+    ): self {
+        $suggestion = $suggestedColumn !== null
+            ? "'$column' is a property name, use the column name '$suggestedColumn'"
+            : "Name one of the columns declared with #[Column] on '$entityClass'. $attribute lists database column names";
+
+        return new self(
+            message: "$attribute $declarationName on entity '$entityClass' names the column '$column', which the entity does not have",
+            context: "While parsing $attribute attributes of entity '$entityClass'",
+            suggestion: $suggestion,
+        );
+    }
+
+    /**
+     * @param class-string $entityClass
+     */
     public static function indexNameTooLong(
         string $entityClass,
         string $tableName,
@@ -425,6 +476,84 @@ class EntityException extends MarkoException
     }
 
     /**
+     * @param class-string $entityClass
+     */
+    public static function foreignKeyNameTooLong(
+        string $entityClass,
+        string $tableName,
+        string $foreignKeyName,
+        int $byteLength,
+    ): self {
+        $maxBytes = IdentifierName::MAX_BYTES;
+
+        return new self(
+            message: "Foreign key name '$foreignKeyName' declared by entity '$entityClass' is $byteLength bytes, over the $maxBytes bytes limit",
+            context: "Building the schema of table '$tableName' from #[ForeignKey] on entity '$entityClass'. PostgreSQL silently truncates a longer name and MySQL rejects it",
+            suggestion: "Shorten #[ForeignKey(name: '...')] to $maxBytes bytes or fewer. Multibyte characters count as more than one byte",
+        );
+    }
+
+    /**
+     * @param class-string $entityClass
+     */
+    public static function duplicateForeignKeyName(
+        string $entityClass,
+        string $tableName,
+        string $foreignKeyName,
+    ): self {
+        return new self(
+            message: "Two foreign keys of table '$tableName' resolve to the name '$foreignKeyName'",
+            context: "Building the schema of table '$tableName' from #[ForeignKey] and #[Column(references:)] on entity '$entityClass'. A foreign key without a name derives fk_<table>_<columns>, the name #[Column(references:)] gets for a single column",
+            suggestion: "Give one of them an explicit name, for example #[ForeignKey([...], '...', [...], name: '...')]",
+        );
+    }
+
+    /**
+     * @param class-string $entityClass
+     */
+    public static function foreignKeyDeclaredTwice(
+        string $entityClass,
+        string $tableName,
+        string $column,
+    ): self {
+        return new self(
+            message: "Column '$column' of table '$tableName' is given a foreign key both by #[Column(references:)] and by #[ForeignKey]",
+            context: "Building the schema of table '$tableName' on entity '$entityClass'",
+            suggestion: "Keep one: drop references: from the column, or drop the #[ForeignKey] that lists only '$column'",
+        );
+    }
+
+    /**
+     * @param class-string $entityClass
+     */
+    public static function malformedColumnReference(
+        string $entityClass,
+        string $columnName,
+        string $references,
+    ): self {
+        return new self(
+            message: "Column '$columnName' of entity '$entityClass' has references: '$references', which is not in table.column format",
+            context: "Building the foreign keys of entity '$entityClass' from #[Column(references:)]. Only a table and a column are accepted, so a schema-qualified value such as 'public.users.id' is rejected",
+            suggestion: "Write references: 'table.column', for example references: 'users.id'",
+        );
+    }
+
+    /**
+     * @param class-string $entityClass
+     */
+    public static function duplicateIndexName(
+        string $entityClass,
+        string $tableName,
+        string $indexName,
+    ): self {
+        return new self(
+            message: "Two indexes of table '$tableName' resolve to the name '$indexName'",
+            context: "Building the schema of table '$tableName' from #[Index] on entity '$entityClass'. Indexes on the same columns with the same uniqueness derive the same name",
+            suggestion: "Give one of them an explicit name, for example #[Index(['...'], name: '...')]",
+        );
+    }
+
+    /**
      * @param class-string $classA
      * @param class-string $classB
      */
@@ -437,6 +566,58 @@ class EntityException extends MarkoException
             message: "Index '$indexName' is defined by both '$classA' and '$classB'",
             context: 'Merging extender indexes into the parent table schema',
             suggestion: 'Rename the index in one of the extenders to avoid the conflict',
+        );
+    }
+
+    /**
+     * @param class-string $classA
+     * @param class-string $classB
+     */
+    public static function duplicateForeignKeyInExtender(
+        string $foreignKeyName,
+        string $classA,
+        string $classB,
+    ): self {
+        return new self(
+            message: "Foreign key '$foreignKeyName' is defined by both '$classA' and '$classB'",
+            context: 'Merging extender foreign keys into the parent table schema',
+            suggestion: "Give one of them an explicit name, for example #[ForeignKey([...], '...', [...], name: '...')]",
+        );
+    }
+
+    /**
+     * @param class-string $classA
+     * @param class-string $classB
+     */
+    public static function nameSharedAcrossTables(
+        string $kind,
+        string $name,
+        string $tableA,
+        string $classA,
+        string $tableB,
+        string $classB,
+    ): self {
+        return new self(
+            message: "$kind '$name' is declared by both table '$tableA' ('$classA') and table '$tableB' ('$classB')",
+            context: 'Registering entity schemas. MySQL scopes foreign key names to the database, and PostgreSQL and SQLite scope index names to the schema or database, so the name must be unique across tables on every driver',
+            suggestion: 'Rename the one with an explicit name: or drop its name: to get a table-scoped derived name. When both names are derived, give one an explicit name:',
+        );
+    }
+
+    /**
+     * @param class-string $foreignKeyClass
+     * @param class-string $indexClass
+     */
+    public static function foreignKeyAndIndexShareName(
+        string $tableName,
+        string $name,
+        string $foreignKeyClass,
+        string $indexClass,
+    ): self {
+        return new self(
+            message: "Foreign key '$name' of '$foreignKeyClass' and index '$name' of '$indexClass' on table '$tableName' share a name but cover different columns",
+            context: "Registering the schema of table '$tableName'. MySQL gives a foreign key's automatically created index the constraint's name",
+            suggestion: 'Rename one of them with an explicit name:, or drop the name: of one to get a table-scoped derived name',
         );
     }
 

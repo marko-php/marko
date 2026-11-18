@@ -56,8 +56,8 @@ use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
 
 #[Table('posts')]
-#[Index('idx_posts_slug', ['slug'])]
-#[Index('idx_posts_published_at', ['published_at'])]
+#[Index(['slug'])]
+#[Index(['published_at'])]
 class Post extends Entity
 {
     #[Column(primaryKey: true, autoIncrement: true)]

@@ -70,7 +70,10 @@ it('runs a runInBackground() command to completion in a separate process', funct
     $record = $this->project . '/storage/background-command.txt';
     $deadline = microtime(true) + 30;
 
-    while (!is_file($record) && microtime(true) < $deadline) {
+    while (
+        !is_file($record)
+        && microtime(true) < $deadline
+    ) {
         usleep(50_000);
         clearstatcache(true, $record);
     }
@@ -90,7 +93,10 @@ it('runs a runInBackground() command to completion in a separate process', funct
     // The child took the mutex (its file exists) and released it when the command ended.
     $deadline = microtime(true) + 10;
 
-    while ($mutex->exists($tasks[0]->mutexName()) && microtime(true) < $deadline) {
+    while (
+        $mutex->exists($tasks[0]->mutexName())
+        && microtime(true) < $deadline
+    ) {
         usleep(50_000);
     }
 

@@ -131,7 +131,10 @@ function integrationServicesSkipReasonFor(
 ): ?string {
     $problem = integrationServicesProblem($env);
 
-    if ($problem !== null && integrationServicesRequired($env)) {
+    if (
+        $problem !== null
+        && integrationServicesRequired($env)
+    ) {
         throw new RuntimeException("MARKO_INTEGRATION_REQUIRED is set but the services are unusable: $problem");
     }
 
@@ -242,7 +245,10 @@ function copyIntegrationDirectory(
     makeIntegrationDirectory($destination);
 
     foreach (scandir($source) ?: [] as $item) {
-        if ($item === '.' || $item === '..') {
+        if (
+            $item === '.'
+            || $item === '..'
+        ) {
             continue;
         }
 
@@ -263,7 +269,11 @@ function copyIntegrationDirectory(
 function makeIntegrationDirectory(
     string $path,
 ): void {
-    if (!is_dir($path) && !mkdir($path, 0777, true) && !is_dir($path)) {
+    if (
+        !is_dir($path)
+        && !mkdir($path, 0777, true)
+        && !is_dir($path)
+    ) {
         throw new RuntimeException("Could not create directory $path.");
     }
 }
@@ -275,7 +285,10 @@ function makeIntegrationDirectory(
 function removeIntegrationProject(
     string $path,
 ): void {
-    if (is_link($path) || is_file($path)) {
+    if (
+        is_link($path)
+        || is_file($path)
+    ) {
         unlink($path);
 
         return;
@@ -286,7 +299,10 @@ function removeIntegrationProject(
     }
 
     foreach (scandir($path) ?: [] as $item) {
-        if ($item !== '.' && $item !== '..') {
+        if (
+            $item !== '.'
+            && $item !== '..'
+        ) {
             removeIntegrationProject("$path/$item");
         }
     }

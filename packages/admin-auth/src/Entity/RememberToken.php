@@ -18,7 +18,7 @@ use Marko\Database\Entity\Entity;
  * Only the SHA-256 hash of the validator is stored; the selector is the lookup key.
  */
 #[Table('remember_tokens')]
-#[Index('idx_remember_tokens_expires_at', ['expires_at'])]
+#[Index(['expires_at'])]
 class RememberToken extends Entity
 {
     #[Column(primaryKey: true, autoIncrement: true)]

@@ -19,7 +19,7 @@ use Marko\Database\Entity\Entity;
  * share passkeys.
  */
 #[Table('passkey_credentials')]
-#[Index('idx_passkey_credentials_owner', ['provider', 'user_id'])]
+#[Index(['provider', 'user_id'])]
 class PasskeyCredential extends Entity
 {
     #[Column(primaryKey: true, autoIncrement: true)]

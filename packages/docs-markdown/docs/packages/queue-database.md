@@ -43,14 +43,14 @@ In development, `db:migrate` generates a migration for the new tables in `databa
 
 | Table | Columns | Purpose |
 |---|---|---|
-| `jobs` | `id VARCHAR(36)` primary key, `queue VARCHAR(255)` (default `'default'`), `payload TEXT`, `attempts INT` (default `0`), `reserved_at TIMESTAMP NULL`, `available_at TIMESTAMP`, `created_at TIMESTAMP` (default `CURRENT_TIMESTAMP`); index `idx_queue_available (queue, available_at)` | Pending and reserved jobs |
+| `jobs` | `id VARCHAR(36)` primary key, `queue VARCHAR(255)` (default `'default'`), `payload TEXT`, `attempts INT` (default `0`), `reserved_at TIMESTAMP NULL`, `available_at TIMESTAMP`, `created_at TIMESTAMP` (default `CURRENT_TIMESTAMP`); index `jobs_queue_available_at_index (queue, available_at)` | Pending and reserved jobs |
 | `failed_jobs` | `id VARCHAR(36)` primary key, `queue VARCHAR(255)`, `payload TEXT`, `exception TEXT`, `failed_at TIMESTAMP` (default `CURRENT_TIMESTAMP`) | Jobs that exceeded their max attempts |
 
 The same DDL is generated on MySQL, MariaDB and PostgreSQL. The entities only own the schema: `DatabaseQueue` and `DatabaseFailedJobRepository` read and write the tables with their own SQL. Because the tables belong to entities, `db:diff` reports drift in them, and [`TruncateDatabase`](/docs/packages/testing/#truncatedatabase) empties them between tests.
 
 #### Upgrading from the migration classes
 
-Earlier versions shipped `CreateJobsTable` and `CreateFailedJobsTable` migration classes, which `db:migrate` never ran. They are removed. An application migration that returns one of them (`return new CreateJobsTable();`) now fails to load. Rewrite it as a migration that creates the table with the columns above. Tables created with the previously documented DDL already match the entities, so `db:migrate` generates nothing for them.
+Earlier versions shipped `CreateJobsTable` and `CreateFailedJobsTable` migration classes, which `db:migrate` never ran. They are removed. An application migration that returns one of them (`return new CreateJobsTable();`) now fails to load. Rewrite it as a migration that creates the table with the columns above. Tables created with the previously documented DDL match the entities except for the index name: the entity now derives `jobs_queue_available_at_index` instead of the old `idx_queue_available`. The next `db:diff` renames it, and because a rename drops an index, `db:migrate` needs `--force` outside development. See [Renaming Indexes](/docs/packages/database/#renaming-indexes).
 
 ### Dispatching and Processing
 

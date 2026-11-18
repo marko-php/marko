@@ -12,6 +12,7 @@ use Marko\Database\PgSql\Connection\PgSqlConnection;
 use Marko\Database\PgSql\Introspection\PgSqlIntrospector;
 use Marko\Database\PgSql\Query\PgSqlQueryBuilderFactory;
 use Marko\Database\PgSql\Sql\PgSqlGenerator;
+use Marko\Database\Schema\Index;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\Command\RetryCommand;
 use Marko\Queue\Database\DatabaseFailedJobRepository;
@@ -137,7 +138,8 @@ describe('database queue on PostgreSQL', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $jobs = $introspector->getTable('jobs');
 
-        expect(array_map(fn ($index): string => $index->name, $jobs?->indexes ?? []))->toContain('idx_queue_available')
+        expect(array_map(fn (Index $index): string => $index->name, $jobs?->indexes ?? []))
+            ->toContain('jobs_queue_available_at_index')
             ->and($introspector->getTable('failed_jobs'))->not->toBeNull()
             ->and(QueueTables::diff($introspector)->isEmpty())->toBeTrue();
     });
@@ -152,7 +154,7 @@ describe('database queue on PostgreSQL', function (): void {
         QueueTables::drop($connection);
         QueueTables::createFromDocumentedDdl($connection);
 
-        expect(new PgSqlGenerator()->generateUp(QueueTables::diff(new PgSqlIntrospector($connection))))->toBe([]);
+        expect(new PgSqlGenerator()->generateUp(QueueTables::diff(new PgSqlIntrospector($connection))))->toBeEmpty();
     });
 
     it(

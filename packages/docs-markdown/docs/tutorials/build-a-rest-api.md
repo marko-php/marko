@@ -46,7 +46,7 @@ use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
 
 #[Table('articles')]
-#[Index('idx_articles_author_email', ['author_email'])]
+#[Index(['author_email'])]
 class Article extends Entity
 {
     #[Column(primaryKey: true, autoIncrement: true)]

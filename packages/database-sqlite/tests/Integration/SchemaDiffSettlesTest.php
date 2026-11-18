@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Marko\Database\Sqlite\Tests\Integration;
 
 use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\ForeignKey;
 use Marko\Database\Attributes\Index;
 use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
 use Marko\Database\Exceptions\UniqueConstraintViolationException;
 use Marko\Database\Schema\Table as SchemaTable;
+use Marko\Database\Sqlite\Introspection\SqliteIntrospector;
 use Marko\Database\Sqlite\Tests\Fixtures\SqliteMigrations;
 use Marko\Database\Sqlite\Tests\Fixtures\SqliteTestDatabase;
 
@@ -104,6 +106,60 @@ describe('SQLite schema diffs that settle', function (): void {
                 expect(SqliteMigrations::diff($database, sqliteSettlePlainUsers())->isEmpty())->toBeTrue()
                     ->and($database->connection->query('SELECT email FROM settle_users'))
                     ->toBe([['email' => 'a@example.com']]);
+            });
+        },
+    )->with([SqliteTestDatabase::FILE, SqliteTestDatabase::MEMORY]);
+
+    it(
+        'migrates a composite ForeignKey attribute and then diffs empty',
+        function (string $kind): void {
+            SqliteTestDatabase::using($kind, function (SqliteTestDatabase $database): void {
+                $items = SqliteMigrations::schema(
+                    new #[Table('settle_order_items'), Index(['order_id', 'line_no'], unique: true)]
+                    class () extends Entity
+                    {
+                        /** @noinspection PhpUnused - Entity property for structural definition */
+                        #[Column(primaryKey: true, autoIncrement: true)]
+                        public int $id;
+
+                        /** @noinspection PhpUnused - Entity property for structural definition */
+                        #[Column]
+                        public int $orderId;
+
+                        /** @noinspection PhpUnused - Entity property for structural definition */
+                        #[Column]
+                        public int $lineNo;
+                    },
+                );
+                $notes = SqliteMigrations::schema(
+                    new #[Table('settle_order_notes')]
+                    #[ForeignKey(['order_id', 'line_no'], 'settle_order_items', ['order_id', 'line_no'], 'CASCADE')]
+                    class () extends Entity
+                    {
+                        /** @noinspection PhpUnused - Entity property for structural definition */
+                        #[Column(primaryKey: true, autoIncrement: true)]
+                        public int $id;
+
+                        /** @noinspection PhpUnused - Entity property for structural definition */
+                        #[Column]
+                        public int $orderId;
+
+                        /** @noinspection PhpUnused - Entity property for structural definition */
+                        #[Column]
+                        public int $lineNo;
+                    },
+                );
+
+                SqliteMigrations::migrate($database, $items);
+                $created = SqliteMigrations::migrate($database, $notes);
+                $migrated = new SqliteIntrospector($database->connection)->getTable('settle_order_notes');
+
+                expect($created->isEmpty())->toBeFalse()
+                    ->and($migrated->foreignKeys)->toHaveCount(1)
+                    ->and($migrated->foreignKeys[0]->columns)->toBe(['order_id', 'line_no'])
+                    ->and($migrated->foreignKeys[0]->referencedColumns)->toBe(['order_id', 'line_no'])
+                    ->and(SqliteMigrations::diff($database, $items)->isEmpty())->toBeTrue()
+                    ->and(SqliteMigrations::diff($database, $notes)->isEmpty())->toBeTrue();
             });
         },
     )->with([SqliteTestDatabase::FILE, SqliteTestDatabase::MEMORY]);

@@ -19,8 +19,8 @@ use Marko\Database\Entity\Entity;
  * auth:clear-reset-tokens derive it from created_at and authentication.password_reset.expire_seconds.
  */
 #[Table('password_reset_tokens')]
-#[Index('idx_password_reset_tokens_provider_user_id', ['provider', 'user_id'], unique: true)]
-#[Index('idx_password_reset_tokens_created_at', ['created_at'])]
+#[Index(['provider', 'user_id'], unique: true)]
+#[Index(['created_at'])]
 class PasswordResetToken extends Entity
 {
     #[Column(primaryKey: true, autoIncrement: true)]

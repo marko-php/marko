@@ -44,3 +44,14 @@ it('creates #[ForeignKey] attribute for composite foreign keys', function (): vo
         ->and($fk->onDelete)->toBe('CASCADE')
         ->and($fk->onUpdate)->toBe('CASCADE');
 });
+
+it('constructs a ForeignKey attribute without a name', function (): void {
+    $fk = new ForeignKey(['user_id'], 'users', ['id'], onDelete: 'cascade');
+
+    expect($fk->name)->toBeNull()
+        ->and($fk->columns)->toBe(['user_id'])
+        ->and($fk->references)->toBe('users')
+        ->and($fk->referencedColumns)->toBe(['id'])
+        ->and($fk->onDelete)->toBe('cascade')
+        ->and($fk->onUpdate)->toBeNull();
+});

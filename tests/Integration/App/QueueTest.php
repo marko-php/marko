@@ -173,7 +173,7 @@ it('skips a duplicate unique job with a Redis lock and releases it once the work
 
     expect($first->pushed)->toBeTrue()
         ->and($duplicate->pushed)->toBeFalse()
-        ->and($duplicate->skipReason)->toContain("unique-job:" . UniqueRecordingJob::class . ":$key")
+        ->and($duplicate->skipReason)->toContain('unique-job:' . UniqueRecordingJob::class . ":$key")
         ->and($rows)->toHaveCount(1)
         ->and($result['exitCode'])->toBe(0, $result['output'])
         ->and(file_get_contents($marker))->toBe("unique job $key ran")

@@ -12,6 +12,7 @@ use Marko\Database\Attributes\BelongsToMany;
 use Marko\Database\Attributes\Cast;
 use Marko\Database\Attributes\Column;
 use Marko\Database\Attributes\Encrypted;
+use Marko\Database\Attributes\ForeignKey;
 use Marko\Database\Attributes\HasMany;
 use Marko\Database\Attributes\HasOne;
 use Marko\Database\Attributes\Index;
@@ -246,6 +247,15 @@ class EntityMetadataFactory
         $indexAttributes = $reflection->getAttributes(Index::class);
         foreach ($indexAttributes as $indexAttr) {
             $index = $indexAttr->newInstance();
+            $this->assertColumnsExist(
+                $index->columns,
+                '#[Index]',
+                $index->name !== null ? "'$index->name'" : 'on (' . implode(', ', $index->columns) . ')',
+                $entityClass,
+                $isExtender,
+                $columns,
+                $properties,
+            );
             foreach ($properties as $propertyName => $propertyMetadata) {
                 if (
                     $propertyMetadata->encrypted
@@ -257,10 +267,24 @@ class EntityMetadataFactory
                 }
             }
             $indexes[] = new IndexMetadata(
-                name: $index->name,
                 columns: $index->columns,
                 unique: $index->unique,
                 where: $index->where,
+                name: $index->name,
+            );
+        }
+
+        $foreignKeys = [];
+        foreach ($reflection->getAttributes(ForeignKey::class) as $foreignKeyAttr) {
+            $foreignKey = $foreignKeyAttr->newInstance();
+            $this->validateForeignKey($foreignKey, $entityClass, $isExtender, $columns, $properties);
+            $foreignKeys[] = new ForeignKeyMetadata(
+                columns: $foreignKey->columns,
+                referencedTable: $foreignKey->references,
+                referencedColumns: $foreignKey->referencedColumns,
+                onDelete: $foreignKey->onDelete,
+                onUpdate: $foreignKey->onUpdate,
+                name: $foreignKey->name,
             );
         }
 
@@ -283,11 +307,101 @@ class EntityMetadataFactory
             createdAtProperty: $createdAtProperty,
             updatedAtProperty: $updatedAtProperty,
             unmanagedIndexes: $tableAttr->unmanagedIndexes,
+            foreignKeys: $foreignKeys,
         );
 
         $this->cache[$entityClass] = $metadata;
 
         return $metadata;
+    }
+
+    /**
+     * Reject a #[ForeignKey] that the attribute and the entity's own columns show is invalid.
+     *
+     * Extenders may reference columns of the parent entity, so column existence is only checked on non-extenders.
+     *
+     * @param class-string $entityClass
+     * @param array<ColumnMetadata> $columns
+     * @param array<string, PropertyMetadata> $properties
+     *
+     * @throws EntityException
+     */
+    private function validateForeignKey(
+        ForeignKey $foreignKey,
+        string $entityClass,
+        bool $isExtender,
+        array $columns,
+        array $properties,
+    ): void {
+        if ($foreignKey->columns === []) {
+            throw EntityException::foreignKeyWithoutColumns($entityClass, $foreignKey->references);
+        }
+
+        $description = $foreignKey->name !== null
+            ? "'$foreignKey->name'"
+            : 'on (' . implode(', ', $foreignKey->columns) . ')';
+
+        if (count($foreignKey->columns) !== count($foreignKey->referencedColumns)) {
+            throw EntityException::foreignKeyColumnCountMismatch(
+                $entityClass,
+                $description,
+                count($foreignKey->columns),
+                count($foreignKey->referencedColumns),
+            );
+        }
+
+        $this->assertColumnsExist(
+            $foreignKey->columns,
+            '#[ForeignKey]',
+            $description,
+            $entityClass,
+            $isExtender,
+            $columns,
+            $properties,
+        );
+    }
+
+    /**
+     * Reject a class-level attribute naming a column the entity does not declare.
+     *
+     * Extenders may name columns of the parent entity, so the check is skipped for them. SchemaRegistry checks
+     * extenders against the merged table instead.
+     *
+     * @param array<string> $attributeColumns
+     * @param class-string $entityClass
+     * @param array<ColumnMetadata> $columns
+     * @param array<string, PropertyMetadata> $properties
+     *
+     * @throws EntityException
+     */
+    private function assertColumnsExist(
+        array $attributeColumns,
+        string $attribute,
+        string $declarationName,
+        string $entityClass,
+        bool $isExtender,
+        array $columns,
+        array $properties,
+    ): void {
+        if ($isExtender) {
+            return;
+        }
+
+        $columnNames = array_map(fn (ColumnMetadata $column) => $column->name, $columns);
+        $missingColumn = array_find(
+            $attributeColumns,
+            fn (string $column) => !in_array($column, $columnNames, true),
+        );
+
+        if ($missingColumn !== null) {
+            throw EntityException::unknownAttributeColumn(
+                $entityClass,
+                $attribute,
+                $declarationName,
+                $missingColumn,
+                isset($properties[$missingColumn]) ? $properties[$missingColumn]->columnName : null,
+            );
+        }
     }
 
     /**
