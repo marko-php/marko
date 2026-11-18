@@ -170,3 +170,20 @@ it('opens a plain connection for tls so that STARTTLS can upgrade it', function 
     $socket->close();
     fclose($server);
 });
+
+it('reads the server greeting over a real loopback connection', function (): void {
+    $server = stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
+    [, $port] = explode(':', stream_socket_get_name($server, false));
+
+    $socket = new StreamSocket();
+    $socket->connect('127.0.0.1', (int) $port);
+
+    $peer = stream_socket_accept($server, 5);
+    fwrite($peer, "220 test ESMTP\r\n");
+
+    expect($socket->read())->toBe('220 test ESMTP');
+
+    $socket->close();
+    fclose($peer);
+    fclose($server);
+});
