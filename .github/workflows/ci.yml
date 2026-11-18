@@ -101,7 +101,9 @@ jobs:
   # in tests/Integration/App (Postgres and Redis), the database-pgsql and
   # database-mysql driver integration tests (MARKO_TEST_PGSQL_* and
   # MARKO_TEST_MYSQL_*) and the live Redis tests of pubsub-redis and
-  # broadcasting-amphp. The database-mysql driver tests then run a second time
+  # broadcasting-amphp, and the RoadRunner end-to-end suite
+  # (packages/roadrunner/tests/Integration, a real `rr serve`; the job installs
+  # the binary). The database-mysql driver tests then run a second time
   # against MariaDB. MARKO_INTEGRATION_REQUIRED turns "service unreachable
   # or not configured" into a failure, so this job can never pass by skipping.
   integration:
@@ -208,6 +210,14 @@ jobs:
 
       - name: Install dependencies
         uses: ramsey/composer-install@v4
+
+      # packages/roadrunner's end-to-end suite serves the fixture app through a
+      # real `rr serve`. GITHUB_TOKEN keeps the release lookup out of the
+      # 60-an-hour anonymous GitHub API limit, which would fail the job.
+      - name: Install the RoadRunner binary
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: vendor/bin/rr get-binary --no-config --no-interaction
 
       # Service containers cannot mount tests/Integration/postgres-init, so the
       # database the local compose file creates on startup is created here.

@@ -178,9 +178,46 @@ function roadRunnerSkipReason(): string
 }
 
 /**
+ * Whether the end-to-end suite must skip because no `rr` binary was located.
+ * Pure (binary and environment are arguments) so it can be unit-tested; in
+ * required mode (`MARKO_INTEGRATION_REQUIRED` is 1, true or yes, like every
+ * other integration-services suite) a missing binary fails instead of skipping,
+ * so CI can never pass by skipping the suite.
+ *
+ * @param array<string, string> $env
+ * @throws RuntimeException
+ */
+function roadRunnerUnavailableFor(
+    ?string $binary,
+    array $env,
+): bool {
+    if ($binary !== null) {
+        return false;
+    }
+
+    if (in_array(strtolower($env['MARKO_INTEGRATION_REQUIRED'] ?? ''), ['1', 'true', 'yes'], true)) {
+        throw new RuntimeException('MARKO_INTEGRATION_REQUIRED is set but ' . roadRunnerSkipReason());
+    }
+
+    return true;
+}
+
+/**
+ * {@see roadRunnerUnavailableFor()} for this process's real binary and
+ * environment, for the end-to-end tests' skip closures.
+ *
+ * @throws RuntimeException
+ */
+function roadRunnerUnavailable(): bool
+{
+    return roadRunnerUnavailableFor(locateRoadRunnerBinary(), getenv());
+}
+
+/**
  * The one real `rr serve` process shared by every end-to-end test in the
  * file that calls this — see {@see SharedRoadRunnerServer}. Every caller is
- * expected to have already skipped when {@see locateRoadRunnerBinary}
+ * expected to have already skipped (or, in required mode, failed) through
+ * {@see roadRunnerUnavailable()} when {@see locateRoadRunnerBinary}
  * returns null, so reaching this function with no binary available is a
  * test-authoring mistake rather than an expected runtime state.
  *

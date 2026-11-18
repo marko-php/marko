@@ -52,7 +52,7 @@ composer test:all
 
 ## The `integration-destructive` Test Group
 
-Tests tagged `->group('integration-destructive')` live in `tests/IntegrationVerificationTest.php`. They verify the clean-install workflow end-to-end by:
+The `integration-destructive` group holds only the reinstall tests in `tests/IntegrationVerificationTest.php`. Nothing else is tagged with it (the RoadRunner end-to-end suite runs in `integration-services`). They verify the clean-install workflow end-to-end by:
 
 1. Deleting `vendor/` and `composer.lock`
 2. Running `composer update` to re-resolve dependencies from scratch
@@ -82,6 +82,7 @@ Unit tests build classes by hand with fakes. They cannot catch wiring bugs in `m
 - **The fixture app** (`tests/Integration/App`): boots a real application through `Application::boot()`, with the real module discovery and `module.php` wiring, against real Postgres and Redis.
 - **Driver integration tests** (`packages/database-pgsql/tests/Integration`, `packages/database-mysql/tests/Integration`): savepoints, row locks, upsert, constraint violations, concurrency errors and migrations against a real PostgreSQL or MySQL server.
 - **Live Redis tests** (`packages/pubsub-redis/tests/Integration/SharedConnectionLiveTest.php`, `packages/broadcasting-amphp/tests/Feature/RedisLiveTest.php`).
+- **RoadRunner end-to-end suite** (`packages/roadrunner/tests/Integration/EndToEndTest.php`): serves a fixture app through a real `rr serve` and checks session and auth isolation across requests. It needs the `rr` binary, not a database or Redis. Without `rr` it skips; with `MARKO_INTEGRATION_REQUIRED=1` it fails with the binary-not-found reason.
 
 ### Layout
 
@@ -132,6 +133,10 @@ MARKO_TEST_MYSQL_HOST=127.0.0.1 MARKO_TEST_MYSQL_PASSWORD=marko \
 
 # Live Redis tests
 REDIS_HOST=127.0.0.1 ./vendor/bin/pest -c phpunit.xml --group=integration-services packages/pubsub-redis packages/broadcasting-amphp
+
+# RoadRunner end-to-end suite (install rr first)
+vendor/bin/rr get-binary --no-config --no-interaction
+./vendor/bin/pest -c phpunit.xml packages/roadrunner/tests/Integration
 ```
 
 The `database-mysql` driver tests also run against MariaDB, together with the other MySQL suites: `packages/admin-auth/tests/Integration/MySql`, `packages/queue-database/tests/Integration/MySqlRoundTripTest.php`, `packages/session-database/tests/Integration/MySql`, `packages/search/tests/Integration/MySql`, `packages/validation-database/tests/Integration/MySql` and `tests/Integration/App/QueueSessionTablesMySqlTest.php`. CI runs them again against MariaDB 11.8 on port 3307 and MariaDB 10.11 on port 3308, with `MARKO_TEST_MYSQL_SERVER=mariadb`; tests whose expectations differ between the servers branch on `IntegrationDatabase::isMariaDb()`, and the MariaDB-only `1020` snapshot-conflict tests skip on MySQL. Locally (port 3308 for 10.11):
@@ -153,7 +158,7 @@ If port 5432, 6379 or 3306 is already taken, start the services with `DB_PORT=55
 
 ### CI
 
-The **Integration** job in `.github/workflows/ci.yml` runs `composer test:integration` against `postgres:17`, `mysql:8.4` and `redis:7` service containers, with every variable above set and `marko_test` created on the Postgres service before the run. It runs serially, because the driver tests share their databases. `tests/CiWorkflowTest.php` asserts the services and variables, so dropping one fails `composer test`.
+The **Integration** job in `.github/workflows/ci.yml` runs `composer test:integration` against `postgres:17`, `mysql:8.4` and `redis:7` service containers, with every variable above set and `marko_test` created on the Postgres service before the run. Before `composer test:integration` it installs the `rr` binary with `vendor/bin/rr get-binary --no-config --no-interaction` (with `GITHUB_TOKEN` set, to avoid GitHub API rate limits), so the RoadRunner end-to-end suite runs on every PR; the nightly workflow installs it too. It runs serially, because the driver tests share their databases. `tests/CiWorkflowTest.php` asserts the services and variables, so dropping one fails `composer test`.
 
 The required checks on `develop` are `Tests`, `Lint` and `Static analysis`. Whether `Integration` becomes a required check is a maintainer decision, tracked in #226.
 
