@@ -67,7 +67,7 @@ class QueueTables
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
             SQL);
-        $connection->execute('CREATE INDEX idx_queue_available ON jobs (queue, available_at)');
+        $connection->execute('CREATE INDEX jobs_queue_available_at_index ON jobs (queue, available_at)');
         $connection->execute(<<<'SQL'
             CREATE TABLE failed_jobs (
                 id VARCHAR(36) PRIMARY KEY,

@@ -32,6 +32,33 @@ function uniqueDiffUsers(
     );
 }
 
+/**
+ * An order_items table with plain integer columns and the given indexes and foreign keys.
+ *
+ * @param list<string> $columnNames
+ * @param list<Index> $indexes
+ * @param list<ForeignKey> $foreignKeys
+ */
+function foreignKeyDiffTable(
+    array $columnNames,
+    array $indexes = [],
+    array $foreignKeys = [],
+    string $name = 'order_items',
+): Table {
+    return new Table(
+        name: $name,
+        columns: [
+            new Column(name: 'id', type: 'integer', primaryKey: true, autoIncrement: true),
+            ...array_map(
+                static fn (string $columnName): Column => new Column(name: $columnName, type: 'integer'),
+                $columnNames,
+            ),
+        ],
+        indexes: $indexes,
+        foreignKeys: $foreignKeys,
+    );
+}
+
 beforeEach(function (): void {
     $this->calculator = new DiffCalculator();
 });
@@ -992,4 +1019,237 @@ describe('DiffCalculator', function (): void {
 
         expect($diff->isEmpty())->toBeTrue();
     });
+});
+
+describe('DiffCalculator foreign key indexes', function (): void {
+    beforeEach(function (): void {
+        $this->orderFk = new ForeignKey(
+            name: 'fk_order_items_order_id',
+            columns: ['order_id'],
+            referencedTable: 'orders',
+            referencedColumns: ['id'],
+        );
+        $this->compositeFk = new ForeignKey(
+            name: 'fk_order_items_order_id_product_id',
+            columns: ['order_id', 'product_id'],
+            referencedTable: 'order_products',
+            referencedColumns: ['order_id', 'product_id'],
+        );
+    });
+
+    it('keeps the single column index of a foreign key declared without column references', function (): void {
+        $diff = $this->calculator->calculate(
+            ['order_items' => foreignKeyDiffTable(['order_id'], foreignKeys: [$this->orderFk])],
+            ['order_items' => foreignKeyDiffTable(
+                ['order_id'],
+                indexes: [new Index(name: 'fk_order_items_order_id', columns: ['order_id'])],
+                foreignKeys: [$this->orderFk],
+            )],
+        );
+
+        expect($diff->isEmpty())->toBeTrue();
+    });
+
+    it('keeps the multi column index of a composite foreign key', function (): void {
+        $diff = $this->calculator->calculate(
+            ['order_items' => foreignKeyDiffTable(['order_id', 'product_id'], foreignKeys: [$this->compositeFk])],
+            ['order_items' => foreignKeyDiffTable(
+                ['order_id', 'product_id'],
+                indexes: [new Index(name: 'fk_order_items_order_id_product_id', columns: ['order_id', 'product_id'])],
+                foreignKeys: [$this->compositeFk],
+            )],
+        );
+
+        expect($diff->isEmpty())->toBeTrue();
+    });
+
+    it(
+        'drops a multi column index whose columns differ from every foreign key\'s columns',
+        function (): void {
+            $kept = new Index(name: 'fk_order_items_order_id_product_id', columns: ['order_id', 'product_id']);
+            $partial = new Index(name: 'order_items_order_id', columns: ['order_id']);
+            $wider = new Index(name: 'order_items_wide', columns: ['order_id', 'product_id', 'id']);
+
+            $diff = $this->calculator->calculate(
+                ['order_items' => foreignKeyDiffTable(['order_id', 'product_id'], foreignKeys: [$this->compositeFk])],
+                ['order_items' => foreignKeyDiffTable(
+                    ['order_id', 'product_id'],
+                    indexes: [$kept, $partial, $wider],
+                    foreignKeys: [$this->compositeFk],
+                )],
+            );
+
+            expect($diff->tablesToAlter['order_items']->indexesToDrop)->toBe([$partial, $wider])
+                ->and($diff->tablesToAlter['order_items']->indexesToAdd)->toBeEmpty();
+        },
+    );
+
+    it(
+        'adds a replacement index when dropping the unique index of a foreign key column declared without column references',
+        function (): void {
+            $diff = $this->calculator->calculate(
+                ['order_items' => foreignKeyDiffTable(['order_id'], foreignKeys: [$this->orderFk])],
+                ['order_items' => foreignKeyDiffTable(
+                    ['order_id'],
+                    indexes: [new Index(name: 'order_id', columns: ['order_id'], type: IndexType::Unique)],
+                    foreignKeys: [$this->orderFk],
+                )],
+            );
+
+            expect($diff->tablesToAlter['order_items']->indexesToAdd)->toEqual([
+                new Index(name: 'order_items_order_id_index', columns: ['order_id']),
+            ]);
+        },
+    );
+
+    it(
+        'adds a composite replacement index when dropping the composite unique index a composite foreign key uses',
+        function (): void {
+            $diff = $this->calculator->calculate(
+                ['order_items' => foreignKeyDiffTable(['order_id', 'product_id'], foreignKeys: [$this->compositeFk])],
+                ['order_items' => foreignKeyDiffTable(
+                    ['order_id', 'product_id'],
+                    indexes: [new Index(
+                        name: 'order_product',
+                        columns: ['order_id', 'product_id'],
+                        type: IndexType::Unique,
+                    )],
+                    foreignKeys: [$this->compositeFk],
+                )],
+            );
+
+            expect($diff->tablesToAlter['order_items']->indexesToAdd)->toEqual([
+                new Index(name: 'order_items_order_id_product_id_index', columns: ['order_id', 'product_id']),
+            ]);
+        },
+    );
+
+    it('adds no replacement when another index still leads with the composite foreign key columns', function (): void {
+        $covering = new Index(name: 'order_items_covering', columns: ['order_id', 'product_id', 'id']);
+
+        $diff = $this->calculator->calculate(
+            ['order_items' => foreignKeyDiffTable(
+                ['order_id', 'product_id'],
+                indexes: [$covering],
+                foreignKeys: [$this->compositeFk],
+            )],
+            ['order_items' => foreignKeyDiffTable(
+                ['order_id', 'product_id'],
+                indexes: [
+                    new Index(name: 'order_product', columns: ['order_id', 'product_id'], type: IndexType::Unique),
+                    $covering,
+                ],
+                foreignKeys: [$this->compositeFk],
+            )],
+        );
+
+        expect($diff->tablesToAlter['order_items']->indexesToAdd)->toBeEmpty();
+    });
+
+    it(
+        'adds a replacement index when dropping a composite index that was the only one leading with a foreign key\'s column',
+        function (): void {
+            $userFk = new ForeignKey(
+                name: 'fk_user_roles_user_id',
+                columns: ['user_id'],
+                referencedTable: 'users',
+                referencedColumns: ['id'],
+            );
+
+            $diff = $this->calculator->calculate(
+                ['user_roles' => foreignKeyDiffTable(
+                    ['user_id', 'role_id'],
+                    foreignKeys: [$userFk],
+                    name: 'user_roles',
+                )],
+                ['user_roles' => foreignKeyDiffTable(
+                    ['user_id', 'role_id'],
+                    indexes: [new Index(
+                        name: 'user_role',
+                        columns: ['user_id', 'role_id'],
+                        type: IndexType::Unique,
+                    )],
+                    foreignKeys: [$userFk],
+                    name: 'user_roles',
+                )],
+            );
+
+            expect($diff->tablesToAlter['user_roles']->indexesToAdd)->toEqual([
+                new Index(name: 'user_roles_user_id_index', columns: ['user_id']),
+            ]);
+        },
+    );
+
+    it('keeps the existing replacement index name for single column foreign keys', function (): void {
+        $diff = $this->calculator->calculate(
+            ['users' => uniqueDiffUsers(new Column(name: 'team_id', type: 'integer', references: 'teams.id'))],
+            ['users' => uniqueDiffUsers(
+                new Column(name: 'team_id', type: 'integer', unique: true),
+                indexes: [new Index(name: 'team_id', columns: ['team_id'], type: IndexType::Unique)],
+            )],
+        );
+
+        expect($diff->tablesToAlter['users']->indexesToAdd[0]->name)->toBe('users_team_id_index');
+    });
+
+    it(
+        'drops a non-unique foreign key column index when the entity declares an index on the same columns under another name',
+        function (): void {
+            $auto = new Index(name: 'fk_order_items_order_id', columns: ['order_id']);
+            $declared = new Index(name: 'order_items_order_id_index', columns: ['order_id']);
+
+            $diff = $this->calculator->calculate(
+                ['order_items' => foreignKeyDiffTable(
+                    ['order_id'],
+                    indexes: [$declared],
+                    foreignKeys: [new ForeignKey(
+                        name: 'custom_fk_name',
+                        columns: ['order_id'],
+                        referencedTable: 'orders',
+                        referencedColumns: ['id'],
+                    )],
+                )],
+                ['order_items' => foreignKeyDiffTable(['order_id'], indexes: [$auto, $declared])],
+            );
+
+            expect($diff->tablesToAlter['order_items']->indexesToDrop)->toBe([$auto]);
+        },
+    );
+
+    it(
+        'keeps a foreign key column index named after a foreign key constraint even when the entity declares an index on the same columns',
+        function (): void {
+            $auto = new Index(name: 'fk_order_items_order_id', columns: ['order_id']);
+            $declared = new Index(name: 'order_items_order_id_index', columns: ['order_id']);
+
+            $diff = $this->calculator->calculate(
+                ['order_items' => foreignKeyDiffTable(
+                    ['order_id'],
+                    indexes: [$declared],
+                    foreignKeys: [$this->orderFk],
+                )],
+                ['order_items' => foreignKeyDiffTable(
+                    ['order_id'],
+                    indexes: [$auto, $declared],
+                    foreignKeys: [$this->orderFk],
+                )],
+            );
+
+            expect($diff->isEmpty())->toBeTrue();
+        },
+    );
+
+    it(
+        'keeps a non-unique foreign key column index when the entity declares no index on those columns',
+        function (): void {
+            $auto = new Index(name: 'some_old_name', columns: ['order_id']);
+
+            $diff = $this->calculator->calculate(
+                ['order_items' => foreignKeyDiffTable(['order_id'], foreignKeys: [$this->orderFk])],
+                ['order_items' => foreignKeyDiffTable(['order_id'], indexes: [$auto], foreignKeys: [$this->orderFk])],
+            );
+
+            expect($diff->isEmpty())->toBeTrue();
+        },
+    );
 });

@@ -274,8 +274,10 @@ class DiffCalculator
      * Find indexes that need to be dropped.
      *
      * A database index stays when the entity declares it by name, when it is the unique index of a column the entity
-     * marks `unique: true`, when it is opted out of the diff, or when it is a non-unique single-column index on a
-     * foreign key column (MySQL creates those for every foreign key).
+     * marks `unique: true`, when it is opted out of the diff, or when it is a non-unique index on exactly the
+     * columns of a foreign key (MySQL creates one for every foreign key). That last one is dropped after all when the
+     * entity declares another index on the same columns, unless it is named after a foreign key constraint (MySQL's
+     * own, which it removes itself once another index covers the key).
      *
      * @param array<Index> $databaseIndexes
      * @return array<Index>
@@ -286,7 +288,11 @@ class DiffCalculator
     ): array {
         $entityIndexNames = $this->getIndexNames($entityTable->indexes);
         $uniqueEntityColumns = [];
-        $fkEntityColumns = [];
+        $foreignKeyColumnLists = $this->foreignKeyColumnLists($entityTable);
+        $foreignKeyNames = array_map(
+            static fn (ForeignKey $foreignKey): string => $foreignKey->name,
+            $entityTable->foreignKeys,
+        );
 
         foreach ($entityTable->columns as $column) {
             if (
@@ -294,10 +300,6 @@ class DiffCalculator
                 && !$column->primaryKey
             ) {
                 $uniqueEntityColumns[] = $column->name;
-            }
-
-            if ($column->references !== null) {
-                $fkEntityColumns[] = $column->name;
             }
         }
 
@@ -321,8 +323,11 @@ class DiffCalculator
 
             if (
                 $index->type !== IndexType::Unique
-                && count($index->columns) === 1
-                && in_array($index->columns[0], $fkEntityColumns, true)
+                && in_array($index->columns, $foreignKeyColumnLists, true)
+                && (
+                    in_array($index->name, $foreignKeyNames, true)
+                    || !$this->entityDeclaresIndexOn($entityTable, $index->columns)
+                )
             ) {
                 continue;
             }
@@ -334,10 +339,10 @@ class DiffCalculator
     }
 
     /**
-     * A plain `<table>_<column>_index` for each foreign key column whose unique index is dropped when nothing else
-     * would index it any more: MySQL refuses to drop the last index a foreign key uses. Once added, it is kept as
-     * the foreign key column's index (see findIndexesToDrop()). Its name is shortened to 63 bytes like
-     * every derived name.
+     * A plain `<table>_<columns>_index` for each foreign key (from `references:` or `Table::$foreignKeys`) whose
+     * leading index is dropped when nothing else would lead with its columns any more: MySQL refuses to drop the
+     * last index a foreign key uses. Once added, it is kept as the foreign key's index (see findIndexesToDrop()). Its
+     * name is shortened to 63 bytes like every derived name.
      *
      * @param array<Index> $databaseIndexes
      * @param array<Index> $indexesToAdd
@@ -360,32 +365,29 @@ class DiffCalculator
         ];
         $replacements = [];
 
+        $foreignKeyColumnLists = $this->foreignKeyColumnLists($entityTable);
+
         foreach ($indexesToDrop as $index) {
-            if (
-                $index->type !== IndexType::Unique
-                || count($index->columns) !== 1
-            ) {
-                continue;
-            }
+            foreach ($foreignKeyColumnLists as $foreignKeyColumns) {
+                $leadsWithForeignKey = array_slice(
+                    $index->columns,
+                    0,
+                    count($foreignKeyColumns),
+                ) === $foreignKeyColumns;
 
-            $columnName = $index->columns[0];
-            $isForeignKeyColumn = array_any(
-                $entityTable->columns,
-                static fn (Column $column): bool => $column->name === $columnName
-                    && $column->references !== null,
-            );
-            $stillIndexed = array_any(
-                $remainingIndexes,
-                static fn (Index $remaining): bool => ($remaining->columns[0] ?? null) === $columnName,
-            );
+                if (
+                    !$leadsWithForeignKey
+                    || $this->isLedBy($remainingIndexes, $foreignKeyColumns)
+                ) {
+                    continue;
+                }
 
-            if (
-                $isForeignKeyColumn
-                && !$stillIndexed
-            ) {
                 $replacement = new Index(
-                    name: IdentifierName::derive("{$entityTable->name}_$columnName", suffix: '_index'),
-                    columns: [$columnName],
+                    name: IdentifierName::derive(
+                        $entityTable->name . '_' . implode('_', $foreignKeyColumns),
+                        suffix: '_index',
+                    ),
+                    columns: $foreignKeyColumns,
                 );
                 $replacements[] = $replacement;
                 $remainingIndexes[] = $replacement;
@@ -393,6 +395,58 @@ class DiffCalculator
         }
 
         return $replacements;
+    }
+
+    /**
+     * The column lists of every foreign key the entity declares, through `references:` or `Table::$foreignKeys`.
+     *
+     * @return list<list<string>>
+     */
+    private function foreignKeyColumnLists(
+        Table $entityTable,
+    ): array {
+        $columnLists = [];
+
+        foreach ($entityTable->columns as $column) {
+            if ($column->references !== null) {
+                $columnLists[] = [$column->name];
+            }
+        }
+
+        foreach ($entityTable->foreignKeys as $foreignKey) {
+            $columnLists[] = array_values($foreignKey->columns);
+        }
+
+        return array_values(array_unique($columnLists, SORT_REGULAR));
+    }
+
+    /**
+     * @param list<string> $columns
+     */
+    private function entityDeclaresIndexOn(
+        Table $entityTable,
+        array $columns,
+    ): bool {
+        return array_any(
+            $entityTable->indexes,
+            static fn (Index $index): bool => $index->columns === $columns,
+        );
+    }
+
+    /**
+     * Whether some index leads with exactly the given columns.
+     *
+     * @param array<Index> $indexes
+     * @param list<string> $columns
+     */
+    private function isLedBy(
+        array $indexes,
+        array $columns,
+    ): bool {
+        return array_any(
+            $indexes,
+            static fn (Index $index): bool => array_slice($index->columns, 0, count($columns)) === $columns,
+        );
     }
 
     /**

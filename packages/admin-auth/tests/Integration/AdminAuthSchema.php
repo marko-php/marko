@@ -130,7 +130,8 @@ class AdminAuthSchema
 
     /**
      * Run db:migrate in a project made by project(), in development so it generates and applies a migration for
-     * any entity drift, as `marko db:migrate` does on a fresh install.
+     * any entity drift, as `marko db:migrate` does on a fresh install. With $force it passes --force, which a diff that
+     * drops existing indexes needs.
      *
      * @return array{exitCode: int, output: string}
      */
@@ -139,6 +140,7 @@ class AdminAuthSchema
         SqlGeneratorInterface $generator,
         IntrospectorInterface $introspector,
         string $project,
+        bool $force = false,
     ): array {
         $paths = new ProjectPaths($project);
         $migrations = new MigrationRepository();
@@ -161,7 +163,10 @@ class AdminAuthSchema
         );
 
         $stream = fopen('php://memory', 'r+');
-        $exitCode = $command->execute(new Input(['marko', 'db:migrate']), new Output($stream));
+        $exitCode = $command->execute(
+            new Input($force ? ['marko', 'db:migrate', '--force'] : ['marko', 'db:migrate']),
+            new Output($stream),
+        );
         rewind($stream);
 
         return ['exitCode' => $exitCode, 'output' => (string) stream_get_contents($stream)];

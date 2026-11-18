@@ -8,6 +8,7 @@ use Marko\Database\MySql\Connection\MySqlConnection;
 use Marko\Database\MySql\Introspection\MySqlIntrospector;
 use Marko\Database\MySql\Query\MySqlQueryBuilderFactory;
 use Marko\Database\MySql\Sql\MySqlGenerator;
+use Marko\Database\Schema\Index;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\Database\DatabaseFailedJobRepository;
 use Marko\Queue\Database\DatabaseQueue;
@@ -110,7 +111,8 @@ describe('database queue tables on MySQL', function (): void {
             $connection->disconnect();
         }
 
-        expect(array_map(fn ($index): string => $index->name, $jobs?->indexes ?? []))->toContain('idx_queue_available')
+        expect(array_map(fn (Index $index): string => $index->name, $jobs?->indexes ?? []))
+            ->toContain('jobs_queue_available_at_index')
             ->and($failedJobs)->not->toBeNull()
             ->and($diff->isEmpty())->toBeTrue();
     });
@@ -133,7 +135,7 @@ describe('database queue tables on MySQL', function (): void {
             $connection->disconnect();
         }
 
-        expect($statements)->toBe([]);
+        expect($statements)->toBeEmpty();
     });
 })->group('integration-services');
 

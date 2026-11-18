@@ -20,14 +20,30 @@ use Marko\Database\Tests\Schema\Fixtures\OrderExtenderConflictsWithParentEntity;
 use Marko\Database\Tests\Schema\Fixtures\OrderExtenderOneEntity;
 use Marko\Database\Tests\Schema\Fixtures\OrderExtenderTwoConflictEntity;
 use Marko\Database\Tests\Schema\Fixtures\OrphanExtenderEntity;
+use Marko\Database\Tests\Schema\Fixtures\ProductDerivedIndexExtenderEntity;
 use Marko\Database\Tests\Schema\Fixtures\ProductEntity;
 use Marko\Database\Tests\Schema\Fixtures\ProductExtenderEntity;
 use Marko\Database\Tests\Schema\Fixtures\ProductFkExtenderEntity;
+use Marko\Database\Tests\Schema\Fixtures\ProductFkParentEntity;
+use Marko\Database\Tests\Schema\Fixtures\ProductFkParentNameExtenderEntity;
+use Marko\Database\Tests\Schema\Fixtures\ProductFkParentTeamExtenderEntity;
 use Marko\Database\Tests\Schema\Fixtures\ProductIndexExtenderEntity;
+use Marko\Database\Tests\Schema\Fixtures\ProductLongFkExtenderEntity;
 use Marko\Database\Tests\Schema\Fixtures\ProductLongIndexExtenderEntity;
+use Marko\Database\Tests\Schema\Fixtures\ProductNameIndexedEntity;
+use Marko\Database\Tests\Schema\Fixtures\ProductNameIndexExtenderEntity;
+use Marko\Database\Tests\Schema\Fixtures\ProductParentColumnFkExtenderEntity;
+use Marko\Database\Tests\Schema\Fixtures\ProductParentColumnIndexExtenderEntity;
 use Marko\Database\Tests\Schema\Fixtures\ProductPartialIndexExtenderEntity;
+use Marko\Database\Tests\Schema\Fixtures\ProductRegionColumnExtenderEntity;
+use Marko\Database\Tests\Schema\Fixtures\ProductRegionFkExtenderEntity;
 use Marko\Database\Tests\Schema\Fixtures\ProductSecondExtenderEntity;
+use Marko\Database\Tests\Schema\Fixtures\ProductSharedFkNameExtenderEntity;
+use Marko\Database\Tests\Schema\Fixtures\ProductSharedFkNameSecondExtenderEntity;
 use Marko\Database\Tests\Schema\Fixtures\ProductSynonymExtenderEntity;
+use Marko\Database\Tests\Schema\Fixtures\ProductUnknownColumnFkExtenderEntity;
+use Marko\Database\Tests\Schema\Fixtures\ProductUnknownColumnIndexExtenderEntity;
+use Marko\Database\Tests\Schema\Fixtures\ProductWarehouseFkExtenderEntity;
 
 beforeEach(function (): void {
     $this->metadataFactory = new EntityMetadataFactory();
@@ -177,7 +193,7 @@ it('clears all registered tables', function (): void {
     $this->registry->clear();
 
     expect($this->registry->hasTable('posts'))->toBeFalse()
-        ->and($this->registry->getTables())->toBe([]);
+        ->and($this->registry->getTables())->toBeEmpty();
 });
 
 // ─── Two-pass merge requirements ───────────────────────────────────────────
@@ -230,6 +246,19 @@ it('merges extender indexes into the parent table', function (): void {
 
     expect($table->indexes)->toHaveCount(1)
         ->and($table->indexes[0]->name)->toBe('idx_products_sku');
+});
+
+it('derives an extender index name from the parent table', function (): void {
+    $this->registry->registerEntities([ProductEntity::class, ProductDerivedIndexExtenderEntity::class]);
+
+    expect($this->registry->getTable('products')->indexes[0]->name)->toBe('products_sku_index');
+});
+
+it('throws when an extender\'s derived index name duplicates a parent index name', function (): void {
+    expect(fn () => $this->registry->registerEntities([
+        ProductNameIndexedEntity::class,
+        ProductNameIndexExtenderEntity::class,
+    ]))->toThrow(EntityException::class, 'products_name_index');
 });
 
 it('rejects an over-long index name declared by an extender', function (): void {
@@ -367,3 +396,118 @@ it(
             ->and($this->registry->getEntityClass('products'))->toBe(ProductEntity::class);
     },
 );
+
+it('merges an extender ForeignKey attribute into the parent table', function (): void {
+    $this->registry->registerEntities([ProductEntity::class, ProductWarehouseFkExtenderEntity::class]);
+
+    $foreignKeys = $this->registry->getTable('products')->foreignKeys;
+
+    expect($foreignKeys)->toHaveCount(1)
+        ->and($foreignKeys[0]->name)->toBe('fk_products_warehouse_id')
+        ->and($foreignKeys[0]->columns)->toBe(['warehouse_id'])
+        ->and($foreignKeys[0]->referencedTable)->toBe('warehouses')
+        ->and($foreignKeys[0]->referencedColumns)->toBe(['id'])
+        ->and($foreignKeys[0]->onDelete)->toBe('CASCADE');
+});
+
+it('allows an extender ForeignKey to use parent columns', function (): void {
+    $this->registry->registerEntities([ProductEntity::class, ProductParentColumnFkExtenderEntity::class]);
+
+    $foreignKeys = $this->registry->getTable('products')->foreignKeys;
+
+    expect($foreignKeys)->toHaveCount(1)
+        ->and($foreignKeys[0]->name)->toBe('fk_products_name')
+        ->and($foreignKeys[0]->columns)->toBe(['name']);
+});
+
+it(
+    'allows an extender ForeignKey to use a column another extender adds regardless of extender order',
+    function (array $entityClasses): void {
+        $this->registry->registerEntities($entityClasses);
+
+        $foreignKeys = $this->registry->getTable('products')->foreignKeys;
+
+        expect($foreignKeys)->toHaveCount(1)
+            ->and($foreignKeys[0]->columns)->toBe(['region_id']);
+    },
+)->with([
+    'foreign key extender first' => [[
+        ProductEntity::class,
+        ProductRegionFkExtenderEntity::class,
+        ProductRegionColumnExtenderEntity::class,
+    ]],
+    'column extender first' => [[
+        ProductEntity::class,
+        ProductRegionColumnExtenderEntity::class,
+        ProductRegionFkExtenderEntity::class,
+    ]],
+]);
+
+it('throws when an extender ForeignKey names a column neither the parent nor the extenders have', function (): void {
+    expect(
+        fn () => $this->registry->registerEntities(
+            [ProductEntity::class, ProductUnknownColumnFkExtenderEntity::class],
+        ),
+    )
+        ->toThrow(EntityException::class, "names the column 'missing_id'");
+});
+
+it('throws when an extender Index names a column neither the parent nor the extenders have', function (): void {
+    expect(
+        fn () => $this->registry->registerEntities([
+            ProductEntity::class,
+            ProductUnknownColumnIndexExtenderEntity::class,
+        ]),
+    )
+        ->toThrow(EntityException::class, "names the column 'missing_col'");
+});
+
+it('allows an extender Index to use parent columns', function (): void {
+    $this->registry->registerEntities([ProductEntity::class, ProductParentColumnIndexExtenderEntity::class]);
+
+    $indexes = $this->registry->getTable('products')->indexes;
+
+    expect($indexes)->toHaveCount(1)
+        ->and($indexes[0]->columns)->toBe(['name', 'note']);
+});
+
+it('throws when an extender foreign key name duplicates a parent foreign key name', function (): void {
+    expect(fn () => $this->registry->registerEntities([
+        ProductFkParentEntity::class,
+        ProductFkParentNameExtenderEntity::class,
+    ]))->toThrow(
+        EntityException::class,
+        sprintf(
+            "Foreign key 'fk_shared' is defined by both '%s' and '%s'",
+            ProductFkParentEntity::class,
+            ProductFkParentNameExtenderEntity::class,
+        ),
+    );
+});
+
+it('throws when two extenders declare the same foreign key name', function (): void {
+    expect(fn () => $this->registry->registerEntities([
+        ProductEntity::class,
+        ProductSharedFkNameExtenderEntity::class,
+        ProductSharedFkNameSecondExtenderEntity::class,
+    ]))->toThrow(
+        EntityException::class,
+        sprintf(
+            "Foreign key 'fk_shared' is defined by both '%s' and '%s'",
+            ProductSharedFkNameExtenderEntity::class,
+            ProductSharedFkNameSecondExtenderEntity::class,
+        ),
+    );
+});
+
+it('throws when an extender ForeignKey name is longer than 63 bytes', function (): void {
+    expect(fn () => $this->registry->registerEntities([ProductEntity::class, ProductLongFkExtenderEntity::class]))
+        ->toThrow(EntityException::class, ProductLongFkExtenderEntity::class);
+});
+
+it('throws when an extender ForeignKey covers a parent column that already has references', function (): void {
+    expect(fn () => $this->registry->registerEntities([
+        ProductFkParentEntity::class,
+        ProductFkParentTeamExtenderEntity::class,
+    ]))->toThrow(EntityException::class, "Column 'team_id' of table 'products' is given a foreign key both");
+});

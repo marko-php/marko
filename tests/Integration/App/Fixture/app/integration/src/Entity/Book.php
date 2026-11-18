@@ -12,7 +12,7 @@ use Marko\Database\Entity\Entity;
 #[Table('books')]
 // No committed migration creates this partial index: db:migrate generates it in
 // development, which is how the suite round-trips #[Index(where: ...)] (#170).
-#[Index('books_titled_idx', ['title'], where: "title <> ''")]
+#[Index(['title'], where: "title <> ''")]
 class Book extends Entity
 {
     #[Column(primaryKey: true, autoIncrement: true)]

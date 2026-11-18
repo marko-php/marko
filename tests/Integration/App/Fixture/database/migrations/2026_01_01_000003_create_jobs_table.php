@@ -24,7 +24,7 @@ return new class () extends Migration
             )
             SQL);
 
-        $this->execute($connection, 'CREATE INDEX idx_queue_available ON jobs (queue, available_at)');
+        $this->execute($connection, 'CREATE INDEX jobs_queue_available_at_index ON jobs (queue, available_at)');
     }
 
     public function down(

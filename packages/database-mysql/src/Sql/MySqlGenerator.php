@@ -108,6 +108,9 @@ class MySqlGenerator implements SqlGeneratorInterface
         'geometry',
     ];
 
+    /**
+     * @throws MigrationException
+     */
     public function generateUp(
         SchemaDiff $diff,
     ): array {
@@ -131,6 +134,9 @@ class MySqlGenerator implements SqlGeneratorInterface
         return $statements;
     }
 
+    /**
+     * @throws MigrationException
+     */
     public function generateDown(
         SchemaDiff $diff,
     ): array {
@@ -154,6 +160,9 @@ class MySqlGenerator implements SqlGeneratorInterface
         return $statements;
     }
 
+    /**
+     * @throws MigrationException
+     */
     public function generateCreateTable(
         Table $table,
     ): string {
@@ -241,6 +250,9 @@ class MySqlGenerator implements SqlGeneratorInterface
         );
     }
 
+    /**
+     * @throws MigrationException
+     */
     public function generateAddIndex(
         string $table,
         Index $index,
@@ -648,6 +660,8 @@ class MySqlGenerator implements SqlGeneratorInterface
 
     /**
      * Build index definition for inline use in CREATE TABLE.
+     *
+     * @throws MigrationException
      */
     private function buildIndexDefinition(
         Index $index,
@@ -702,6 +716,7 @@ class MySqlGenerator implements SqlGeneratorInterface
      * Generate ALTER statements for a table diff.
      *
      * @return array<string>
+     * @throws MigrationException
      */
     private function generateTableAlterations(
         TableDiff $tableDiff,
@@ -757,6 +772,7 @@ class MySqlGenerator implements SqlGeneratorInterface
      * Generate reverse ALTER statements for a table diff (for down migrations).
      *
      * @return array<string>
+     * @throws MigrationException
      */
     private function generateReverseTableAlterations(
         TableDiff $tableDiff,
@@ -854,24 +870,26 @@ class MySqlGenerator implements SqlGeneratorInterface
     }
 
     /**
-     * The added indexes that replace a dropped index on the same columns, such as the plain index the diff adds
-     * when a foreign key column stops being unique. InnoDB refuses to drop the last index a foreign key uses, so
-     * these are created before the drop (and, in down, dropped after the original is restored).
+     * The added indexes that go in before any index is dropped, so a foreign key never loses the last index it uses
+     * (InnoDB refuses that drop, error 1553): every added index, except one that redefines a dropped index under
+     * the same name (it must follow the drop) and one on a column the diff adds or modifies (the column must be
+     * in its final shape first). In down they are dropped only after the dropped indexes are restored.
      *
      * @return list<Index>
      */
     private function replacementIndexes(
         TableDiff $tableDiff,
     ): array {
-        $addedColumnNames = array_map(static fn (Column $column): string => $column->name, $tableDiff->columnsToAdd);
+        $droppedNames = array_map(static fn (Index $index): string => $index->name, $tableDiff->indexesToDrop);
+        $changedColumnNames = [
+            ...array_map(static fn (Column $column): string => $column->name, $tableDiff->columnsToAdd),
+            ...array_keys($tableDiff->columnsToModify),
+        ];
 
         return array_values(array_filter(
             $tableDiff->indexesToAdd,
-            static fn (Index $index): bool => array_any(
-                $tableDiff->indexesToDrop,
-                static fn (Index $dropped): bool => $dropped->columns === $index->columns,
-            )
-                    && array_intersect($index->columns, $addedColumnNames) === [],
+            static fn (Index $index): bool => !in_array($index->name, $droppedNames, true)
+                && array_intersect($index->columns, $changedColumnNames) === [],
         ));
     }
 

@@ -182,7 +182,7 @@ use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
 
 #[Table('role_permissions')]
-#[Index('idx_role_permissions_unique', ['role_id', 'permission_id'], unique: true)]
+#[Index(['role_id', 'permission_id'], unique: true)]
 class RolePermission extends Entity implements RolePermissionInterface
 {
     #[Column(references: 'roles.id', onDelete: 'CASCADE')]
@@ -199,7 +199,7 @@ Generate and run the migrations from these entity definitions:
 marko db:migrate
 ```
 
-Marko reads the `#[Table]`, `#[Column]`, `#[Index]`, and `#[ForeignKey]` attributes from your entity classes, diffs them against the current database state, and auto-generates the necessary migration SQL.
+Marko reads the `#[Table]`, `#[Column]`, `#[Index]`, and `#[ForeignKey]` attributes from your entity classes, diffs them against the current database state, and auto-generates the necessary migration SQL. The index above has no `name:`, so Marko derives `role_permissions_role_id_permission_id_unique`. Single-column foreign keys use `references:` on the column, as here; reach for `#[ForeignKey]` when a key spans several columns or needs its own name (see [Composite and Named Foreign Keys](/docs/packages/database/#composite-and-named-foreign-keys)).
 
 Seed a super admin role and an initial admin user:
 

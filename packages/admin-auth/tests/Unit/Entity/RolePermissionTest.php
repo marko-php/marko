@@ -94,7 +94,7 @@ it('indexes permission_id for cascading permission deletes', function (): void {
     $table = new SchemaBuilder()->build(new EntityMetadataFactory()->parse(RolePermission::class));
     $index = array_find(
         $table->indexes,
-        fn (SchemaIndex $index): bool => $index->name === 'idx_role_permissions_permission_id',
+        fn (SchemaIndex $index): bool => $index->name === 'role_permissions_permission_id_index',
     );
 
     expect($index?->columns)->toBe(['permission_id'])

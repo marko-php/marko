@@ -12,7 +12,7 @@ use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
 
 #[Table('permissions')]
-#[Index('idx_permissions_group', ['group'])]
+#[Index(['group'])]
 class Permission extends Entity implements PermissionInterface
 {
     #[Column(primaryKey: true, autoIncrement: true)]

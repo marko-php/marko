@@ -41,11 +41,12 @@ beforeEach(function (): void {
     AdminAuthSchema::dropMigrations($this->connection);
     $this->project = AdminAuthSchema::project();
 
-    $this->migrate = fn (): array => AdminAuthSchema::migrate(
+    $this->migrate = fn (bool $force = false): array => AdminAuthSchema::migrate(
         $this->connection,
         new MySqlGenerator(),
         $this->introspector,
         $this->project,
+        $force,
     );
 });
 
@@ -57,6 +58,46 @@ afterEach(function (): void {
         $this->connection->disconnect();
     }
 });
+
+/**
+ * The tables the earlier hand-written migrations created, with their old idx_* index names, one row each.
+ */
+function legacyAdminAuthTables(
+    MySqlConnection $connection,
+): void {
+    $legacy = [
+        'CREATE TABLE roles (id INT UNSIGNED NOT NULL AUTO_INCREMENT, name VARCHAR(255) NOT NULL, '
+        . 'slug VARCHAR(255) NOT NULL, description TEXT NULL, is_super_admin TINYINT(1) NOT NULL DEFAULT 0, '
+        . 'created_at TIMESTAMP NULL, updated_at TIMESTAMP NULL, PRIMARY KEY (id), '
+        . 'UNIQUE INDEX idx_roles_slug (slug))',
+        'CREATE TABLE permissions (id INT UNSIGNED NOT NULL AUTO_INCREMENT, `key` VARCHAR(255) NOT NULL, '
+        . 'label VARCHAR(255) NOT NULL, `group` VARCHAR(255) NOT NULL, created_at TIMESTAMP NULL, '
+        . 'PRIMARY KEY (id), UNIQUE INDEX idx_permissions_key (`key`), INDEX idx_permissions_group (`group`))',
+        'CREATE TABLE role_permissions (role_id INT UNSIGNED NOT NULL, permission_id INT UNSIGNED NOT NULL, '
+        . 'UNIQUE INDEX idx_role_permissions_unique (role_id, permission_id), '
+        . 'INDEX idx_role_permissions_permission_id (permission_id), '
+        . 'FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE, '
+        . 'FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE)',
+        'CREATE TABLE admin_users (id INT UNSIGNED NOT NULL AUTO_INCREMENT, email VARCHAR(255) NOT NULL, '
+        . 'password VARCHAR(255) NOT NULL, name VARCHAR(255) NOT NULL, remember_token VARCHAR(255) NULL, '
+        . 'is_active TINYINT(1) NOT NULL DEFAULT 1, created_at TIMESTAMP NULL, updated_at TIMESTAMP NULL, '
+        . 'PRIMARY KEY (id), UNIQUE INDEX idx_admin_users_email (email))',
+        'CREATE TABLE admin_user_roles (user_id INT UNSIGNED NOT NULL, role_id INT UNSIGNED NOT NULL, '
+        . 'UNIQUE INDEX idx_admin_user_roles_unique (user_id, role_id), '
+        . 'INDEX idx_admin_user_roles_role_id (role_id), '
+        . 'FOREIGN KEY (user_id) REFERENCES admin_users(id) ON DELETE CASCADE, '
+        . 'FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE)',
+        "INSERT INTO roles (name, slug) VALUES ('Editor', 'editor')",
+        "INSERT INTO permissions (`key`, label, `group`) VALUES ('blog.view', 'View', 'blog')",
+        'INSERT INTO role_permissions (role_id, permission_id) VALUES (1, 1)',
+        "INSERT INTO admin_users (email, password, name) VALUES ('a@example.com', 'x', 'A')",
+        'INSERT INTO admin_user_roles (user_id, role_id) VALUES (1, 1)',
+    ];
+
+    foreach ($legacy as $sql) {
+        $connection->execute($sql);
+    }
+}
 
 describe('db:migrate for marko/admin-auth on MySQL', function (): void {
     it('creates every admin-auth table from the entities on a fresh db:migrate', function (): void {
@@ -74,48 +115,17 @@ describe('db:migrate for marko/admin-auth on MySQL', function (): void {
 
         expect($result['exitCode'])->toBe(0)
             ->and($result['output'])->toContain('Applied 6 schema migration(s).')
-            ->and($missing)->toBe([])
-            ->and($uniqueIndexColumns('role_permissions', 'idx_role_permissions_unique'))
+            ->and($missing)->toBeEmpty()
+            ->and($uniqueIndexColumns('role_permissions', 'role_permissions_role_id_permission_id_unique'))
             ->toBe(['role_id', 'permission_id'])
-            ->and($uniqueIndexColumns('admin_user_roles', 'idx_admin_user_roles_unique'))
+            ->and($uniqueIndexColumns('admin_user_roles', 'admin_user_roles_user_id_role_id_unique'))
             ->toBe(['user_id', 'role_id']);
     });
 
     it('upgrades the tables of the earlier hand-written migrations, adding the pivot id keys', function (): void {
-        $legacy = [
-            'CREATE TABLE roles (id INT UNSIGNED NOT NULL AUTO_INCREMENT, name VARCHAR(255) NOT NULL, '
-            . 'slug VARCHAR(255) NOT NULL, description TEXT NULL, is_super_admin TINYINT(1) NOT NULL DEFAULT 0, '
-            . 'created_at TIMESTAMP NULL, updated_at TIMESTAMP NULL, PRIMARY KEY (id), '
-            . 'UNIQUE INDEX idx_roles_slug (slug))',
-            'CREATE TABLE permissions (id INT UNSIGNED NOT NULL AUTO_INCREMENT, `key` VARCHAR(255) NOT NULL, '
-            . 'label VARCHAR(255) NOT NULL, `group` VARCHAR(255) NOT NULL, created_at TIMESTAMP NULL, '
-            . 'PRIMARY KEY (id), UNIQUE INDEX idx_permissions_key (`key`), INDEX idx_permissions_group (`group`))',
-            'CREATE TABLE role_permissions (role_id INT UNSIGNED NOT NULL, permission_id INT UNSIGNED NOT NULL, '
-            . 'UNIQUE INDEX idx_role_permissions_unique (role_id, permission_id), '
-            . 'INDEX idx_role_permissions_permission_id (permission_id), '
-            . 'FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE, '
-            . 'FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE)',
-            'CREATE TABLE admin_users (id INT UNSIGNED NOT NULL AUTO_INCREMENT, email VARCHAR(255) NOT NULL, '
-            . 'password VARCHAR(255) NOT NULL, name VARCHAR(255) NOT NULL, remember_token VARCHAR(255) NULL, '
-            . 'is_active TINYINT(1) NOT NULL DEFAULT 1, created_at TIMESTAMP NULL, updated_at TIMESTAMP NULL, '
-            . 'PRIMARY KEY (id), UNIQUE INDEX idx_admin_users_email (email))',
-            'CREATE TABLE admin_user_roles (user_id INT UNSIGNED NOT NULL, role_id INT UNSIGNED NOT NULL, '
-            . 'UNIQUE INDEX idx_admin_user_roles_unique (user_id, role_id), '
-            . 'INDEX idx_admin_user_roles_role_id (role_id), '
-            . 'FOREIGN KEY (user_id) REFERENCES admin_users(id) ON DELETE CASCADE, '
-            . 'FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE)',
-            "INSERT INTO roles (name, slug) VALUES ('Editor', 'editor')",
-            "INSERT INTO permissions (`key`, label, `group`) VALUES ('blog.view', 'View', 'blog')",
-            'INSERT INTO role_permissions (role_id, permission_id) VALUES (1, 1)',
-            "INSERT INTO admin_users (email, password, name) VALUES ('a@example.com', 'x', 'A')",
-            'INSERT INTO admin_user_roles (user_id, role_id) VALUES (1, 1)',
-        ];
+        legacyAdminAuthTables($this->connection);
 
-        foreach ($legacy as $sql) {
-            $this->connection->execute($sql);
-        }
-
-        $result = ($this->migrate)();
+        $result = ($this->migrate)(true);
         $second = ($this->migrate)();
         $pivotKey = fn (string $table): array => array_values(array_map(
             fn ($column): string => $column->name,
@@ -131,6 +141,49 @@ describe('db:migrate for marko/admin-auth on MySQL', function (): void {
             ->and($this->connection->query('SELECT id, user_id, role_id FROM admin_user_roles'))
             ->toEqual([['id' => 1, 'user_id' => 1, 'role_id' => 1]])
             ->and($second['output'])->toContain('Nothing to migrate.');
+    });
+
+    it(
+        'renames the legacy admin auth indexes to derived names on MySQL and then has nothing to migrate',
+        function (): void {
+            legacyAdminAuthTables($this->connection);
+
+            $first = ($this->migrate)(true);
+            $second = ($this->migrate)();
+            $uniqueIndexColumns = fn (string $table, string $name): ?array => array_find(
+                $this->introspector->getIndexes($table),
+                fn (Index $index): bool => $index->name === $name
+                    && $index->type === IndexType::Unique,
+            )?->columns;
+
+            expect($first['exitCode'])->toBe(0)
+                ->and($uniqueIndexColumns('role_permissions', 'role_permissions_role_id_permission_id_unique'))
+                ->toBe(['role_id', 'permission_id'])
+                ->and($uniqueIndexColumns('admin_user_roles', 'admin_user_roles_user_id_role_id_unique'))
+                ->toBe(['user_id', 'role_id'])
+                ->and($second['exitCode'])->toBe(0)
+                ->and($second['output'])->toContain('Nothing to migrate.');
+        },
+    );
+
+    it('leaves no old copy of a renamed foreign key column index on MySQL', function (): void {
+        legacyAdminAuthTables($this->connection);
+
+        ($this->migrate)(true);
+
+        $indexNames = fn (string $table): array => array_map(
+            fn (Index $index): string => $index->name,
+            $this->introspector->getIndexes($table),
+        );
+
+        expect($indexNames('role_permissions'))
+            ->toContain('role_permissions_permission_id_index')
+            ->not->toContain('idx_role_permissions_unique')
+            ->not->toContain('idx_role_permissions_permission_id')
+            ->and($indexNames('admin_user_roles'))
+            ->toContain('admin_user_roles_role_id_index')
+            ->not->toContain('idx_admin_user_roles_unique')
+            ->not->toContain('idx_admin_user_roles_role_id');
     });
 
     it('reports nothing to migrate on a second run', function (): void {

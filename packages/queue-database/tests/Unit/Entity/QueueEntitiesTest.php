@@ -69,11 +69,11 @@ describe('queue-database entities', function (): void {
             ]);
     });
 
-    it('indexes jobs on queue and available_at as idx_queue_available', function (): void {
+    it('indexes jobs on queue and available_at as jobs_queue_available_at_index', function (): void {
         $indexes = queueEntityTable(DatabaseJob::class)->indexes;
 
         expect($indexes)->toHaveCount(1)
-            ->and($indexes[0]->name)->toBe('idx_queue_available')
+            ->and($indexes[0]->name)->toBe('jobs_queue_available_at_index')
             ->and($indexes[0]->columns)->toBe(['queue', 'available_at']);
     });
 
@@ -98,7 +98,7 @@ describe('queue-database entities', function (): void {
             'CREATE TABLE `jobs` (`id` VARCHAR(36) NOT NULL, `queue` VARCHAR(255) NOT NULL DEFAULT \'default\', '
             . '`payload` TEXT NOT NULL, `attempts` INT NOT NULL DEFAULT 0, `reserved_at` TIMESTAMP NULL, '
             . '`available_at` TIMESTAMP NOT NULL, `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, '
-            . 'PRIMARY KEY (`id`), INDEX `idx_queue_available` (`queue`, `available_at`))',
+            . 'PRIMARY KEY (`id`), INDEX `jobs_queue_available_at_index` (`queue`, `available_at`))',
         ])
             ->and(queueEntityDdl(new MySqlGenerator(), $failedJobs))->toBe([
                 'CREATE TABLE `failed_jobs` (`id` VARCHAR(36) NOT NULL, `queue` VARCHAR(255) NOT NULL, '
@@ -112,7 +112,7 @@ describe('queue-database entities', function (): void {
             ->toContain('"reserved_at" TIMESTAMP,')
             ->toContain('"available_at" TIMESTAMP NOT NULL')
             ->toContain('"created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP')
-            ->toContain('CREATE INDEX "idx_queue_available" ON "jobs" ("queue", "available_at")')
+            ->toContain('CREATE INDEX "jobs_queue_available_at_index" ON "jobs" ("queue", "available_at")')
             ->and(implode("\n", queueEntityDdl(new PgSqlGenerator(), $failedJobs)))
             ->toContain('"exception" TEXT NOT NULL')
             ->toContain('"failed_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP');

@@ -32,7 +32,8 @@ class SchemaBuilder
     /**
      * Build a Table schema from EntityMetadata.
      *
-     * @throws EntityException When a declared index name is longer than 63 bytes
+     * @throws EntityException When a declared index or foreign key name is longer than 63 bytes, two of them resolve
+     *                         to one name, a column has a foreign key both ways, or a references value is malformed
      */
     public function build(
         EntityMetadata $metadata,
@@ -47,7 +48,30 @@ class SchemaBuilder
             $metadata->indexes,
         );
 
-        $foreignKeys = $this->buildForeignKeys($metadata->tableName, $metadata->columns);
+        $this->assertDistinctIndexNames($indexes, $metadata->entityClass, $metadata->tableName);
+
+        $referenceForeignKeys = $this->buildForeignKeys(
+            $metadata->entityClass,
+            $metadata->tableName,
+            $metadata->columns,
+        );
+        $declaredForeignKeys = array_map(
+            fn (ForeignKeyMetadata $foreignKey) => $this->buildForeignKey(
+                $foreignKey,
+                $metadata->entityClass,
+                $metadata->tableName,
+            ),
+            $metadata->foreignKeys,
+        );
+
+        $this->assertForeignKeysDistinct(
+            $metadata->entityClass,
+            $metadata->tableName,
+            $declaredForeignKeys,
+            $referenceForeignKeys,
+        );
+
+        $foreignKeys = [...$referenceForeignKeys, ...$declaredForeignKeys];
 
         return new Table(
             name: $metadata->tableName,
@@ -82,8 +106,9 @@ class SchemaBuilder
     /**
      * Build an Index schema from IndexMetadata.
      *
-     * A declared name is never shortened: one over 63 bytes is rejected, since PostgreSQL would silently truncate
-     * it and MySQL would refuse it.
+     * A declared name is used literally and never shortened: one over 63 bytes is rejected, since PostgreSQL would
+     * silently truncate it and MySQL would refuse it. Without a name, `<table>_<columns>_index` (or `_unique`) is
+     * derived and shortened to fit.
      *
      * @param class-string $entityClass The entity that declares the index, named in the error
      * @param string $tableName The table the index belongs to, named in the error
@@ -94,7 +119,10 @@ class SchemaBuilder
         string $entityClass,
         string $tableName,
     ): Index {
-        if (!IdentifierName::fits($metadata->name)) {
+        if (
+            $metadata->name !== null
+            && !IdentifierName::fits($metadata->name)
+        ) {
             throw EntityException::indexNameTooLong(
                 entityClass: $entityClass,
                 tableName: $tableName,
@@ -104,7 +132,7 @@ class SchemaBuilder
         }
 
         return new Index(
-            name: $metadata->name,
+            name: $metadata->name ?? $this->deriveIndexName($metadata, $tableName),
             columns: $metadata->columns,
             type: $metadata->unique ? IndexType::Unique : IndexType::Btree,
             where: $metadata->where,
@@ -112,27 +140,145 @@ class SchemaBuilder
     }
 
     /**
+     * Build a ForeignKey schema from ForeignKeyMetadata.
+     *
+     * A declared name is used literally and never shortened: one over 63 bytes is rejected. Without a name,
+     * `fk_<table>_<columns>` is derived and shortened to fit.
+     *
+     * @param class-string $entityClass The entity that declares the foreign key, named in the error
+     * @param string $tableName The table the foreign key belongs to, named in the error
+     * @throws EntityException When the declared name is longer than 63 bytes
+     */
+    public function buildForeignKey(
+        ForeignKeyMetadata $metadata,
+        string $entityClass,
+        string $tableName,
+    ): ForeignKey {
+        if (
+            $metadata->name !== null
+            && !IdentifierName::fits($metadata->name)
+        ) {
+            throw EntityException::foreignKeyNameTooLong(
+                entityClass: $entityClass,
+                tableName: $tableName,
+                foreignKeyName: $metadata->name,
+                byteLength: IdentifierName::byteLength($metadata->name),
+            );
+        }
+
+        return new ForeignKey(
+            name: $metadata->name ?? IdentifierName::derive(
+                $tableName . '_' . implode('_', $metadata->columns),
+                prefix: 'fk_',
+            ),
+            columns: $metadata->columns,
+            referencedTable: $metadata->referencedTable,
+            referencedColumns: $metadata->referencedColumns,
+            onDelete: $metadata->onDelete,
+            onUpdate: $metadata->onUpdate,
+        );
+    }
+
+    /**
+     * Reject two indexes of one table that resolve to the same name.
+     *
+     * @param array<Index> $indexes
+     * @param class-string $entityClass
+     * @throws EntityException When two indexes share a name
+     */
+    public function assertDistinctIndexNames(
+        array $indexes,
+        string $entityClass,
+        string $tableName,
+    ): void {
+        $seen = [];
+
+        foreach ($indexes as $index) {
+            if (isset($seen[$index->name])) {
+                throw EntityException::duplicateIndexName($entityClass, $tableName, $index->name);
+            }
+
+            $seen[$index->name] = true;
+        }
+    }
+
+    /**
+     * Reject foreign keys of one table that clash.
+     *
+     * @param class-string $entityClass The entity whose declaration is being added, named in the error
+     * @param array<ForeignKey> $declaredForeignKeys Built from #[ForeignKey]
+     * @param array<ForeignKey> $referenceForeignKeys Derived from #[Column(references:)]
+     * @throws EntityException When two foreign keys share a name, or one column has a foreign key both ways
+     */
+    public function assertForeignKeysDistinct(
+        string $entityClass,
+        string $tableName,
+        array $declaredForeignKeys,
+        array $referenceForeignKeys,
+    ): void {
+        $seen = [];
+
+        foreach ([...$referenceForeignKeys, ...$declaredForeignKeys] as $foreignKey) {
+            if (isset($seen[$foreignKey->name])) {
+                throw EntityException::duplicateForeignKeyName($entityClass, $tableName, $foreignKey->name);
+            }
+
+            $seen[$foreignKey->name] = true;
+        }
+
+        $referenceColumns = array_map(
+            fn (ForeignKey $foreignKey) => $foreignKey->columns[0],
+            $referenceForeignKeys,
+        );
+
+        foreach ($declaredForeignKeys as $foreignKey) {
+            if (
+                count($foreignKey->columns) === 1
+                && in_array($foreignKey->columns[0], $referenceColumns, true)
+            ) {
+                throw EntityException::foreignKeyDeclaredTwice($entityClass, $tableName, $foreignKey->columns[0]);
+            }
+        }
+    }
+
+    private function deriveIndexName(
+        IndexMetadata $metadata,
+        string $tableName,
+    ): string {
+        return IdentifierName::derive(
+            $tableName . '_' . implode('_', $metadata->columns),
+            suffix: $metadata->unique ? '_unique' : '_index',
+        );
+    }
+
+    /**
      * Build ForeignKey schemas from columns with references, using an explicit table name.
      * Used when merging extender columns under the parent's table name.
      *
+     * @param class-string $entityClass The entity that declares the columns, named in the error
      * @param array<ColumnMetadata> $columns
      * @return array<ForeignKey>
+     * @throws EntityException When a references value is not in table.column format
      */
     public function buildForeignKeysForTable(
+        string $entityClass,
         string $tableName,
         array $columns,
     ): array {
-        return $this->buildForeignKeys($tableName, $columns);
+        return $this->buildForeignKeys($entityClass, $tableName, $columns);
     }
 
     /**
      * Build ForeignKey schemas from columns with references.
      *
+     * @param class-string $entityClass The entity that declares the columns, named in the error
      * @param string $tableName The table name (for generating FK names)
      * @param array<ColumnMetadata> $columns
      * @return array<ForeignKey>
+     * @throws EntityException When a references value is not in table.column format
      */
     private function buildForeignKeys(
+        string $entityClass,
         string $tableName,
         array $columns,
     ): array {
@@ -145,8 +291,11 @@ class SchemaBuilder
 
             // Parse references format: "table.column"
             $parts = explode('.', $column->references);
-            if (count($parts) !== 2) {
-                continue;
+            if (
+                count($parts) !== 2
+                || in_array('', $parts, true)
+            ) {
+                throw EntityException::malformedColumnReference($entityClass, $column->name, $column->references);
             }
 
             [$referencedTable, $referencedColumn] = $parts;

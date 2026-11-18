@@ -29,7 +29,7 @@ class SqlitePasswordResetTokenConnection implements ConnectionInterface
             . 'user_id TEXT NOT NULL, token_hash TEXT NOT NULL, created_at TEXT NOT NULL)',
         );
         $this->pdo->exec(
-            'CREATE UNIQUE INDEX idx_password_reset_tokens_provider_user_id '
+            'CREATE UNIQUE INDEX password_reset_tokens_provider_user_id_unique '
             . 'ON password_reset_tokens (provider, user_id)',
         );
     }

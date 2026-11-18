@@ -148,7 +148,7 @@ it('returns null for createdAt when not set', function (): void {
 
 it('indexes the permissions group column', function (): void {
     $table = new SchemaBuilder()->build(new EntityMetadataFactory()->parse(Permission::class));
-    $index = array_find($table->indexes, fn (Index $index): bool => $index->name === 'idx_permissions_group');
+    $index = array_find($table->indexes, fn (Index $index): bool => $index->name === 'permissions_group_index');
 
     expect($index?->columns)->toBe(['group'])
         ->and($index?->type)->toBe(IndexType::Btree);

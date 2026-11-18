@@ -276,11 +276,17 @@ An inline `UNIQUE` (a new table or column with `unique: true`) creates a unique 
 ALTER TABLE "users" DROP CONSTRAINT "users_email_key"
 ```
 
-and the down migration restores it with `ALTER TABLE "users" ADD CONSTRAINT "users_email_key" UNIQUE ("email")`. Adding `unique: true` to an existing column creates a unique index, `<table>_<column>_unique`, dropped with `DROP INDEX` in down. PostgreSQL silently truncates identifiers to 63 bytes, so Marko [shortens a derived name over 63 bytes with a hash](/docs/packages/database/#index-and-foreign-key-names) (the `_unique`, `_index` and `fk_` names) and rejects a declared `#[Index]` name over 63 bytes, rather than let the database hold a name the entity does not. See [Unique Columns on Existing Tables](/docs/packages/database/#unique-columns-on-existing-tables).
+and the down migration restores it with `ALTER TABLE "users" ADD CONSTRAINT "users_email_key" UNIQUE ("email")`. Adding `unique: true` to an existing column creates a unique index, `<table>_<column>_unique`, dropped with `DROP INDEX` in down. PostgreSQL silently truncates identifiers to 63 bytes, so Marko [shortens a derived name over 63 bytes with a hash](/docs/packages/database/#index-and-foreign-key-names) (the `_unique`, `_index` and `fk_` names) and rejects a `name:` over 63 bytes on `#[Index]` or `#[ForeignKey]`, rather than let the database hold a name the entity does not. See [Unique Columns on Existing Tables](/docs/packages/database/#unique-columns-on-existing-tables).
 
 ### Partial Indexes
 
 `#[Index(..., where: '...')]` generates `CREATE INDEX ... WHERE <predicate>`, and the introspector reads the predicate back from `pg_indexes`, so a partial index round-trips without drift. See [Partial Indexes](/docs/packages/database/#partial-indexes).
+
+### Foreign Keys and Renaming Indexes
+
+Composite foreign keys declared with `#[ForeignKey]` are read back with their columns paired in order, so they settle with an empty `db:diff` ([Composite and Named Foreign Keys](/docs/packages/database/#composite-and-named-foreign-keys)). Index renames are a plain `DROP INDEX` followed by `CREATE INDEX`.
+
+On PostgreSQL a foreign key depends on the unique index it references. Renaming such an index, including switching it to a derived name, fails at `DROP INDEX` because the foreign key still needs it. Keep an explicit `name:` on every unique index that another table's foreign key references. See [Renaming Indexes](/docs/packages/database/#renaming-indexes).
 
 ## Postgres-Wire-Compatible Databases (CockroachDB, YugabyteDB, etc.)
 

@@ -10,7 +10,7 @@ use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
 
 #[Table(extends: ExtenderParentEntity::class)]
-#[Index('idx_extra', ['extra'])]
+#[Index(['extra'])]
 class ExtenderWithIndexEntity extends Entity
 {
     /** @noinspection PhpUnused - Entity property for structural definition */

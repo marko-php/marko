@@ -14,8 +14,8 @@ use Marko\Database\Entity\Entity;
  * AdminUserRepository::syncRoles() and getRolesForUser() read and write it.
  */
 #[Table('admin_user_roles')]
-#[Index('idx_admin_user_roles_unique', ['user_id', 'role_id'], unique: true)]
-#[Index('idx_admin_user_roles_role_id', ['role_id'])]
+#[Index(['user_id', 'role_id'], unique: true)]
+#[Index(['role_id'])]
 class AdminUserRole extends Entity implements AdminUserRoleInterface
 {
     #[Column(primaryKey: true, autoIncrement: true)]

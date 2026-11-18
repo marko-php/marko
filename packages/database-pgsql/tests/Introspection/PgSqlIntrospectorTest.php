@@ -479,13 +479,13 @@ describe('PgSqlIntrospector', function (): void {
             ->and($diff->isEmpty())->toBeTrue();
     });
 
-    it('reads foreign keys from information_schema.table_constraints', function (): void {
+    it('reads foreign keys from pg_constraint', function (): void {
         $queriedSql = null;
         $queriedBindings = null;
 
         $connection = createTestConnection(
             function (string $sql, array $bindings) use (&$queriedSql, &$queriedBindings): array {
-                if (str_contains($sql, 'information_schema.table_constraints')) {
+                if (str_contains($sql, 'pg_constraint')) {
                     $queriedSql = $sql;
                     $queriedBindings = $bindings;
 
@@ -495,8 +495,8 @@ describe('PgSqlIntrospector', function (): void {
                             'column_name' => 'user_id',
                             'referenced_table' => 'users',
                             'referenced_column' => 'id',
-                            'delete_rule' => 'CASCADE',
-                            'update_rule' => 'NO ACTION',
+                            'delete_type' => 'c',
+                            'update_type' => 'a',
                         ],
                     ];
                 }
@@ -508,9 +508,7 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $foreignKeys = $introspector->getForeignKeys('posts');
 
-        expect($queriedSql)->toContain('information_schema.table_constraints')
-            ->and($queriedSql)->toContain('key_column_usage')
-            ->and($queriedSql)->toContain('referential_constraints')
+        expect($queriedSql)->toContain('pg_constraint')
             ->and($queriedBindings)->toBe(['posts', 'public'])
             ->and($foreignKeys)->toHaveCount(1)
             ->and($foreignKeys[0])->toBeInstanceOf(ForeignKey::class)
@@ -520,39 +518,27 @@ describe('PgSqlIntrospector', function (): void {
             ->and($foreignKeys[0]->referencedColumns)->toBe(['id']);
     });
 
-    it('detects ON DELETE and ON UPDATE actions', function (): void {
+    it('reports the delete and update rules of a foreign key', function (): void {
         $connection = createTestConnection(function (string $sql): array {
-            if (str_contains($sql, 'information_schema.table_constraints')) {
+            if (str_contains($sql, 'pg_constraint')) {
                 return [
-                    [
-                        'constraint_name' => 'posts_user_id_fkey',
-                        'column_name' => 'user_id',
-                        'referenced_table' => 'users',
-                        'referenced_column' => 'id',
-                        'delete_rule' => 'CASCADE',
-                        'update_rule' => 'SET NULL',
-                    ],
-                    [
-                        'constraint_name' => 'posts_category_id_fkey',
-                        'column_name' => 'category_id',
-                        'referenced_table' => 'categories',
-                        'referenced_column' => 'id',
-                        'delete_rule' => 'SET NULL',
-                        'update_rule' => 'CASCADE',
-                    ],
+                    ['constraint_name' => 'posts_user_id_fkey', 'column_name' => 'user_id', 'referenced_table' => 'users', 'referenced_column' => 'id', 'delete_type' => 'c', 'update_type' => 'n'],
+                    ['constraint_name' => 'posts_category_id_fkey', 'column_name' => 'category_id', 'referenced_table' => 'categories', 'referenced_column' => 'id', 'delete_type' => 'd', 'update_type' => 'r'],
+                    ['constraint_name' => 'posts_editor_id_fkey', 'column_name' => 'editor_id', 'referenced_table' => 'users', 'referenced_column' => 'id', 'delete_type' => 'a', 'update_type' => 'a'],
                 ];
             }
 
             return [];
         });
 
-        $introspector = new PgSqlIntrospector($connection);
-        $foreignKeys = $introspector->getForeignKeys('posts');
+        $foreignKeys = new PgSqlIntrospector($connection)->getForeignKeys('posts');
 
         expect($foreignKeys[0]->onDelete)->toBe('CASCADE')
             ->and($foreignKeys[0]->onUpdate)->toBe('SET NULL')
-            ->and($foreignKeys[1]->onDelete)->toBe('SET NULL')
-            ->and($foreignKeys[1]->onUpdate)->toBe('CASCADE');
+            ->and($foreignKeys[1]->onDelete)->toBe('SET DEFAULT')
+            ->and($foreignKeys[1]->onUpdate)->toBe('RESTRICT')
+            ->and($foreignKeys[2]->onDelete)->toBe('NO ACTION')
+            ->and($foreignKeys[2]->onUpdate)->toBe('NO ACTION');
     });
 
     it('filters to public schema by default', function (): void {
@@ -691,10 +677,10 @@ describe('PgSqlIntrospector', function (): void {
 
     it('handles multi-column foreign keys', function (): void {
         $connection = createTestConnection(function (string $sql): array {
-            if (str_contains($sql, 'information_schema.table_constraints')) {
+            if (str_contains($sql, 'pg_constraint')) {
                 return [
-                    ['constraint_name' => 'order_items_fkey', 'column_name' => 'order_id', 'referenced_table' => 'orders', 'referenced_column' => 'id', 'delete_rule' => 'CASCADE', 'update_rule' => 'NO ACTION'],
-                    ['constraint_name' => 'order_items_fkey', 'column_name' => 'item_id', 'referenced_table' => 'orders', 'referenced_column' => 'item_num', 'delete_rule' => 'CASCADE', 'update_rule' => 'NO ACTION'],
+                    ['constraint_name' => 'order_items_fkey', 'column_name' => 'order_id', 'referenced_table' => 'orders', 'referenced_column' => 'id', 'delete_type' => 'c', 'update_type' => 'a'],
+                    ['constraint_name' => 'order_items_fkey', 'column_name' => 'item_id', 'referenced_table' => 'orders', 'referenced_column' => 'item_num', 'delete_type' => 'c', 'update_type' => 'a'],
                 ];
             }
 
@@ -767,6 +753,7 @@ describe('PgSqlIntrospector', function (): void {
         expect($columns[0]->primaryKey)->toBeTrue()
             ->and($columns[1]->primaryKey)->toBeFalse();
     });
+
     it('marks an index that backs a unique constraint as a constraint', function (): void {
         $connection = createTestConnection(function (string $sql): array {
             if (str_contains($sql, 'pg_indexes')) {
