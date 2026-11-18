@@ -8,6 +8,41 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 <!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->
 
+## [0.14.0] - 2026-11-18
+
+### Breaking Changes
+* fix(security)!: check the csrf token after the route's own middleware by @etienne-scherrer in https://github.com/marko-php/marko/pull/680
+* fix: merge module config by source priority and correct config docs by @markshust in https://github.com/marko-php/marko/pull/707
+* feat: read #[ForeignKey] and derive table-scoped index and foreign key names by @markshust in https://github.com/marko-php/marko/pull/709
+### New Features
+* feat: constructor argument substitution via an arguments key in module.php by @markshust in https://github.com/marko-php/marko/pull/687
+* feat: show warnings on the error page in development web requests by @markshust in https://github.com/marko-php/marko/pull/696
+* feat: add a twig slot() function so layouts work with twig by @markshust in https://github.com/marko-php/marko/pull/698
+### Bug Fixes
+* fix(core): reset request state behind a plugin interface proxy by @etienne-scherrer in https://github.com/marko-php/marko/pull/681
+* fix(errors-advanced): report warnings as non-fatal instead of rendering a page by @etienne-scherrer in https://github.com/marko-php/marko/pull/682
+* fix: refuse plugins on final classes and final methods with a loud error by @markshust in https://github.com/marko-php/marko/pull/684
+### Documentation
+* docs: explain plugin sort order conflicts by @markshust in https://github.com/marko-php/marko/pull/688
+* docs: lead argument substitution with a simple literal example by @markshust in https://github.com/marko-php/marko/pull/689
+* docs: coming from magento guide by @markshust in https://github.com/marko-php/marko/pull/690
+* docs: list every docs page in the sidebar and lint for it by @markshust in https://github.com/marko-php/marko/pull/695
+* docs: fix layout template names and use self-closing slot tags by @markshust in https://github.com/marko-php/marko/pull/697
+* docs: add a coming from laravel guide by @markshust in https://github.com/marko-php/marko/pull/700
+* docs: one param and one check per line in code examples by @markshust in https://github.com/marko-php/marko/pull/701
+* docs: run plans from the current session with copied plans by @markshust in https://github.com/marko-php/marko/pull/704
+* docs: say where plans live now that worktrees hold a copy by @markshust in https://github.com/marko-php/marko/pull/705
+### Testing
+* test: replace the flaky gmail smtp socket test with a loopback test by @markshust in https://github.com/marko-php/marko/pull/710
+* test: run the roadrunner end-to-end suite on every pull request by @markshust in https://github.com/marko-php/marko/pull/711
+### CI
+* ci: announce each release in slack by @markshust in https://github.com/marko-php/marko/pull/679
+* ci: queue docs deploys so close pushes never race by @markshust in https://github.com/marko-php/marko/pull/702
+### Maintenance
+* chore: run every change in its own worktree by @markshust in https://github.com/marko-php/marko/pull/699
+* feat: enforce one check per line in compound conditions by @markshust in https://github.com/marko-php/marko/pull/703
+
+
 ## [0.13.0] - 2026-11-03
 
 ### Breaking Changes
