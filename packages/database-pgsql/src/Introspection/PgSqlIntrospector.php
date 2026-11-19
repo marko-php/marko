@@ -637,11 +637,12 @@ readonly class PgSqlIntrospector implements IntrospectorInterface, ExpressionDef
         if (preg_match('/USING\s+\w+\s*\(([^)]+)\)/i', $indexDef, $matches)) {
             $columnsPart = $matches[1];
 
-            // Split by comma and clean up each column name
+            // Split by comma and clean up each column name. PostgreSQL quotes a reserved word or a mixed-case name
+            // here, and a quoted name would be quoted a second time when a generated migration recreates the index.
             $columns = array_map(
-                fn (string $col): string => trim(
+                fn (string $col): string => PgSqlIdentifier::unquote(trim(
                     preg_replace('/\s+(ASC|DESC|NULLS\s+(FIRST|LAST))$/i', '', trim($col)),
-                ),
+                )),
                 explode(',', $columnsPart),
             );
 

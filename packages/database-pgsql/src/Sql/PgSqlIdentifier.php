@@ -33,4 +33,25 @@ class PgSqlIdentifier
             explode('.', $identifier),
         ));
     }
+
+    /**
+     * Read back a single name as PostgreSQL prints it, the inverse of quote().
+     *
+     * PostgreSQL quotes a name in its own output (pg_indexes.indexdef, for one) only when it has to: a reserved
+     * word, mixed case or an embedded quote. Anything not wrapped in quotes, such as a plain name or an index
+     * expression, is returned unchanged.
+     */
+    public static function unquote(
+        string $identifier,
+    ): string {
+        if (
+            strlen($identifier) < 2
+            || !str_starts_with($identifier, self::DELIMITER)
+            || !str_ends_with($identifier, self::DELIMITER)
+        ) {
+            return $identifier;
+        }
+
+        return str_replace(self::DELIMITER . self::DELIMITER, self::DELIMITER, substr($identifier, 1, -1));
+    }
 }

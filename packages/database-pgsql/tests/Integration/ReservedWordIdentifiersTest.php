@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Database\PgSql\Tests\Integration;
 
 use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Index;
 use Marko\Database\Attributes\Table;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Diff\DiffCalculator;
@@ -37,6 +38,7 @@ use Marko\Database\Testing\DatabaseTestHelper;
  */
 
 #[Table('ident_settings')]
+#[Index(['group', 'order'])]
 class PgSqlReservedWordSetting extends Entity
 {
     #[Column(primaryKey: true, autoIncrement: true)]
@@ -162,6 +164,7 @@ beforeEach(function (): void {
         ($this->run)($this->generator->generateUp(new SchemaDiff(tablesToCreate: [$table->name => $table])));
     }
 
+    $this->settingsTable = new SchemaBuilder()->build($metadataFactory->parse(PgSqlReservedWordSetting::class));
     $this->settings = new PgSqlReservedWordSettingRepository($this->connection, $metadataFactory, $hydrator);
     $this->delimiterRows = new PgSqlDelimiterNamedRowRepository($this->connection, $metadataFactory, $hydrator);
 });
@@ -261,6 +264,32 @@ describe('PostgreSQL reserved-word identifiers', function (): void {
         expect($this->delimiterRows->find($row->id)?->label)->toBe('say "bye"')
             ->and($this->delimiterRows->findOneBy(['label' => 'say "bye"'])?->id)->toBe($row->id)
             ->and($this->delimiterRows->count())->toBe(1);
+    });
+
+    it('rolls back a renamed index on reserved-word columns', function (): void {
+        $this->connection->execute(
+            'ALTER INDEX "ident_settings_group_order_index" RENAME TO "ident_settings_legacy_index"',
+        );
+        $introspector = new PgSqlIntrospector($this->connection);
+        $diff = new DiffCalculator()->calculate(
+            ['ident_settings' => $this->settingsTable],
+            ['ident_settings' => $introspector->getTable('ident_settings')],
+        );
+
+        ($this->run)($this->generator->generateUp($diff));
+        ($this->run)($this->generator->generateDown($diff));
+
+        $indexes = array_column(
+            array_map(
+                static fn ($index): array => [$index->name, $index->columns],
+                $introspector->getIndexes('ident_settings'),
+            ),
+            1,
+            0,
+        );
+
+        expect($indexes['ident_settings_legacy_index'] ?? null)->toBe(['group', 'order'])
+            ->and($indexes)->not->toHaveKey('ident_settings_group_order_index');
     });
 
     it('widens an auto-increment key whose table name contains $$ in one DO block', function (): void {
