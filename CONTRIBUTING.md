@@ -12,11 +12,7 @@ git push -u origin feature/my-feature
 
 ## Branch Naming
 
-| Prefix | Use for |
-|---|---|
-| `feature/{name}` | New features |
-| `fix/{name}` | Bug fixes |
-| `docs/{name}` | Documentation changes |
+Every branch is `feature/{name}`, created from `develop`, whatever the change is: a feature, a bug fix, a refactor or a docs change. Don't use `fix/`, `docs/`, `chore/` or any other prefix. The commit type (below) says what kind of change it is.
 
 ## Commit Format
 
