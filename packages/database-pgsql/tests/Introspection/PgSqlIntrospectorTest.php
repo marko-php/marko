@@ -420,6 +420,25 @@ describe('PgSqlIntrospector', function (): void {
         expect($indexes[0]->where)->toBe('(a = 1) OR (b = 2)');
     });
 
+    it('reads the columns of an index without the quotes PostgreSQL puts around them', function (): void {
+        $connection = createTestConnection(function (string $sql): array {
+            if (str_contains($sql, 'pg_indexes')) {
+                return [
+                    [
+                        'indexname' => 'settings_group_label_index',
+                        'indexdef' => 'CREATE INDEX settings_group_label_index ON public.settings USING btree ("group", "la""bel", "displayName", status)',
+                    ],
+                ];
+            }
+
+            return [];
+        });
+
+        $indexes = new PgSqlIntrospector($connection)->getIndexes('settings');
+
+        expect($indexes[0]->columns)->toBe(['group', 'la"bel', 'displayName', 'status']);
+    });
+
     it('parses columns of a partial index without the predicate', function (): void {
         $connection = createTestConnection(function (string $sql): array {
             if (str_contains($sql, 'pg_indexes')) {
