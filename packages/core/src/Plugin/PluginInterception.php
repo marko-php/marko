@@ -117,7 +117,9 @@ trait PluginInterception
 
         foreach ($beforeMethods as $beforeMethod) {
             $plugin = $this->pluginContainer->get($beforeMethod['pluginClass']);
-            $result = $plugin->{$beforeMethod['method']}(...$arguments);
+            $result = $beforeMethod['subject']
+                ? $plugin->{$beforeMethod['method']}($this, ...$arguments)
+                : $plugin->{$beforeMethod['method']}(...$arguments);
 
             if (is_array($result)) {
                 $expectedCount = (new ReflectionMethod($this->pluginTarget, $method))->getNumberOfParameters();
@@ -155,7 +157,9 @@ trait PluginInterception
 
         foreach ($afterMethods as $afterMethod) {
             $plugin = $this->pluginContainer->get($afterMethod['pluginClass']);
-            $result = $plugin->{$afterMethod['method']}($result, ...$arguments);
+            $result = $afterMethod['subject']
+                ? $plugin->{$afterMethod['method']}($this, $result, ...$arguments)
+                : $plugin->{$afterMethod['method']}($result, ...$arguments);
         }
 
         return $result;

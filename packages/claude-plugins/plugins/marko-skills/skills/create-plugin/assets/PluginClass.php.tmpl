@@ -19,6 +19,10 @@ class {{TargetClass}}Plugin
      *   null            → pass-through: original method runs with original arguments
      *   array           → argument modification: original method runs with these values
      *   any other value → short-circuit: original method is NOT called; this value is returned
+     *
+     * Optional: to receive the intercepted instance, make the first parameter
+     * `#[Subject] {{TargetClass}} $subject` (use Marko\Core\Attributes\Subject). Never call this
+     * hooked method on it.
      */
     #[Before(sortOrder: 10)]
     public function methodName(/* same signature as target method */): null
@@ -33,6 +37,9 @@ class {{TargetClass}}Plugin
      * $result holds the return value of the original method (or the short-circuit value).
      * Chain: when multiple After plugins target the same method, each one's return value
      * feeds the next as $result. Always return the (possibly modified) result.
+     *
+     * Optional: to receive the intercepted instance, make the first parameter
+     * `#[Subject] {{TargetClass}} $subject`, before $result. Never call this hooked method on it.
      */
     #[After(sortOrder: 10)]
     public function methodName(mixed $result /* , ...same args as target */): mixed

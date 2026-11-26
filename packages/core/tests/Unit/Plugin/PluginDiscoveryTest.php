@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\Core\Attributes\After;
 use Marko\Core\Attributes\Before;
 use Marko\Core\Attributes\Plugin;
+use Marko\Core\Attributes\Subject;
 use Marko\Core\Exceptions\PluginException;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Plugin\PluginDefinition;
@@ -505,3 +506,501 @@ it('provides helpful error message with class and method names for intra-class c
             ->and($e->getSuggestion())->not->toBeEmpty();
     }
 });
+
+class PDSubjectTarget
+{
+    public function save(
+        string $sql = '',
+    ): void {}
+}
+
+#[Plugin(target: PDSubjectTarget::class)]
+class PDSubjectBeforePlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(
+        #[Subject]
+        PDSubjectTarget $subject,
+        string $sql = '',
+    ): void {}
+}
+
+it('records that a before method takes the subject when its first parameter is marked Subject', function (): void {
+    $definition = (new PluginDiscovery())->parsePluginClass(PDSubjectBeforePlugin::class);
+
+    expect($definition->beforeMethods['save'])->toBe([
+        'pluginMethod' => 'save',
+        'sortOrder' => 0,
+        'subject' => true,
+    ]);
+});
+
+#[Plugin(target: PDSubjectTarget::class)]
+class PDPlainPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(
+        string $sql = '',
+    ): void {}
+
+    /** @noinspection PhpUnused */
+    #[After]
+    public function load(): void {}
+}
+
+it('records that a method without a Subject parameter does not take the subject', function (): void {
+    $definition = (new PluginDiscovery())->parsePluginClass(PDPlainPlugin::class);
+
+    expect($definition->beforeMethods['save']['subject'])->toBeFalse()
+        ->and($definition->afterMethods['load']['subject'])->toBeFalse();
+});
+
+#[Plugin(target: PDSubjectTarget::class)]
+class PDSubjectSecondPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(
+        string $sql,
+        #[Subject]
+        PDSubjectTarget $subject,
+    ): void {}
+}
+
+it('throws when the Subject parameter is not the first parameter', function (): void {
+    try {
+        (new PluginDiscovery())->parsePluginClass(PDSubjectSecondPlugin::class);
+        expect(false)->toBeTrue('Expected PluginException to be thrown');
+    } catch (PluginException $e) {
+        expect($e->getMessage())->toContain('PDSubjectSecondPlugin')
+            ->toContain('save')
+            ->toContain('$subject')
+            ->toContain('position 1')
+            ->and($e->getContext())->toContain('PDSubjectSecondPlugin')
+            ->and($e->getSuggestion())->toContain('first parameter');
+    }
+});
+
+#[Plugin(target: PDSubjectTarget::class)]
+class PDSubjectVariadicPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(
+        #[Subject]
+        PDSubjectTarget ...$subject,
+    ): void {}
+}
+
+#[Plugin(target: PDSubjectTarget::class)]
+class PDSubjectByReferencePlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(
+        #[Subject]
+        PDSubjectTarget &$subject,
+    ): void {}
+}
+
+it('throws when the Subject parameter is variadic or passed by reference', function (string $pluginClass): void {
+    try {
+        (new PluginDiscovery())->parsePluginClass($pluginClass);
+        expect(false)->toBeTrue('Expected PluginException to be thrown');
+    } catch (PluginException $e) {
+        expect($e->getMessage())->toContain($pluginClass)
+            ->toContain('save')
+            ->toContain('$subject')
+            ->toContain('position 0')
+            ->and($e->getContext())->toContain($pluginClass)
+            ->and($e->getSuggestion())->toContain('plain');
+    }
+})->with([
+    'variadic' => PDSubjectVariadicPlugin::class,
+    'by reference' => PDSubjectByReferencePlugin::class,
+]);
+
+#[Plugin(target: PDSubjectTarget::class)]
+class PDSubjectNonHookPlugin
+{
+    /** @noinspection PhpUnused */
+    public function helper(
+        #[Subject]
+        PDSubjectTarget $subject,
+    ): void {}
+}
+
+it(
+    'throws when a plugin class method marked with a Subject parameter has no Before or After attribute',
+    function (): void {
+        try {
+            (new PluginDiscovery())->parsePluginClass(PDSubjectNonHookPlugin::class);
+            expect(false)->toBeTrue('Expected PluginException to be thrown');
+        } catch (PluginException $e) {
+            expect($e->getMessage())->toContain('PDSubjectNonHookPlugin')
+                ->toContain('helper')
+                ->toContain('$subject')
+                ->and($e->getContext())->toContain('PDSubjectNonHookPlugin')
+                ->and($e->getSuggestion())->toContain('#[Before]');
+        }
+    },
+);
+
+#[Plugin(target: PDSubjectTarget::class)]
+class PDSubjectAfterPlugin
+{
+    /** @noinspection PhpUnused */
+    #[After(sortOrder: 5)]
+    public function save(
+        #[Subject]
+        PDSubjectTarget $subject,
+        mixed $result,
+        string $sql = '',
+    ): mixed {
+        return $result;
+    }
+}
+
+it('records that an after method takes the subject when its first parameter is marked Subject', function (): void {
+    $definition = (new PluginDiscovery())->parsePluginClass(PDSubjectAfterPlugin::class);
+
+    expect($definition->afterMethods['save'])->toBe([
+        'pluginMethod' => 'save',
+        'sortOrder' => 5,
+        'subject' => true,
+    ]);
+});
+
+interface PDTypeBaseInterface {}
+
+interface PDTypeInterface extends PDTypeBaseInterface {}
+
+interface PDTypeOtherInterface {}
+
+class PDTypeParent {}
+
+class PDTypeTarget extends PDTypeParent implements PDTypeInterface
+{
+    public function save(): void {}
+}
+
+class PDTypeSubtypeOfTarget extends PDTypeTarget {}
+
+class PDTypeImplementation implements PDTypeInterface {}
+
+class PDTypeUnrelated {}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeIntPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] int $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeStringPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] string $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeArrayPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] array $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeIterablePlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] iterable $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeCallablePlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] callable $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeBoolPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] bool $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeNullPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] null $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeSelfPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] self $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeUnrelatedPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] PDTypeUnrelated $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeSubtypeOfClassTargetPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] PDTypeSubtypeOfTarget $subject): void {}
+}
+
+#[Plugin(target: PDTypeInterface::class)]
+class PDTypeSubtypeOfInterfaceTargetPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] PDTypeImplementation $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeUnionOfRejectedPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] int|string|PDTypeUnrelated|null $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeIntersectionWithRejectedPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] PDTypeInterface&PDTypeOtherInterface $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeUntypedPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeObjectPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] object $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeMixedPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] mixed $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeExactPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] PDTypeTarget $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeNullableExactPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] ?PDTypeTarget $subject): void {}
+}
+
+it(
+    'accepts a Subject parameter that is untyped or typed as object, mixed, the target or a nullable target',
+    function (string $pluginClass): void {
+        $definition = (new PluginDiscovery())->parsePluginClass($pluginClass);
+
+        expect($definition->beforeMethods['save']['subject'])->toBeTrue();
+    },
+)->with([
+    'untyped' => PDTypeUntypedPlugin::class,
+    'object' => PDTypeObjectPlugin::class,
+    'mixed' => PDTypeMixedPlugin::class,
+    'the target' => PDTypeExactPlugin::class,
+    'a nullable target' => PDTypeNullableExactPlugin::class,
+]);
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeParentClassPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] PDTypeParent $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeImplementedInterfacePlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] PDTypeInterface $subject): void {}
+}
+
+#[Plugin(target: PDTypeInterface::class)]
+class PDTypeExtendedInterfacePlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] PDTypeBaseInterface $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeParentKeywordPlugin extends PDTypeParent
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] parent $subject): void {}
+}
+
+it(
+    'accepts a Subject parameter typed as a parent class or an interface the target implements',
+    function (string $pluginClass): void {
+        $definition = (new PluginDiscovery())->parsePluginClass($pluginClass);
+
+        expect($definition->beforeMethods['save']['subject'])->toBeTrue();
+    },
+)->with([
+    'a parent class' => PDTypeParentClassPlugin::class,
+    'an implemented interface' => PDTypeImplementedInterfacePlugin::class,
+    'an interface the target interface extends' => PDTypeExtendedInterfacePlugin::class,
+    'the parent keyword' => PDTypeParentKeywordPlugin::class,
+]);
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeUnionPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] int|PDTypeUnrelated|PDTypeInterface $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeNullableUnionPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] PDTypeUnrelated|PDTypeParent|null $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeIntersectionPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] PDTypeInterface&PDTypeBaseInterface $subject): void {}
+}
+
+#[Plugin(target: PDTypeTarget::class)]
+class PDTypeDnfPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] (PDTypeInterface&PDTypeBaseInterface)|int $subject): void {}
+}
+
+it(
+    'accepts a Subject parameter whose union or intersection type can hold the target',
+    function (string $pluginClass): void {
+        $definition = (new PluginDiscovery())->parsePluginClass($pluginClass);
+
+        expect($definition->beforeMethods['save']['subject'])->toBeTrue();
+    },
+)->with([
+    'a union with an acceptable member' => PDTypeUnionPlugin::class,
+    'a nullable union' => PDTypeNullableUnionPlugin::class,
+    'an intersection of acceptable members' => PDTypeIntersectionPlugin::class,
+    'a DNF type' => PDTypeDnfPlugin::class,
+]);
+
+#[Plugin(target: 'PDTypeMissing\NoSuchTarget')]
+class PDTypeMissingTargetPlugin
+{
+    /** @noinspection PhpUnused */
+    #[Before]
+    public function save(#[Subject] int $subject): void {}
+}
+
+it('skips the Subject type check when the plugin target does not exist', function (): void {
+    $definition = (new PluginDiscovery())->parsePluginClass(PDTypeMissingTargetPlugin::class);
+
+    expect($definition->beforeMethods['save']['subject'])->toBeTrue();
+});
+
+it(
+    'throws when the Subject parameter is typed as a scalar, array, an unrelated class or a subtype of an interface target',
+    function (string $pluginClass, string $declaredType, string $targetClass): void {
+        try {
+            (new PluginDiscovery())->parsePluginClass($pluginClass);
+            expect(false)->toBeTrue('Expected PluginException to be thrown');
+        } catch (PluginException $e) {
+            expect($e->getMessage())->toContain($pluginClass)
+                ->toContain('save')
+                ->toContain('$subject')
+                ->toContain($declaredType)
+                ->toContain($targetClass)
+                ->and($e->getContext())->toContain($pluginClass)
+                ->and($e->getSuggestion())->toContain($targetClass);
+        }
+    },
+)->with([
+    'int' => [PDTypeIntPlugin::class, 'int', PDTypeTarget::class],
+    'string' => [PDTypeStringPlugin::class, 'string', PDTypeTarget::class],
+    'array' => [PDTypeArrayPlugin::class, 'array', PDTypeTarget::class],
+    'iterable' => [PDTypeIterablePlugin::class, 'iterable', PDTypeTarget::class],
+    'callable' => [PDTypeCallablePlugin::class, 'callable', PDTypeTarget::class],
+    'bool' => [PDTypeBoolPlugin::class, 'bool', PDTypeTarget::class],
+    'null' => [PDTypeNullPlugin::class, 'null', PDTypeTarget::class],
+    'self' => [PDTypeSelfPlugin::class, PDTypeSelfPlugin::class, PDTypeTarget::class],
+    'unrelated class' => [PDTypeUnrelatedPlugin::class, PDTypeUnrelated::class, PDTypeTarget::class],
+    'subtype of a class target' => [
+        PDTypeSubtypeOfClassTargetPlugin::class,
+        PDTypeSubtypeOfTarget::class,
+        PDTypeTarget::class,
+    ],
+    'subtype of an interface target' => [
+        PDTypeSubtypeOfInterfaceTargetPlugin::class,
+        PDTypeImplementation::class,
+        PDTypeInterface::class,
+    ],
+    'union of rejected members' => [
+        PDTypeUnionOfRejectedPlugin::class,
+        PDTypeUnrelated::class . '|string|int|null',
+        PDTypeTarget::class,
+    ],
+    'intersection with a rejected member' => [
+        PDTypeIntersectionWithRejectedPlugin::class,
+        PDTypeInterface::class . '&' . PDTypeOtherInterface::class,
+        PDTypeTarget::class,
+    ],
+]);

@@ -57,9 +57,27 @@ debuggable.
 ### After return semantics
 
 After plugins receive `$result` (the return value of the original method or a
-prior After plugin) as their first parameter, followed by the (possibly modified)
-original arguments. Each After plugin's return value feeds the next After plugin
-in sort order — always return the (possibly modified) result.
+prior After plugin) as their first parameter, or their second after a `#[Subject]`
+parameter, followed by the (possibly modified) original arguments. Each After
+plugin's return value feeds the next After plugin in sort order — always return
+the (possibly modified) result.
+
+### Getting the intercepted instance
+
+A plugin method that needs the object it is intercepting marks its **first
+parameter** `#[Subject]` (`use Marko\Core\Attributes\Subject;`). The rest of the
+signature is unchanged: a Before method takes the target's arguments after it, an
+After method takes `$result` and then the arguments. Without `#[Subject]` nothing
+is passed.
+
+```php
+#[After]
+public function save(#[Subject] PostRepository $subject, mixed $result, Post $post): mixed
+```
+
+The subject is the same object the container returned. Calls on it are
+intercepted again, so never call the hooked method itself on it: a plugin that
+calls `$subject->save()` from its `save` hook recurses without end.
 
 ### sortOrder
 

@@ -213,6 +213,68 @@ public function addBonus(int $result): int
 // Final result: 25
 ```
 
+## Receiving the Intercepted Instance
+
+A plugin normally does not know which instance a call ran on. When one plugin intercepts several live instances of the same target (non-shared bindings such as several connections, cache stores or log channels), mark the **first** parameter of a `#[Before]` or `#[After]` method with `#[Subject]` and it receives the intercepted instance. The rest of the signature is unchanged: a before plugin then takes the target's arguments, and an after plugin takes `$result` and then the arguments. Plugins without `#[Subject]` are unaffected.
+
+```php title="QueryLogPlugin.php"
+<?php
+
+declare(strict_types=1);
+
+namespace App\MyApp\Plugin;
+
+use Marko\Core\Attributes\After;
+use Marko\Core\Attributes\Before;
+use Marko\Core\Attributes\Plugin;
+use Marko\Core\Attributes\Subject;
+use Marko\Database\Connection\ConnectionInterface;
+
+#[Plugin(target: ConnectionInterface::class)]
+class QueryLogPlugin
+{
+    #[Before]
+    public function query(
+        #[Subject] ConnectionInterface $connection,
+        string $sql,
+        array $bindings = [],
+    ): null {
+        // $connection is the instance this call is running on
+        return null;
+    }
+
+    #[After(method: 'query')]
+    public function logQuery(
+        #[Subject] ConnectionInterface $connection,
+        array $result,
+        string $sql,
+        array $bindings = [],
+    ): array {
+        // $connection is the instance that ran the query
+        return $result;
+    }
+}
+```
+
+A before plugin that returns an array still returns only the **target's** arguments. The subject is not part of it.
+
+The subject is the object the application holds for that service: the interceptor the container returned, for interface targets and concrete-class targets alike. So `$subject === $injectedInstance` holds and its state is current. Calls a plugin makes on the subject go back through the plugin chain. A plugin must therefore not call the method it is hooked on, because that recurses. Calling other methods is fine, and those calls are intercepted like any other call.
+
+For a singleton target you do not need `#[Subject]`: injecting the target's interface through the plugin's constructor still works.
+
+### Subject Errors
+
+Discovery throws a `PluginException` when `#[Subject]` is misused:
+
+| Mistake | Message |
+|---------|---------|
+| Not on the first parameter (this includes two `#[Subject]` parameters) | `Parameter '$x' at position N of 'Plugin::method()' is marked #[Subject], but #[Subject] is only allowed on the first parameter` |
+| On a variadic or by-reference parameter | `... is marked #[Subject], but #[Subject] cannot be variadic or passed by reference` |
+| On a method that is neither `#[Before]` nor `#[After]` | `... is marked #[Subject], but 'method()' has neither #[Before] nor #[After], so the subject would never be passed` |
+| Declared type cannot hold the target | `Parameter '$x' of 'Plugin::method()' is marked #[Subject] and declared as 'Type', which cannot hold the intercepted 'Target'` |
+
+The declared type may be omitted, `object`, `mixed`, the target, one of its parent classes or interfaces, or a union containing one of those.
+
 ## Targeting Interfaces
 
 Plugins can target interfaces, not just concrete classes. This is the **recommended approach** — it keeps your plugin decoupled from specific implementations and survives Preference swaps.

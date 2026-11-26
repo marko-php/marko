@@ -374,6 +374,54 @@ it('returns empty array when no plugins match target method', function (): void 
     expect($result)->toBeArray()->toBeEmpty();
 });
 
+it('returns the subject flag with each before method', function (): void {
+    $registry = new PluginRegistry();
+    $registry->register(new PluginDefinition(
+        pluginClass: InvoiceValidationPlugin::class,
+        targetClass: InvoiceService::class,
+        beforeMethods: ['create' => ['pluginMethod' => 'create', 'sortOrder' => 1, 'subject' => true]],
+    ));
+
+    $result = $registry->getBeforeMethodsFor(InvoiceService::class, 'create');
+
+    expect($result)->toHaveCount(1)
+        ->and($result[0]['subject'])->toBeTrue();
+});
+
+it('returns the subject flag with each after method', function (): void {
+    $registry = new PluginRegistry();
+    $registry->register(new PluginDefinition(
+        pluginClass: InvoiceAuditPlugin::class,
+        targetClass: InvoiceService::class,
+        afterMethods: ['cancel' => ['pluginMethod' => 'cancel', 'sortOrder' => 2, 'subject' => true]],
+    ));
+
+    $result = $registry->getAfterMethodsFor(InvoiceService::class, 'cancel');
+
+    expect($result)->toHaveCount(1)
+        ->and($result[0]['subject'])->toBeTrue();
+});
+
+it('returns a false subject flag for a plugin definition entry without the subject key', function (): void {
+    $registry = new PluginRegistry();
+    $registry->register(new PluginDefinition(
+        pluginClass: InvoiceValidationPlugin::class,
+        targetClass: InvoiceService::class,
+        beforeMethods: ['create' => ['pluginMethod' => 'create', 'sortOrder' => 1]],
+    ));
+    $registry->register(new PluginDefinition(
+        pluginClass: InvoiceAuditPlugin::class,
+        targetClass: InvoiceService::class,
+        afterMethods: ['cancel' => ['pluginMethod' => 'cancel', 'sortOrder' => 2]],
+    ));
+
+    $before = $registry->getBeforeMethodsFor(InvoiceService::class, 'create');
+    $after = $registry->getAfterMethodsFor(InvoiceService::class, 'cancel');
+
+    expect($before[0]['subject'])->toBeFalse()
+        ->and($after[0]['subject'])->toBeFalse();
+});
+
 // Fixtures for cross-class duplicate sort order tests
 
 class ConflictTargetService
