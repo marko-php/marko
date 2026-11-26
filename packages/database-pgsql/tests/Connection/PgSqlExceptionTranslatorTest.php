@@ -305,4 +305,80 @@ describe('PgSqlExceptionTranslator', function (): void {
                 ->and($syntaxError->sqlState())->toBe('42601');
         },
     );
+
+    it('translates HY000 terminating connection due to a timeout to a LostConnectionException', function (): void {
+        $lost = (new PgSqlExceptionTranslator())->translate(
+            pgsqlDriverError('HY000', 'FATAL:  terminating connection due to idle-session timeout'),
+            'SELECT 1',
+            [],
+        );
+
+        expect($lost)->toBeInstanceOf(LostConnectionException::class);
+    });
+
+    it(
+        'translates HY000 SSL connection has been closed unexpectedly to a LostConnectionException',
+        function (): void {
+            $lost = (new PgSqlExceptionTranslator())->translate(
+                pgsqlDriverError('HY000', 'SSL connection has been closed unexpectedly'),
+                'SELECT 1',
+                [],
+            );
+
+            expect($lost)->toBeInstanceOf(LostConnectionException::class);
+        },
+    );
+
+    it('translates HY000 SSL SYSCALL error to a LostConnectionException', function (): void {
+        $lost = (new PgSqlExceptionTranslator())->translate(
+            pgsqlDriverError('HY000', 'SSL SYSCALL error: EOF detected'),
+            'SELECT 1',
+            [],
+        );
+
+        expect($lost)->toBeInstanceOf(LostConnectionException::class);
+    });
+
+    it('translates HY000 could not receive data from server to a LostConnectionException', function (): void {
+        $lost = (new PgSqlExceptionTranslator())->translate(
+            pgsqlDriverError('HY000', 'could not receive data from server: Connection reset by peer'),
+            'SELECT 1',
+            [],
+        );
+
+        expect($lost)->toBeInstanceOf(LostConnectionException::class);
+    });
+
+    it('translates HY000 could not send data to server to a LostConnectionException', function (): void {
+        $lost = (new PgSqlExceptionTranslator())->translate(
+            pgsqlDriverError('HY000', 'could not send data to server: Broken pipe'),
+            'SELECT 1',
+            [],
+        );
+
+        expect($lost)->toBeInstanceOf(LostConnectionException::class);
+    });
+
+    it('translates HY000 connection to server failed to a LostConnectionException', function (): void {
+        $lost = (new PgSqlExceptionTranslator())->translate(
+            pgsqlDriverError(
+                'HY000',
+                'connection to server at "db" (10.0.0.5), port 5432 failed: Connection refused',
+            ),
+            'SELECT 1',
+            [],
+        );
+
+        expect($lost)->toBeInstanceOf(LostConnectionException::class);
+    });
+
+    it('matches a lost-connection message regardless of case', function (): void {
+        $lost = (new PgSqlExceptionTranslator())->translate(
+            pgsqlDriverError('HY000', 'SSL SYSCALL ERROR: EOF DETECTED'),
+            'SELECT 1',
+            [],
+        );
+
+        expect($lost)->toBeInstanceOf(LostConnectionException::class);
+    });
 });
