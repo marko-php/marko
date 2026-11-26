@@ -7,6 +7,7 @@ namespace Marko\Database\MySql\Tests\Connection;
 use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
+use Marko\Database\Connection\TransactionalDdlInterface;
 use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\MySql\Connection\MySqlConnection;
 use Marko\Database\MySql\Exceptions\ConnectionException;
@@ -20,6 +21,12 @@ describe('MySqlConnection', function (): void {
         $connection = new MySqlConnection($config);
 
         expect($connection)->toBeInstanceOf(ConnectionInterface::class);
+    });
+
+    it('does not offer transactional DDL on the MySQL connection', function (): void {
+        $connection = new MySqlConnection(createTestDatabaseConfig());
+
+        expect($connection)->not->toBeInstanceOf(TransactionalDdlInterface::class);
     });
 
     it('supports RETURNING on MariaDB 10.5 and later', function (): void {

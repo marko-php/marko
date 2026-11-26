@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Database\Migration;
 
+use Closure;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Exceptions\MigrationException;
 use Throwable;
@@ -22,6 +23,7 @@ class DataMigrator
         private readonly ConnectionInterface $connection,
         private readonly MigrationRepository $repository,
         private readonly DataMigrationDiscovery $discovery,
+        private readonly MigrationTransaction $migrationTransaction = new MigrationTransaction(),
     ) {}
 
     /**
@@ -44,8 +46,11 @@ class DataMigrator
         $applied = [];
 
         foreach ($pending as $migration) {
-            $this->runMigration($migration, 'up');
-            $this->repository->record($this->connection, $migration['name'], $batch);
+            $this->runMigration(
+                $migration,
+                'up',
+                fn () => $this->repository->record($this->connection, $migration['name'], $batch),
+            );
             $applied[] = $migration['name'];
         }
 
@@ -78,8 +83,11 @@ class DataMigrator
                 throw MigrationException::migrationNotFound($name);
             }
 
-            $this->runMigration($migrationsByName[$name], 'down');
-            $this->repository->delete($this->connection, $name);
+            $this->runMigration(
+                $migrationsByName[$name],
+                'down',
+                fn () => $this->repository->delete($this->connection, $name),
+            );
             $rolledBack[] = $name;
         }
 
@@ -145,35 +153,58 @@ class DataMigrator
      * Run a single migration.
      *
      * @param array{name: string, path: string, source: string} $migration
+     * @param Closure(): void $bookkeeping Runs after the migration, in the same transaction when there is one
      * @throws MigrationException If migration fails
      */
     private function runMigration(
         array $migration,
         string $direction,
+        Closure $bookkeeping,
     ): void {
-        $path = $migration['path'];
+        $name = $migration['name'];
+        $instance = $this->loadMigration($migration);
+
+        $this->migrationTransaction->run(
+            $name,
+            $instance,
+            $this->connection,
+            function () use ($instance, $direction, $bookkeeping): void {
+                if ($direction === 'up') {
+                    $instance->up($this->connection);
+                } else {
+                    $instance->down($this->connection);
+                }
+
+                $bookkeeping();
+            },
+        );
+    }
+
+    /**
+     * Require the migration file and check it returns a data migration.
+     *
+     * @param array{name: string, path: string, source: string} $migration
+     * @throws MigrationException If the file is missing, fails to load or returns something else
+     */
+    private function loadMigration(
+        array $migration,
+    ): DataMigration {
         $name = $migration['name'];
 
-        if (!file_exists($path)) {
+        if (!file_exists($migration['path'])) {
             throw MigrationException::migrationNotFound($name);
         }
 
         try {
-            $instance = require $path;
-
-            if (!$instance instanceof DataMigration) {
-                throw MigrationException::invalidMigration($name);
-            }
-
-            if ($direction === 'up') {
-                $instance->up($this->connection);
-            } else {
-                $instance->down($this->connection);
-            }
-        } catch (MigrationException $e) {
-            throw $e;
+            $instance = require $migration['path'];
         } catch (Throwable $e) {
             throw MigrationException::migrationFailed($name, $e->getMessage(), $e);
         }
+
+        if (!$instance instanceof DataMigration) {
+            throw MigrationException::invalidMigration($name);
+        }
+
+        return $instance;
     }
 }

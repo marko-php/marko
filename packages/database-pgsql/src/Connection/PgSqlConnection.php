@@ -12,6 +12,7 @@ use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\LostConnectionRecovery;
 use Marko\Database\Connection\PendingAfterCommitInterface;
 use Marko\Database\Connection\StatementInterface;
+use Marko\Database\Connection\TransactionalDdlInterface;
 use Marko\Database\Connection\TransactionBackoff;
 use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\Connection\TransactionState;
@@ -27,7 +28,7 @@ use PDOException;
 use PDOStatement;
 use Throwable;
 
-class PgSqlConnection implements ConnectionInterface, TransactionInterface, PendingAfterCommitInterface, ResettableInterface
+class PgSqlConnection implements ConnectionInterface, TransactionInterface, PendingAfterCommitInterface, TransactionalDdlInterface, ResettableInterface
 {
     private ?PDO $pdo = null;
 
@@ -341,6 +342,11 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface, Pend
     }
 
     public function supportsReturning(): bool
+    {
+        return true;
+    }
+
+    public function supportsTransactionalDdl(): bool
     {
         return true;
     }

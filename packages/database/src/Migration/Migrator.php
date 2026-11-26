@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Database\Migration;
 
+use Closure;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Exceptions\MigrationException;
@@ -22,6 +23,7 @@ class Migrator
         private readonly ConnectionInterface $connection,
         private readonly MigrationRepository $repository,
         ProjectPaths $paths,
+        private readonly MigrationTransaction $migrationTransaction = new MigrationTransaction(),
     ) {
         $this->migrationsPath = $paths->database . '/migrations';
     }
@@ -46,8 +48,11 @@ class Migrator
         $applied = [];
 
         foreach ($pending as $name) {
-            $this->runMigration($name, 'up');
-            $this->repository->record($this->connection, $name, $batch);
+            $this->runMigration(
+                $name,
+                'up',
+                fn () => $this->repository->record($this->connection, $name, $batch),
+            );
             $applied[] = $name;
         }
 
@@ -69,8 +74,11 @@ class Migrator
         $rolledBack = [];
 
         foreach ($migrations as $name) {
-            $this->runMigration($name, 'down');
-            $this->repository->delete($this->connection, $name);
+            $this->runMigration(
+                $name,
+                'down',
+                fn () => $this->repository->delete($this->connection, $name),
+            );
             $rolledBack[] = $name;
         }
 
@@ -95,8 +103,11 @@ class Migrator
         $this->assertKnownMigrations($migrations);
 
         foreach ($migrations as $name) {
-            $this->runMigration($name, 'down');
-            $this->repository->delete($this->connection, $name);
+            $this->runMigration(
+                $name,
+                'down',
+                fn () => $this->repository->delete($this->connection, $name),
+            );
             $rolledBack[] = $name;
         }
 
@@ -219,12 +230,40 @@ class Migrator
     /**
      * Run a single migration.
      *
+     * @param Closure(): void $bookkeeping Runs after the migration, in the same transaction when there is one
      * @throws MigrationException If migration fails
      */
     private function runMigration(
         string $name,
         string $direction,
+        Closure $bookkeeping,
     ): void {
+        $migration = $this->loadMigration($name);
+
+        $this->migrationTransaction->run(
+            $name,
+            $migration,
+            $this->connection,
+            function () use ($migration, $direction, $bookkeeping): void {
+                if ($direction === 'up') {
+                    $migration->up($this->connection);
+                } else {
+                    $migration->down($this->connection);
+                }
+
+                $bookkeeping();
+            },
+        );
+    }
+
+    /**
+     * Require the migration file and check it returns a migration.
+     *
+     * @throws MigrationException If the file is missing, fails to load or returns something else
+     */
+    private function loadMigration(
+        string $name,
+    ): Migration {
         $path = $this->migrationsPath . '/' . $name . '.php';
 
         if (!file_exists($path)) {
@@ -233,20 +272,14 @@ class Migrator
 
         try {
             $migration = require $path;
-
-            if (!$migration instanceof Migration) {
-                throw MigrationException::invalidMigration($name);
-            }
-
-            if ($direction === 'up') {
-                $migration->up($this->connection);
-            } else {
-                $migration->down($this->connection);
-            }
-        } catch (MigrationException $e) {
-            throw $e;
         } catch (Throwable $e) {
             throw MigrationException::migrationFailed($name, $e->getMessage(), $e);
         }
+
+        if (!$migration instanceof Migration) {
+            throw MigrationException::invalidMigration($name);
+        }
+
+        return $migration;
     }
 }

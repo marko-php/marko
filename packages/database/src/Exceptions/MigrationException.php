@@ -7,6 +7,7 @@ namespace Marko\Database\Exceptions;
 use Marko\Core\Exceptions\MarkoException;
 use Marko\Core\Exceptions\UnsupportedFeature;
 use Marko\Core\Exceptions\UnsupportedFeatureExceptionInterface;
+use Marko\Database\Migration\MigrationFailureOutcome;
 use Throwable;
 
 /**
@@ -16,24 +17,73 @@ class MigrationException extends MarkoException
 {
     /**
      * The original exception is kept as previous, and its suggestion replaces the generic one when it has one.
+     * When an outcome is given, the message says what the failure left in the database, and a migration that
+     * was rolled back gets a hint when it failed only because it ran inside a transaction.
      */
     public static function migrationFailed(
         string $migrationName,
         string $error,
         ?Throwable $previous = null,
+        ?MigrationFailureOutcome $outcome = null,
     ): self {
         $originalSuggestion = ($previous instanceof MarkoException || $previous instanceof UnsupportedFeatureExceptionInterface)
             ? $previous->getSuggestion()
             : '';
 
+        $hint = $outcome === MigrationFailureOutcome::RolledBack
+            ? self::transactionHint($previous)
+            : '';
+
         return new self(
-            message: "Migration '$migrationName' failed: $error",
+            message: "Migration '$migrationName' failed: $error" . self::outcomeSentence($outcome)
+                . ($hint !== '' ? " $hint" : ''),
             context: "While running migration '$migrationName'",
-            suggestion: $originalSuggestion !== ''
-                ? $originalSuggestion
-                : 'Fix the migration error and try again. You may need to manually revert partial changes.',
+            suggestion: match (true) {
+                $hint !== '' => $hint,
+                $originalSuggestion !== '' => $originalSuggestion,
+                default => 'Fix the migration error and try again. You may need to manually revert partial changes.',
+            },
             previous: $previous,
         );
+    }
+
+    /**
+     * What to do about a failure that only happens because the migration ran inside a transaction, found by
+     * the SQLSTATE of the query error in the chain.
+     */
+    private static function transactionHint(
+        ?Throwable $error,
+    ): string {
+        for ($current = $error; $current !== null; $current = $current->getPrevious()) {
+            if ($current instanceof QueryException) {
+                return match ($current->sqlState()) {
+                    '25001' => 'The database refuses this statement inside a transaction. Mark the migration '
+                        . '#[WithoutTransaction] to run it outside one.',
+                    '25P02' => 'An earlier statement in this migration failed and the migration caught that error '
+                        . 'and carried on, which PostgreSQL does not allow inside a transaction. Remove the catch '
+                        . '(use IF EXISTS or IF NOT EXISTS instead) or mark the migration #[WithoutTransaction].',
+                    default => '',
+                };
+            }
+        }
+
+        return '';
+    }
+
+    private static function outcomeSentence(
+        ?MigrationFailureOutcome $outcome,
+    ): string {
+        return match ($outcome) {
+            MigrationFailureOutcome::RolledBack => '. The migration was rolled back: nothing from it was applied and '
+                . 'it was not recorded. Fix it and run the migrations again.',
+            MigrationFailureOutcome::MayBePartlyApplied => '. The migration ran without a transaction, so statements '
+                . 'before the failing one stay applied. It was not recorded. Check the database and repair it before '
+                . 'running the migrations again.',
+            MigrationFailureOutcome::Unknown => '. The connection was lost while committing, so whether the migration '
+                . 'was applied is unknown. Check the schema and the migrations table before running the migrations '
+                . 'again.',
+            null => '',
+        };
     }
 
     public static function partialIndexNotSupported(

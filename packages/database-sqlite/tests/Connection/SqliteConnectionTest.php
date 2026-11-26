@@ -6,6 +6,7 @@ namespace Marko\Database\Sqlite\Tests\Connection;
 
 use FilesystemIterator;
 use Marko\Database\Config\DatabaseConfig;
+use Marko\Database\Connection\TransactionalDdlInterface;
 use Marko\Database\Sqlite\Exceptions\ConnectionException;
 use Marko\Database\Sqlite\Tests\Fixtures\CapturingSqliteConnection;
 use PDO;
@@ -68,6 +69,10 @@ describe('SqliteConnection setup', function (): void {
 
     afterEach(function (): void {
         sqliteRemoveDir($this->dir);
+    });
+
+    it('does not offer transactional DDL on the SQLite connection', function (): void {
+        expect(sqliteTestConnection(':memory:'))->not->toBeInstanceOf(TransactionalDdlInterface::class);
     });
 
     it('connects to the file at the configured path and to an in-memory database for :memory:', function (): void {

@@ -247,6 +247,47 @@ final class Helpers
     }
 
     /**
+     * Returns migration file content whose up() and down() each run one statement.
+     *
+     * @param bool $failAfterStatement Throw after the statement ran, so the migration fails halfway
+     * @param bool $withoutTransaction Mark the migration class with #[WithoutTransaction]
+     * @param bool $dataMigration Extend DataMigration instead of Migration
+     */
+    public static function getStatementMigrationContent(
+        string $upStatement,
+        string $downStatement = 'DROP TABLE nothing',
+        bool $failAfterStatement = false,
+        bool $withoutTransaction = false,
+        bool $dataMigration = false,
+    ): string {
+        $attribute = $withoutTransaction ? '#[WithoutTransaction] ' : '';
+        $parent = $dataMigration ? 'DataMigration' : 'Migration';
+        $failure = $failAfterStatement ? "throw new RuntimeException('boom');" : '';
+
+        return <<<PHP
+            <?php
+            declare(strict_types=1);
+            use Marko\Database\Attributes\WithoutTransaction;
+            use Marko\Database\Connection\ConnectionInterface;
+            use Marko\Database\Migration\\$parent;
+            return new {$attribute}class () extends $parent {
+                public function up(
+                    ConnectionInterface \$connection,
+                ): void {
+                    \$connection->execute('$upStatement');
+                    $failure
+                }
+                public function down(
+                    ConnectionInterface \$connection,
+                ): void {
+                    \$connection->execute('$downStatement');
+                    $failure
+                }
+            };
+            PHP;
+    }
+
+    /**
      * Writes standard test migration files (first, second, third) to a directory.
      *
      * @param string $path Directory to write migration files to
