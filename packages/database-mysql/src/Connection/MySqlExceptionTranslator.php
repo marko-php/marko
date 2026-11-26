@@ -8,6 +8,7 @@ use Marko\Database\Exceptions\CheckConstraintViolationException;
 use Marko\Database\Exceptions\DeadlockException;
 use Marko\Database\Exceptions\ForeignKeyConstraintViolationException;
 use Marko\Database\Exceptions\LockTimeoutException;
+use Marko\Database\Exceptions\LostConnectionException;
 use Marko\Database\Exceptions\NotNullConstraintViolationException;
 use Marko\Database\Exceptions\QueryException;
 use Marko\Database\Exceptions\SerializationFailureException;
@@ -31,6 +32,13 @@ use PDOException;
  *   innodb_snapshot_isolation=ON)              → SerializationFailureException
  * - 1205 lock wait timeout exceeded,
  *   3572 lock not acquired with NOWAIT         → LockTimeoutException
+ * - 2006 server has gone away, 2013 lost connection
+ *   during query, 2055 lost connection at a named
+ *   stage, 4031 disconnected for inactivity (MySQL
+ *   8.0.24+), 1927 connection killed (MariaDB),
+ *   1053 server shutdown in progress; with no error
+ *   number, a message saying the server has gone
+ *   away or the connection was lost              → LostConnectionException
  * - anything else                              → QueryException
  *
  * The constraint, table and column are parsed from the server message.
@@ -84,8 +92,36 @@ class MySqlExceptionTranslator
             1213 => DeadlockException::fromDriverError($exception, $sql, $bindings),
             1020 => SerializationFailureException::fromDriverError($exception, $sql, $bindings),
             1205, 3572 => LockTimeoutException::fromDriverError($exception, $sql, $bindings),
+            1053, 1927, 2006, 2013, 2055, 4031 => LostConnectionException::fromDriverError(
+                $exception,
+                $sql,
+                $bindings,
+            ),
+            null => $this->unclassified($exception, $sql, $bindings, $serverMessage),
             default => QueryException::fromDriverError($exception, $sql, $bindings),
         };
+    }
+
+    /**
+     * A PDOException with no usable error number: only the message can tell
+     * whether the server connection is gone.
+     *
+     * @param array<int|string, mixed> $bindings
+     */
+    private function unclassified(
+        PDOException $exception,
+        string $sql,
+        array $bindings,
+        string $serverMessage,
+    ): QueryException {
+        if (
+            stripos($serverMessage, 'server has gone away') !== false
+            || stripos($serverMessage, 'Lost connection to') !== false
+        ) {
+            return LostConnectionException::fromDriverError($exception, $sql, $bindings);
+        }
+
+        return QueryException::fromDriverError($exception, $sql, $bindings);
     }
 
     /**

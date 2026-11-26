@@ -9,11 +9,13 @@ use JsonException;
 use Marko\Core\Contracts\ResettableInterface;
 use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Connection\LostConnectionRecovery;
 use Marko\Database\Connection\PendingAfterCommitInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Connection\TransactionBackoff;
 use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\Connection\TransactionState;
+use Marko\Database\Exceptions\LostConnectionException;
 use Marko\Database\Exceptions\QueryException;
 use Marko\Database\Exceptions\TransactionConflictException;
 use Marko\Database\Exceptions\TransactionException;
@@ -36,6 +38,7 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface, Pend
         private readonly string $charset = 'utf8',
         private readonly PgSqlExceptionTranslator $exceptionTranslator = new PgSqlExceptionTranslator(),
         private readonly TransactionBackoff $transactionBackoff = new TransactionBackoff(),
+        private readonly LostConnectionRecovery $lostConnectionRecovery = new LostConnectionRecovery(),
     ) {
         $this->transactionState = new TransactionState();
     }
@@ -181,23 +184,52 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface, Pend
     }
 
     /**
+     * Forget the dead PDO without touching the transaction state: an open
+     * transaction stays open (and marked lost) until the caller rolls it back.
+     */
+    private function dropPdo(): void
+    {
+        $this->pdo = null;
+    }
+
+    /**
+     * A prepared statement lost the connection. Acts only when the statement
+     * was prepared on the PDO still in use, so a stale statement from an
+     * earlier connection never drops a healthy reconnected PDO or marks a
+     * newer transaction lost.
+     */
+    private function statementLostConnection(
+        PDO $preparedOn,
+    ): void {
+        if ($this->pdo === $preparedOn) {
+            $this->lostConnectionRecovery->connectionLost($this->dropPdo(...), $this->transactionState);
+        }
+    }
+
+    /**
      * @throws ConnectionException|QueryException
      */
     public function query(
         string $sql,
         array $bindings = [],
     ): array {
-        $this->ensureConnected();
+        return $this->lostConnectionRecovery->run(
+            function () use ($sql, $bindings): array {
+                $this->ensureConnected();
 
-        try {
-            $statement = $this->pdo->prepare($sql);
-            $this->bindValues($statement, $bindings);
-            $statement->execute();
-        } catch (PDOException $e) {
-            throw $this->exceptionTranslator->translate($e, $sql, $bindings);
-        }
+                try {
+                    $statement = $this->pdo->prepare($sql);
+                    $this->bindValues($statement, $bindings);
+                    $statement->execute();
+                } catch (PDOException $e) {
+                    throw $this->exceptionTranslator->translate($e, $sql, $bindings);
+                }
 
-        return $statement->fetchAll(PDO::FETCH_ASSOC);
+                return $statement->fetchAll(PDO::FETCH_ASSOC);
+            },
+            $this->dropPdo(...),
+            $this->transactionState,
+        );
     }
 
     /**
@@ -207,17 +239,23 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface, Pend
         string $sql,
         array $bindings = [],
     ): int {
-        $this->ensureConnected();
+        return $this->lostConnectionRecovery->run(
+            function () use ($sql, $bindings): int {
+                $this->ensureConnected();
 
-        try {
-            $statement = $this->pdo->prepare($sql);
-            $this->bindValues($statement, $bindings);
-            $statement->execute();
-        } catch (PDOException $e) {
-            throw $this->exceptionTranslator->translate($e, $sql, $bindings);
-        }
+                try {
+                    $statement = $this->pdo->prepare($sql);
+                    $this->bindValues($statement, $bindings);
+                    $statement->execute();
+                } catch (PDOException $e) {
+                    throw $this->exceptionTranslator->translate($e, $sql, $bindings);
+                }
 
-        return $statement->rowCount();
+                return $statement->rowCount();
+            },
+            $this->dropPdo(...),
+            $this->transactionState,
+        );
     }
 
     /**
@@ -226,15 +264,27 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface, Pend
     public function prepare(
         string $sql,
     ): StatementInterface {
-        $this->ensureConnected();
+        return $this->lostConnectionRecovery->run(
+            function () use ($sql): StatementInterface {
+                $this->ensureConnected();
 
-        try {
-            $pdoStatement = $this->pdo->prepare($sql);
-        } catch (PDOException $e) {
-            throw $this->exceptionTranslator->translate($e, $sql, []);
-        }
+                try {
+                    $pdoStatement = $this->pdo->prepare($sql);
+                } catch (PDOException $e) {
+                    throw $this->exceptionTranslator->translate($e, $sql, []);
+                }
 
-        return new PgSqlStatement($pdoStatement, $this->exceptionTranslator);
+                $preparedOn = $this->pdo;
+
+                return new PgSqlStatement(
+                    $pdoStatement,
+                    $this->exceptionTranslator,
+                    fn () => $this->statementLostConnection($preparedOn),
+                );
+            },
+            $this->dropPdo(...),
+            $this->transactionState,
+        );
     }
 
     /**
@@ -272,10 +322,14 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface, Pend
     }
 
     /**
-     * @throws ConnectionException
+     * @throws ConnectionException|LostConnectionException
      */
     public function lastInsertId(): int
     {
+        if ($this->transactionState->isLost()) {
+            throw LostConnectionException::transactionAlreadyLost();
+        }
+
         $this->ensureConnected();
 
         return (int) $this->pdo->lastInsertId();
@@ -299,28 +353,37 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface, Pend
 
     /**
      * Open a transaction, or a savepoint named marko_sp_{depth} when one is
-     * already open.
+     * already open. Outside a transaction a lost connection is retried once
+     * on a new connection. Inside one, a lost connection (or one already
+     * marked lost) throws LostConnectionException and no statement reaches a
+     * new connection until the caller rolls the transaction back.
      *
-     * @throws ConnectionException|QueryException
+     * @throws ConnectionException|QueryException|LostConnectionException
      */
     public function beginTransaction(): void
     {
-        $this->ensureConnected();
+        $this->lostConnectionRecovery->run(
+            function (): void {
+                $this->ensureConnected();
 
-        $level = $this->transactionState->level();
-        $statement = $level === 0 ? 'BEGIN' : 'SAVEPOINT ' . $this->savepointName($level);
+                $level = $this->transactionState->level();
+                $statement = $level === 0 ? 'BEGIN' : 'SAVEPOINT ' . $this->savepointName($level);
 
-        try {
-            if ($level === 0) {
-                $this->pdo->beginTransaction();
-            } else {
-                $this->pdo->exec($statement);
-            }
-        } catch (PDOException $e) {
-            throw $this->exceptionTranslator->translate($e, $statement, []);
-        }
+                try {
+                    if ($level === 0) {
+                        $this->pdo->beginTransaction();
+                    } else {
+                        $this->pdo->exec($statement);
+                    }
+                } catch (PDOException $e) {
+                    throw $this->exceptionTranslator->translate($e, $statement, []);
+                }
 
-        $this->transactionState->begin();
+                $this->transactionState->begin();
+            },
+            $this->dropPdo(...),
+            $this->transactionState,
+        );
     }
 
     /**
@@ -332,6 +395,10 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface, Pend
      * server left it open), the after-rollback callbacks run, and the COMMIT
      * error is rethrown, translated like any other statement error (so a
      * conflict detected at COMMIT is a TransactionConflictException).
+     *
+     * When the connection was lost, the level is closed without touching the
+     * dead connection and LostConnectionException is thrown: the outcome of a
+     * COMMIT that was in flight is unknown.
      *
      * @throws ConnectionException|TransactionException|QueryException|Throwable
      */
@@ -348,7 +415,11 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface, Pend
      *
      * When the server has already ended the transaction (MySQL does this on a
      * deadlock), there is nothing left to roll back: the level is closed as
-     * rolled back without sending a statement.
+     * rolled back without sending a statement. The same holds for a level
+     * marked lost (the connection is gone): nothing is sent and the connection
+     * is not reopened, so the next statement reconnects once every level is
+     * closed. A ROLLBACK that itself loses the connection closes the level the
+     * same way and does not throw.
      *
      * @throws ConnectionException|TransactionException|QueryException|Throwable
      */
@@ -358,6 +429,12 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface, Pend
 
         if ($level === 0) {
             throw TransactionException::notInTransaction();
+        }
+
+        if ($this->transactionState->isLost()) {
+            $this->transactionState->rollback();
+
+            return;
         }
 
         $this->ensureConnected();
@@ -372,9 +449,19 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface, Pend
                 }
             }
         } catch (Throwable $e) {
+            $translated = $e instanceof PDOException ? $this->exceptionTranslator->translate($e, $statement, []) : $e;
+
+            if ($translated instanceof LostConnectionException) {
+                // The server rolled the work back with the session, which is what the caller asked for.
+                $this->lostConnectionRecovery->connectionLost($this->dropPdo(...), $this->transactionState);
+                $this->transactionState->rollback();
+
+                return;
+            }
+
             $this->transactionState->discard();
 
-            throw $e instanceof PDOException ? $this->exceptionTranslator->translate($e, $statement, []) : $e;
+            throw $translated;
         }
 
         $this->transactionState->rollback();
@@ -473,28 +560,65 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface, Pend
             throw TransactionException::notInTransaction();
         }
 
-        $this->ensureConnected();
+        if ($this->transactionState->isLost()) {
+            $this->closeLevelAfterFailedCommit($level);
+
+            throw LostConnectionException::transactionAlreadyLost();
+        }
+
         $statement = $level === 1 ? 'COMMIT' : 'RELEASE SAVEPOINT ' . $this->savepointName($level - 1);
 
         try {
-            if ($level === 1) {
-                $this->pdo->commit();
-            } else {
-                $this->pdo->exec($statement);
-            }
+            $this->lostConnectionRecovery->run(
+                function () use ($level, $statement): void {
+                    $this->ensureConnected();
+
+                    try {
+                        if ($level === 1) {
+                            $this->pdo->commit();
+                        } else {
+                            $this->pdo->exec($statement);
+                        }
+                    } catch (PDOException $e) {
+                        throw $this->exceptionTranslator->translate($e, $statement, []);
+                    }
+                },
+                $this->dropPdo(...),
+                $this->transactionState,
+            );
+        } catch (LostConnectionException $e) {
+            $this->closeLevelAfterFailedCommit($level);
+
+            throw $e;
         } catch (Throwable $e) {
-            if ($level === 1) {
-                if ($this->pdo->inTransaction()) {
-                    $this->pdo->rollBack();
-                }
-
-                $this->transactionState->rollback();
-            } else {
-                $this->transactionState->discard();
+            if (
+                $level === 1
+                && $this->pdo?->inTransaction()
+            ) {
+                $this->pdo->rollBack();
             }
 
-            throw $e instanceof PDOException ? $this->exceptionTranslator->translate($e, $statement, []) : $e;
+            $this->closeLevelAfterFailedCommit($level);
+
+            throw $e;
         }
+    }
+
+    /**
+     * Close the level whose COMMIT or RELEASE SAVEPOINT did not succeed
+     * without touching the PDO: the outermost level rolls back (running its
+     * after-rollback callbacks), a nested level is dropped.
+     */
+    private function closeLevelAfterFailedCommit(
+        int $level,
+    ): void {
+        if ($level === 1) {
+            $this->transactionState->rollback();
+
+            return;
+        }
+
+        $this->transactionState->discard();
     }
 
     /**
@@ -540,7 +664,11 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface, Pend
      * commit()/rollback(), so a long-running worker never carries it into
      * the next request. Pending callbacks are dropped without running: they
      * belong to the abandoned request. Never opens a connection: an
-     * unconnected instance has nothing to roll back.
+     * unconnected instance has nothing to roll back. When the server is gone
+     * the PDO is dropped instead (the transaction went with the session) and
+     * the next statement reconnects.
+     *
+     * @throws QueryException
      */
     #[Override]
     public function reset(): void
@@ -548,10 +676,23 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface, Pend
         $this->transactionState->clear();
 
         if (
-            $this->pdo !== null
-            && $this->pdo->inTransaction()
+            $this->pdo === null
+            || !$this->pdo->inTransaction()
         ) {
+            return;
+        }
+
+        try {
             $this->pdo->rollBack();
+        } catch (PDOException $e) {
+            $translated = $this->exceptionTranslator->translate($e, 'ROLLBACK', []);
+
+            if (!$translated instanceof LostConnectionException) {
+                throw $translated;
+            }
+
+            // The server is gone and took the transaction with it: nothing is left to roll back.
+            $this->dropPdo();
         }
     }
 
