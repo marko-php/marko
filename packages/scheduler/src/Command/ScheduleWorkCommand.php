@@ -10,15 +10,19 @@ use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
+use Marko\Core\RequestStateResetter;
 use Marko\Scheduler\Exceptions\SchedulerException;
 use Marko\Scheduler\ScheduleRunner;
 use Psr\Clock\ClockInterface;
+use Throwable;
 
 /**
  * Foreground scheduler loop for local development and containers without a cron daemon.
  *
  * Sleeps until the top of each minute, then runs the tasks due at that minute. Tasks run
  * inline and sequentially, so a run that overruns the minute waits for the next boundary.
+ * Resettable services are reset before each run, so a run never starts inside state the
+ * previous one left behind. A reset that throws ends the command before that minute's tasks run.
  * Stops gracefully on SIGINT/SIGTERM when the pcntl extension is available.
  *
  * @noinspection PhpUnused
@@ -34,11 +38,12 @@ class ScheduleWorkCommand implements CommandInterface
     public function __construct(
         private readonly ScheduleRunner $scheduleRunner,
         private readonly ClockInterface $clock,
+        private readonly RequestStateResetter $requestStateResetter,
         private readonly ?Closure $sleeper = null,
     ) {}
 
     /**
-     * @throws SchedulerException
+     * @throws SchedulerException|Throwable
      */
     public function execute(
         Input $input,
@@ -61,6 +66,7 @@ class ScheduleWorkCommand implements CommandInterface
                     continue;
                 }
 
+                $this->requestStateResetter->reset();
                 $this->scheduleRunner->run($nextRun, $output);
                 $nextRun = $this->startOfNextMinute($this->clock->now());
             }

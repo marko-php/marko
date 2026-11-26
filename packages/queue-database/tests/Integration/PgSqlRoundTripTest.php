@@ -6,6 +6,7 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 use Marko\Core\Container\Container;
 use Marko\Core\Path\ProjectPaths;
+use Marko\Core\RequestStateResetter;
 use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Config\DatabaseTimezoneConfig;
 use Marko\Database\PgSql\Connection\PgSqlConnection;
@@ -284,6 +285,7 @@ describe('database queue on PostgreSQL', function (): void {
             ])), new FakeClock()),
             clock: new FakeClock(),
             logger: new FakeLogger(),
+            requestStateResetter: new RequestStateResetter(new Container()),
         );
         $worker->work(once: true);
 

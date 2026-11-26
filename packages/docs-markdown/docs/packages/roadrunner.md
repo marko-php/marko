@@ -88,6 +88,8 @@ The reset runs **before** each request, not after: a request that throws, or a w
 
 `ReadWriteConnection` (`marko/database-readwrite`) also implements `ResettableInterface` for the same underlying reason, covered in more detail in [`marko/database-readwrite`'s Long-Running Processes section](/docs/packages/database-readwrite/#long-running-processes) — sticky-write routing state and any transaction left open by a request that threw before `commit()`/`rollback()` are exactly the kind of per-request state this section describes, just for a database connection rather than a session.
 
+The same reset runs outside HTTP: `queue:work` resets before each job ([State Reset Between Jobs](/docs/packages/queue/#state-reset-between-jobs)) and `schedule:work` before each scheduler run, so these singletons need no extra handling for long-running queue and scheduler processes.
+
 This driver is the only place in the monorepo that runs `packages/*/src` code under PHPStan level 6 outside `marko/core` — deliberately, since a type error here is a plausible path to a cross-user security bug rather than an ordinary bug.
 
 Some state lives for the whole worker on purpose. Keep these in mind when extending the framework:

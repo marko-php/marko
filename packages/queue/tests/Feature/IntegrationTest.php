@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
+use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
+use Marko\Core\RequestStateResetter;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\AsyncObserverJob;
 use Marko\Queue\Command\WorkCommand;
@@ -313,6 +315,7 @@ describe('Integration Tests', function (): void {
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
             logger: new FakeLogger(),
+            requestStateResetter: new RequestStateResetter(new Container()),
         );
 
         // 1. Push the job to the queue
@@ -524,6 +527,7 @@ describe('Integration Tests', function (): void {
                 new RetryPolicy($config, new FakeClock()),
                 clock: new FakeClock(),
                 logger: new FakeLogger(),
+                requestStateResetter: new RequestStateResetter(new Container()),
             );
             $worker->work(once: true);
 
@@ -620,6 +624,7 @@ describe('Integration Tests', function (): void {
                 new RetryPolicy($config, new FakeClock()),
                 clock: new FakeClock(),
                 logger: new FakeLogger(),
+                requestStateResetter: new RequestStateResetter(new Container()),
             );
             $worker->work(once: true);
 
@@ -671,6 +676,7 @@ describe('Integration Tests', function (): void {
             processControl: $processControl,
             clock: new FakeClock(),
             logger: new FakeLogger(),
+            requestStateResetter: new RequestStateResetter(new Container()),
         );
 
         // Push a job to the queue
@@ -768,6 +774,7 @@ describe('Integration Tests', function (): void {
             new RetryPolicy($queueConfig, new FakeClock()),
             clock: new FakeClock(),
             logger: new FakeLogger(),
+            requestStateResetter: new RequestStateResetter(new Container()),
         );
 
         expect($worker)->toBeInstanceOf(WorkerInterface::class);

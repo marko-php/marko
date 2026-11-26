@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Core\Container\Container;
+use Marko\Core\RequestStateResetter;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Log\LogLevel;
 use Marko\Queue\Exceptions\FailedJobNotStoredException;
@@ -224,6 +225,7 @@ function createNotStoredWorker(
         new RetryPolicy($config, new FakeClock()),
         new FakeClock(),
         $logger,
+        new RequestStateResetter(new Container()),
         $processControl,
     );
 

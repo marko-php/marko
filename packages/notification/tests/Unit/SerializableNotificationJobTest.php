@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
+use Marko\Core\RequestStateResetter;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Mail\Message;
 use Marko\Notification\Contracts\ChannelInterface;
@@ -402,6 +404,7 @@ describe('SendNotificationJob serialization', function (): void {
                 new RetryPolicy($queueConfig, new FakeClock()),
                 clock: new FakeClock(),
                 logger: new FakeLogger(),
+                requestStateResetter: new RequestStateResetter(new Container()),
             );
             $worker->work(once: true);
 
@@ -569,6 +572,7 @@ describe('SendNotificationJob final failure', function (): void {
                 new RetryPolicy(createNotificationTestQueueConfig(), new FakeClock()),
                 clock: new FakeClock(),
                 logger: new FakeLogger(),
+                requestStateResetter: new RequestStateResetter(new Container()),
             );
             $stopJob->worker = $worker;
 

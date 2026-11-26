@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Core\Container\Container;
+use Marko\Core\RequestStateResetter;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\Event\JobFailedEvent;
 use Marko\Queue\Exceptions\JobAttemptsExhaustedException;
@@ -180,6 +181,7 @@ function createWorkerRetryWorker(
         new RetryPolicy($config, $clock),
         clock: new FakeClock(),
         logger: new FakeLogger(),
+        requestStateResetter: new RequestStateResetter(new Container()),
     );
 
     return ['worker' => $worker, 'failed' => $failed, 'events' => $events];

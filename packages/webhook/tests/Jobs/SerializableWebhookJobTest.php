@@ -6,7 +6,9 @@ namespace Marko\Webhook\Tests\Jobs;
 
 use Closure;
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
+use Marko\Core\RequestStateResetter;
 use Marko\Database\Config\DatabaseTimezoneConfig;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Encryption\Contracts\EncryptorInterface;
@@ -355,6 +357,7 @@ describe('DispatchWebhookJob final failure', function (): void {
                 new RetryPolicy(SerializableWebhookJobTestHelpers::queueConfig(), new FakeClock()),
                 clock: new FakeClock(),
                 logger: new FakeLogger(),
+                requestStateResetter: new RequestStateResetter(new Container()),
             );
             $stopJob->worker = $worker;
 
@@ -636,6 +639,7 @@ describe('DispatchWebhookJob serialization', function (): void {
                 new RetryPolicy($queueConfig, new FakeClock()),
                 clock: new FakeClock(),
                 logger: new FakeLogger(),
+                requestStateResetter: new RequestStateResetter(new Container()),
             );
             $worker->work(once: true);
 
@@ -749,6 +753,7 @@ describe('DispatchWebhookJob serialization', function (): void {
             new RetryPolicy($queueConfig, new FakeClock()),
             clock: new FakeClock(),
             logger: new FakeLogger(),
+            requestStateResetter: new RequestStateResetter(new Container()),
         );
         $worker->work(once: true);
 
