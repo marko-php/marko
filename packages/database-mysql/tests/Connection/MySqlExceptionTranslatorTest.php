@@ -7,6 +7,7 @@ use Marko\Database\Exceptions\ConstraintViolationException;
 use Marko\Database\Exceptions\DeadlockException;
 use Marko\Database\Exceptions\ForeignKeyConstraintViolationException;
 use Marko\Database\Exceptions\LockTimeoutException;
+use Marko\Database\Exceptions\LostConnectionException;
 use Marko\Database\Exceptions\NotNullConstraintViolationException;
 use Marko\Database\Exceptions\QueryException;
 use Marko\Database\Exceptions\SerializationFailureException;
@@ -279,5 +280,88 @@ describe('MySqlExceptionTranslator', function (): void {
         $exception = new MySqlExceptionTranslator()->translate($pdoException, 'UPDATE accounts SET n = ?', [1]);
 
         expect($exception)->toBeInstanceOf(DeadlockException::class);
+    });
+
+    it(
+        'translates error 2006 server has gone away to a LostConnectionException and keeps a syntax error that mentions gone away as a plain QueryException',
+        function (): void {
+            $lost = mysqlDriverError('HY000', 2006, 'MySQL server has gone away');
+            $syntax = mysqlDriverError(
+                '42000',
+                1064,
+                "You have an error in your SQL syntax near 'server has gone away'",
+            );
+
+            $lostException = new MySqlExceptionTranslator()->translate($lost, 'SELECT 1', []);
+            $syntaxException = new MySqlExceptionTranslator()->translate($syntax, 'SELEC 1', []);
+
+            expect($lostException)->toBeInstanceOf(LostConnectionException::class)
+                ->and($lostException->getPrevious())->toBe($lost)
+                ->and($syntaxException)->toBeInstanceOf(QueryException::class)
+                ->not->toBeInstanceOf(LostConnectionException::class);
+        },
+    );
+
+    it(
+        'translates error 2013 lost connection during query to a LostConnectionException and keeps error 1317 query interrupted as a plain QueryException',
+        function (): void {
+            $lost = mysqlDriverError('HY000', 2013, 'Lost connection to MySQL server during query');
+            $interrupted = mysqlDriverError('70100', 1317, 'Query execution was interrupted');
+
+            $lostException = new MySqlExceptionTranslator()->translate($lost, 'SELECT SLEEP(10)', []);
+            $interruptedException = new MySqlExceptionTranslator()->translate($interrupted, 'SELECT SLEEP(10)', []);
+
+            expect($lostException)->toBeInstanceOf(LostConnectionException::class)
+                ->and($interruptedException)->toBeInstanceOf(QueryException::class)
+                ->not->toBeInstanceOf(LostConnectionException::class);
+        },
+    );
+
+    it(
+        'translates error 4031 inactivity disconnect and 1053 server shutdown to a LostConnectionException',
+        function (): void {
+            $inactive = mysqlDriverError(
+                'HY000',
+                4031,
+                'The client was disconnected by the server because of inactivity',
+            );
+            $shutdown = mysqlDriverError('08S01', 1053, 'Server shutdown in progress');
+
+            expect(new MySqlExceptionTranslator()->translate($inactive, 'SELECT 1', []))
+                ->toBeInstanceOf(LostConnectionException::class)
+                ->and(new MySqlExceptionTranslator()->translate($shutdown, 'SELECT 1', []))
+                ->toBeInstanceOf(LostConnectionException::class);
+        },
+    );
+
+    it('translates MariaDB error 1927 connection was killed to a LostConnectionException', function (): void {
+        $killed = mysqlDriverError('70100', 1927, 'Connection was killed');
+
+        expect(new MySqlExceptionTranslator()->translate($killed, 'SELECT 1', []))
+            ->toBeInstanceOf(LostConnectionException::class);
+    });
+
+    it('translates a gone away message without a driver code to a LostConnectionException', function (): void {
+        $lost = new PDOException('MySQL server has gone away');
+        $lostToServer = new PDOException('Lost connection to server');
+        $other = new PDOException('Something else broke');
+
+        expect(new MySqlExceptionTranslator()->translate($lost, 'SELECT 1', []))
+            ->toBeInstanceOf(LostConnectionException::class)
+            ->and(new MySqlExceptionTranslator()->translate($lostToServer, 'SELECT 1', []))
+            ->toBeInstanceOf(LostConnectionException::class)
+            ->and(new MySqlExceptionTranslator()->translate($other, 'SELECT 1', []))
+            ->not->toBeInstanceOf(LostConnectionException::class);
+    });
+
+    it('translates error 2055 lost connection at a named stage to a LostConnectionException', function (): void {
+        $lost = mysqlDriverError(
+            'HY000',
+            2055,
+            "Lost connection to MySQL server at 'reading initial communication packet'",
+        );
+
+        expect(new MySqlExceptionTranslator()->translate($lost, 'SELECT 1', []))
+            ->toBeInstanceOf(LostConnectionException::class);
     });
 });

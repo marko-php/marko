@@ -20,6 +20,11 @@ namespace Marko\Database\Connection;
  * Callbacks run after the level has been removed, so a callback that opens
  * a new transaction starts from a clean state. An exception thrown by a
  * callback propagates and the remaining callbacks for that level do not run.
+ *
+ * A lost marker records that the connection under the open transaction was
+ * lost. It is only set while a level is open and clears itself once the last
+ * level is closed (commit, rollback, discard or clear), so the caller must
+ * close every level before the connection is used again.
  */
 class TransactionState
 {
@@ -28,9 +33,28 @@ class TransactionState
      */
     private array $levels = [];
 
+    private bool $lost = false;
+
     public function level(): int
     {
         return count($this->levels);
+    }
+
+    /**
+     * Record that the connection under the open transaction was lost.
+     */
+    public function markLost(): void
+    {
+        if ($this->levels === []) {
+            return;
+        }
+
+        $this->lost = true;
+    }
+
+    public function isLost(): bool
+    {
+        return $this->lost;
     }
 
     public function begin(): void
@@ -75,6 +99,7 @@ class TransactionState
     public function commit(): void
     {
         $closed = array_pop($this->levels);
+        $this->clearLostWhenIdle();
 
         if ($closed === null) {
             return;
@@ -99,6 +124,7 @@ class TransactionState
     public function rollback(): void
     {
         $closed = array_pop($this->levels);
+        $this->clearLostWhenIdle();
 
         if ($closed === null) {
             return;
@@ -143,6 +169,7 @@ class TransactionState
     public function discard(): void
     {
         array_pop($this->levels);
+        $this->clearLostWhenIdle();
     }
 
     /**
@@ -151,5 +178,13 @@ class TransactionState
     public function clear(): void
     {
         $this->levels = [];
+        $this->lost = false;
+    }
+
+    private function clearLostWhenIdle(): void
+    {
+        if ($this->levels === []) {
+            $this->lost = false;
+        }
     }
 }

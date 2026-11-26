@@ -281,4 +281,66 @@ describe('TransactionState', function (): void {
 
         expect($ran)->toBeTrue();
     });
+
+    it('marks an open transaction as lost', function (): void {
+        $state = new TransactionState();
+
+        $state->begin();
+        $state->markLost();
+
+        expect($state->isLost())->toBeTrue()
+            ->and($state->level())->toBe(1);
+    });
+
+    it('ignores markLost when no transaction is open', function (): void {
+        $state = new TransactionState();
+
+        $state->markLost();
+
+        expect($state->isLost())->toBeFalse();
+    });
+
+    it('keeps the lost marker while outer levels remain open', function (): void {
+        $state = new TransactionState();
+
+        $state->begin();
+        $state->begin();
+        $state->begin();
+        $state->markLost();
+        $state->rollback();
+        $afterRollback = $state->isLost();
+        $state->discard();
+        $afterDiscard = $state->isLost();
+        $state->commit();
+
+        expect($afterRollback)->toBeTrue()
+            ->and($afterDiscard)->toBeTrue()
+            ->and($state->level())->toBe(0);
+    });
+
+    it('clears the lost marker when the last level is rolled back, discarded or cleared', function (): void {
+        $state = new TransactionState();
+        $cleared = [];
+
+        $state->begin();
+        $state->markLost();
+        $state->rollback();
+        $cleared[] = $state->isLost();
+
+        $state->begin();
+        $state->markLost();
+        $state->discard();
+        $cleared[] = $state->isLost();
+
+        $state->begin();
+        $state->begin();
+        $state->markLost();
+        $state->clear();
+        $cleared[] = $state->isLost();
+
+        $state->begin();
+
+        expect($cleared)->toBe([false, false, false])
+            ->and($state->isLost())->toBeFalse();
+    });
 });

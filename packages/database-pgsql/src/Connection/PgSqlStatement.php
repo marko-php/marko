@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Marko\Database\PgSql\Connection;
 
+use Closure;
 use Marko\Database\Connection\StatementInterface;
+use Marko\Database\Exceptions\LostConnectionException;
 use Marko\Database\Exceptions\QueryException;
 use PDO;
 use PDOException;
@@ -15,6 +17,7 @@ readonly class PgSqlStatement implements StatementInterface
     public function __construct(
         private PDOStatement $statement,
         private PgSqlExceptionTranslator $exceptionTranslator = new PgSqlExceptionTranslator(),
+        private ?Closure $connectionLost = null,
     ) {}
 
     /**
@@ -26,7 +29,16 @@ readonly class PgSqlStatement implements StatementInterface
         try {
             return $this->statement->execute($bindings);
         } catch (PDOException $e) {
-            throw $this->exceptionTranslator->translate($e, $this->statement->queryString, $bindings);
+            $translated = $this->exceptionTranslator->translate($e, $this->statement->queryString, $bindings);
+
+            if (
+                $translated instanceof LostConnectionException
+                && $this->connectionLost !== null
+            ) {
+                ($this->connectionLost)();
+            }
+
+            throw $translated;
         }
     }
 

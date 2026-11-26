@@ -7,6 +7,7 @@ use Marko\Database\Exceptions\ConstraintViolationException;
 use Marko\Database\Exceptions\DeadlockException;
 use Marko\Database\Exceptions\ForeignKeyConstraintViolationException;
 use Marko\Database\Exceptions\LockTimeoutException;
+use Marko\Database\Exceptions\LostConnectionException;
 use Marko\Database\Exceptions\NotNullConstraintViolationException;
 use Marko\Database\Exceptions\QueryException;
 use Marko\Database\Exceptions\SerializationFailureException;
@@ -187,4 +188,121 @@ describe('PgSqlExceptionTranslator', function (): void {
         expect($exception)->toBeInstanceOf(LockTimeoutException::class)
             ->and($exception->sqlState())->toBe('55P03');
     });
+
+    it('translates sqlstate 08006 and every other class 08 sqlstate to a LostConnectionException', function (): void {
+        $translator = new PgSqlExceptionTranslator();
+
+        foreach (['08000', '08001', '08003', '08004', '08006', '08007', '08P01'] as $sqlState) {
+            $exception = $translator->translate(
+                pgsqlDriverError($sqlState, 'connection failure'),
+                'SELECT 1',
+                [],
+            );
+
+            expect($exception)->toBeInstanceOf(LostConnectionException::class)
+                ->and($exception->sqlState())->toBe($sqlState);
+        }
+
+        $unrelated = $translator->translate(pgsqlDriverError('42P01', 'relation does not exist'), 'SELECT 1', []);
+
+        expect($unrelated)->not->toBeInstanceOf(LostConnectionException::class);
+    });
+
+    it(
+        'translates 57P01 admin shutdown to a LostConnectionException and keeps 57014 query canceled as a plain QueryException',
+        function (): void {
+            $translator = new PgSqlExceptionTranslator();
+
+            $shutdown = $translator->translate(
+                pgsqlDriverError('57P01', 'FATAL:  terminating connection due to administrator command'),
+                'SELECT 1',
+                [],
+            );
+            $canceled = $translator->translate(
+                pgsqlDriverError('57014', 'ERROR:  canceling statement due to statement timeout'),
+                'SELECT pg_sleep(10)',
+                [],
+            );
+
+            expect($shutdown)->toBeInstanceOf(LostConnectionException::class)
+                ->and($shutdown->sqlState())->toBe('57P01')
+                ->and($canceled)->not->toBeInstanceOf(LostConnectionException::class)
+                ->toBeInstanceOf(QueryException::class)
+                ->and($canceled->sqlState())->toBe('57014');
+        },
+    );
+
+    it('translates the idle session and idle in transaction timeouts to a LostConnectionException', function (): void {
+        $translator = new PgSqlExceptionTranslator();
+
+        $cases = [
+            ['57P02', 'FATAL:  the database system is in recovery mode'],
+            ['57P03', 'FATAL:  the database system is starting up'],
+            ['57P05', 'FATAL:  terminating connection due to idle-session timeout'],
+            ['25P03', 'FATAL:  terminating connection due to idle-in-transaction timeout'],
+        ];
+
+        foreach ($cases as [$sqlState, $serverMessage]) {
+            $exception = $translator->translate(pgsqlDriverError($sqlState, $serverMessage), 'SELECT 1', []);
+
+            expect($exception)->toBeInstanceOf(LostConnectionException::class)
+                ->and($exception->sqlState())->toBe($sqlState);
+        }
+
+        $other = $translator->translate(
+            pgsqlDriverError('25P02', 'ERROR:  current transaction is aborted'),
+            'SELECT 1',
+            [],
+        );
+
+        expect($other)->not->toBeInstanceOf(LostConnectionException::class);
+    });
+
+    it(
+        'translates HY000 no connection to the server to a LostConnectionException and keeps an HY000 error with an unrelated message as a plain QueryException',
+        function (): void {
+            $translator = new PgSqlExceptionTranslator();
+
+            $lost = $translator->translate(pgsqlDriverError('HY000', 'no connection to the server'), 'SELECT 1', []);
+            $unrelated = $translator->translate(
+                pgsqlDriverError('HY000', 'could not determine data type'),
+                'SELECT 1',
+                [],
+            );
+
+            expect($lost)->toBeInstanceOf(LostConnectionException::class)
+                ->and($lost->sqlState())->toBe('HY000')
+                ->and($unrelated)->not->toBeInstanceOf(LostConnectionException::class)
+                ->toBeInstanceOf(QueryException::class);
+        },
+    );
+
+    it(
+        'translates HY000 server closed the connection unexpectedly to a LostConnectionException and keeps a syntax error that mentions the same phrase as a plain QueryException',
+        function (): void {
+            $translator = new PgSqlExceptionTranslator();
+
+            $lost = $translator->translate(
+                pgsqlDriverError(
+                    'HY000',
+                    "FATAL:  terminating connection due to administrator command\n"
+                    . 'server closed the connection unexpectedly',
+                ),
+                'SELECT 1',
+                [],
+            );
+            $syntaxError = $translator->translate(
+                pgsqlDriverError(
+                    '42601',
+                    'ERROR:  syntax error at or near "server closed the connection unexpectedly"',
+                ),
+                "SELECT 'server closed the connection unexpectedly' FROM",
+                [],
+            );
+
+            expect($lost)->toBeInstanceOf(LostConnectionException::class)
+                ->and($syntaxError)->not->toBeInstanceOf(LostConnectionException::class)
+                ->and($syntaxError->sqlState())->toBe('42601');
+        },
+    );
 });

@@ -1378,6 +1378,7 @@ When the database rejects a statement, the driver turns the `PDOException` into 
 | `NotNullConstraintViolationException` | `NULL` (or no value) is written to a `NOT NULL` column | `23502` | `1048`, `1364` | --- |
 | `CheckConstraintViolationException` | A row fails a `CHECK` constraint | `23514` | `3819` (MySQL), `4025` (MariaDB) | --- |
 | `DeadlockException`, `SerializationFailureException`, `LockTimeoutException` | A transaction conflict or lock timeout: see [Concurrency Errors and Retries](#concurrency-errors-and-retries) | `40P01`, `40001`, `55P03` | `1213`, `1020`, `1205`, `3572` | --- |
+| `LostConnectionException` | The connection to the server is gone: see [Lost Connections](#lost-connections) | `08xxx`, `57P01`, `57P02`, `57P03`, `57P05`, `25P03`, or `HY000` with a libpq "connection is gone" message | `2006`, `2013`, `2055`, `4031`, `1927`, `1053` | --- |
 | `QueryException` | Any other driver error | anything else | anything else | --- |
 
 PostgreSQL is matched on the SQLSTATE and MySQL on the server error number, because MySQL reports every integrity violation as SQLSTATE `23000`.
@@ -1395,7 +1396,8 @@ DatabaseException
     ├── TransactionConflictException    isRetryable() (abstract)
     │   ├── DeadlockException
     │   └── SerializationFailureException
-    └── LockTimeoutException
+    ├── LockTimeoutException
+    └── LostConnectionException
 ```
 
 The original `PDOException` is always available from `getPrevious()`. `constraintName()`, `table()` and `column()` are parsed from the driver message and return `null` when the driver does not report them. `table()` is the table that owns the constraint. For a foreign key violation that is the referencing (child) table, whether the statement inserted the child or deleted the parent. For a unique violation on PostgreSQL, `column()` is the indexed column list as the server reports it, for example `email` or `tenant_id, email`.
@@ -1575,6 +1577,57 @@ These exceptions do not implement `HttpExceptionInterface`. A conflict that is s
 ### Upgrading `TransactionInterface` Implementations
 
 `TransactionInterface::transaction()` is now `transaction(callable $callback, int $attempts = 1, int|Closure|null $backoff = null): mixed`. A class that implements the interface itself (a custom driver, decorator or test fake) must add the new parameters, or PHP refuses to load it. Decorators should pass `$attempts` and `$backoff` on to the connection they wrap, as `ReadWriteConnection` does.
+
+## Lost Connections
+
+A long-lived process (a queue worker, the scheduler) can outlive its database session: the server restarts, fails over, or drops an idle connection. `marko/database-pgsql` and `marko/database-mysql` recover from this without a process restart. The drivers detect the loss from the driver error (the codes are in the [exception table](#query-and-constraint-exceptions)) and raise `Marko\Database\Exceptions\LostConnectionException`, a `QueryException`. SQLite is unaffected, because it has no server session.
+
+### Outside a Transaction
+
+When `query()`, `execute()`, `prepare()` or the outermost `beginTransaction()` finds the connection gone, the driver drops it, reconnects and runs the statement once more. If the connection is lost a second time, `LostConnectionException` is thrown.
+
+Retrying has one trade-off. If the reply to a statement was lost, the statement may already have run on the server before the retry, so a retried statement can run twice.
+
+### Inside a Transaction
+
+Nothing is retried, because the transaction ended on the server with the session. The statement that found the loss throws `LostConnectionException`, and the connection is marked lost. Until you roll back every open level, each further statement, `commit()`, nested `beginTransaction()` and `lastInsertId()` throws `LostConnectionException` without sending any SQL. `rollback()` sends no SQL on a lost transaction. `transaction()` rolls back by itself when the callback throws. Once every level is closed, the next statement reconnects.
+
+```php
+use Marko\Database\Connection\TransactionInterface;
+use Marko\Database\Exceptions\LostConnectionException;
+
+class LedgerService
+{
+    public function __construct(
+        private TransactionInterface $transaction,
+    ) {}
+
+    public function post(
+        int $accountId,
+        int $amount,
+    ): void {
+        try {
+            $this->transaction->transaction(function () use ($accountId, $amount): void {
+                // ...
+            });
+        } catch (LostConnectionException $e) {
+            // The transaction is rolled back; run the whole unit of work again.
+        }
+    }
+}
+```
+
+Retry the whole unit of work from the start. If the lost statement was `COMMIT`, its outcome is unknown: the commit may or may not have completed, so check before retrying.
+
+### Prepared Statements and `reset()`
+
+A statement prepared before the loss throws `LostConnectionException` from `execute()`. Prepare it again.
+
+`reset()` on a connection whose server is gone does not throw: the connection is dropped and the next statement reconnects.
+
+:::note
+`isConnected()` only reports whether the driver holds a connection object. It is not a liveness check, and there is no `ping()`.
+:::
 
 ## Bulk Insert
 

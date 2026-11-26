@@ -8,6 +8,7 @@ use Marko\Database\Exceptions\CheckConstraintViolationException;
 use Marko\Database\Exceptions\DeadlockException;
 use Marko\Database\Exceptions\ForeignKeyConstraintViolationException;
 use Marko\Database\Exceptions\LockTimeoutException;
+use Marko\Database\Exceptions\LostConnectionException;
 use Marko\Database\Exceptions\NotNullConstraintViolationException;
 use Marko\Database\Exceptions\QueryException;
 use Marko\Database\Exceptions\SerializationFailureException;
@@ -25,7 +26,11 @@ use PDOException;
  * - 40P01 deadlock_detected     → DeadlockException
  * - 40001 serialization_failure → SerializationFailureException
  * - 55P03 lock_not_available    → LockTimeoutException (lock_timeout, NOWAIT)
- * - anything else               → QueryException
+ * - 08xxx connection_exception, 57P01/57P02/57P03 shutdown and startup,
+ *   57P05 and 25P03 idle timeouts, and HY000 with a libpq "connection is
+ *   gone" message                → LostConnectionException
+ * - anything else               → QueryException (57014 query_canceled
+ *   included: the session is still alive)
  *
  * The constraint, table and column are parsed from the server message.
  * table() is the table the constraint is defined on. Values in the DETAIL
@@ -34,6 +39,26 @@ use PDOException;
 class PgSqlExceptionTranslator
 {
     /**
+     * SQLSTATEs outside class 08 where the server has ended the session.
+     */
+    private const array LOST_CONNECTION_SQLSTATES = ['57P01', '57P02', '57P03', '57P05', '25P03'];
+
+    /**
+     * Server messages (matched case-insensitively) that mark an HY000 error
+     * as a lost connection.
+     */
+    private const array LOST_CONNECTION_MESSAGES = [
+        'no connection to the server',
+        'server closed the connection unexpectedly',
+        'terminating connection due to',
+        'SSL connection has been closed unexpectedly',
+        'SSL SYSCALL error',
+        'could not receive data from server',
+        'could not send data to server',
+        'connection to server',
+    ];
+
+    /**
      * @param array<int|string, mixed> $bindings
      */
     public function translate(
@@ -41,6 +66,10 @@ class PgSqlExceptionTranslator
         string $sql,
         array $bindings,
     ): QueryException {
+        if ($this->isLostConnection($exception)) {
+            return LostConnectionException::fromDriverError($exception, $sql, $bindings);
+        }
+
         $serverMessage = $this->serverMessage($exception);
         $constraintName = $this->match('/constraint "([^"]+)"/', $serverMessage);
         $table = $this->constraintTable($serverMessage) ?? $this->tableFromSql($sql);
@@ -80,6 +109,32 @@ class PgSqlExceptionTranslator
             '55P03' => LockTimeoutException::fromDriverError($exception, $sql, $bindings),
             default => QueryException::fromDriverError($exception, $sql, $bindings),
         };
+    }
+
+    private function isLostConnection(
+        PDOException $exception,
+    ): bool {
+        $sqlState = QueryException::sqlStateOf($exception) ?? '';
+
+        return str_starts_with($sqlState, '08')
+            || in_array($sqlState, self::LOST_CONNECTION_SQLSTATES, true)
+            || (
+                $sqlState === 'HY000'
+                && $this->mentionsLostConnection($this->serverMessage($exception))
+            );
+    }
+
+    /**
+     * pdo_pgsql reports a dead socket as HY000 with libpq's own wording,
+     * because libpq has no result to read a SQLSTATE from.
+     */
+    private function mentionsLostConnection(
+        string $serverMessage,
+    ): bool {
+        return array_any(
+            self::LOST_CONNECTION_MESSAGES,
+            fn (string $fragment): bool => stripos($serverMessage, $fragment) !== false,
+        );
     }
 
     private function serverMessage(

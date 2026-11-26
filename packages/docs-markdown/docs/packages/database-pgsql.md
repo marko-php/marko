@@ -143,6 +143,8 @@ $connection->transaction(function () use ($connection): void {
 
 See [Concurrency Errors and Retries](/docs/packages/database/#concurrency-errors-and-retries).
 
+If the server connection is lost (a restart, failover, or `idle_session_timeout`/`idle_in_transaction_session_timeout` disconnect), outside a transaction the connection reconnects and runs the statement once more; inside a transaction it throws `LostConnectionException` and nothing is retried, until you roll back. A statement prepared before the loss must be prepared again. See [Lost Connections](/docs/packages/database/#lost-connections).
+
 Row locks compile to `FOR UPDATE` / `FOR SHARE`, with optional `SKIP LOCKED` / `NOWAIT`, appended after `LIMIT`/`OFFSET`. PostgreSQL rejects `FOR UPDATE` together with `DISTINCT`, `GROUP BY` or `HAVING`, and on the nullable side of an outer join.
 
 `upsert()` compiles to `INSERT ... ON CONFLICT (...) DO UPDATE SET col = EXCLUDED.col`, or `DO NOTHING` when there is nothing to update. PostgreSQL requires a unique index or constraint on exactly the `$uniqueBy` columns, and rejects a batch that contains the same conflict key twice (`ON CONFLICT DO UPDATE command cannot affect row a second time`). A statement can bind at most 65,535 values, so split very large batches.
@@ -318,7 +320,7 @@ Implements `ConnectionInterface`, `TransactionInterface`, `PendingAfterCommitInt
 | `afterCommit(callable $callback): void` | Run the callback after the outermost commit (immediately outside a transaction) |
 | `afterRollback(callable $callback): void` | Run the callback if its level rolls back |
 | `runPendingAfterCommitCallbacks(): void` | Run the queued `afterCommit()` callbacks without committing (`PendingAfterCommitInterface`); for test helpers such as `RefreshDatabase`, not production code |
-| `reset(): void` | Roll back every level left open by a failed request and drop pending callbacks; never opens a connection |
+| `reset(): void` | Roll back every level left open by a failed request and drop pending callbacks; never opens a connection, and does not throw when the server is gone |
 
 ### PgSqlStatement
 
@@ -333,7 +335,7 @@ Implements `StatementInterface`. Wraps a prepared PDO statement.
 
 ### PgSqlExceptionTranslator
 
-Turns a `PDOException` raised by `query()`, `execute()`, `prepare()` or `PgSqlStatement::execute()` into a typed exception from `marko/database`, keyed on the SQLSTATE: `23505` unique, `23503` foreign key, `23502` not null, `23514` check, `40P01` `DeadlockException`, `40001` `SerializationFailureException`, `55P03` `LockTimeoutException` (`NOWAIT` and `lock_timeout`), anything else `QueryException`. Failed `BEGIN`, `COMMIT`, `SAVEPOINT`, `RELEASE SAVEPOINT` and `ROLLBACK` statements are translated the same way, so a serialization failure detected at `COMMIT` is a `SerializationFailureException`. The constraint, table and column are parsed from the server message, and the `DETAIL:` line (which echoes row data) is never copied. `PgSqlConnection` and `PgSqlStatement` take it as an optional constructor argument (`exceptionTranslator`). See [Query and Constraint Exceptions](/docs/packages/database/#query-and-constraint-exceptions) and [Concurrency Errors and Retries](/docs/packages/database/#concurrency-errors-and-retries).
+Turns a `PDOException` raised by `query()`, `execute()`, `prepare()` or `PgSqlStatement::execute()` into a typed exception from `marko/database`, keyed on the SQLSTATE: `23505` unique, `23503` foreign key, `23502` not null, `23514` check, `40P01` `DeadlockException`, `40001` `SerializationFailureException`, `55P03` `LockTimeoutException` (`NOWAIT` and `lock_timeout`), `LostConnectionException` for a lost connection (any `08xxx` class, `57P01`, `57P02`, `57P03`, `57P05`, `25P03`, or `HY000` with a libpq message such as "no connection to the server", "server closed the connection unexpectedly", "terminating connection due to", "SSL SYSCALL error", "could not receive data from server", "could not send data to server" or "connection to server"), anything else `QueryException` (`57014` query canceled included: the session is still alive). Failed `BEGIN`, `COMMIT`, `SAVEPOINT`, `RELEASE SAVEPOINT` and `ROLLBACK` statements are translated the same way, so a serialization failure detected at `COMMIT` is a `SerializationFailureException`. The constraint, table and column are parsed from the server message, and the `DETAIL:` line (which echoes row data) is never copied. `PgSqlConnection` and `PgSqlStatement` take it as an optional constructor argument (`exceptionTranslator`). See [Query and Constraint Exceptions](/docs/packages/database/#query-and-constraint-exceptions) and [Concurrency Errors and Retries](/docs/packages/database/#concurrency-errors-and-retries).
 
 | Method | Description |
 |---|---|
