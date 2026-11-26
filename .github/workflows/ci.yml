@@ -19,7 +19,7 @@ jobs:
       # Redis integration suites (packages/cache-redis, packages/ratelimiter)
       # skip without a server; this keeps them running on every build.
       redis:
-        image: public.ecr.aws/docker/library/redis:7-alpine
+        image: mirror.gcr.io/library/redis:7-alpine
         ports:
           - 6379:6379
         options: >-
@@ -115,7 +115,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: public.ecr.aws/docker/library/postgres:17
+        image: mirror.gcr.io/library/postgres:17
         env:
           POSTGRES_USER: marko
           POSTGRES_PASSWORD: marko
@@ -128,7 +128,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
       mysql:
-        image: public.ecr.aws/docker/library/mysql:8.4
+        image: mirror.gcr.io/library/mysql:8.4
         env:
           MYSQL_ROOT_PASSWORD: marko
           MYSQL_DATABASE: marko_test
@@ -143,7 +143,7 @@ jobs:
       # stored as LONGTEXT) run only against MariaDB. 11.8 is the first LTS
       # with innodb_snapshot_isolation=ON by default.
       mariadb:
-        image: public.ecr.aws/docker/library/mariadb:11.8
+        image: mirror.gcr.io/library/mariadb:11.8
         env:
           MARIADB_ROOT_PASSWORD: marko
           MARIADB_DATABASE: marko_test
@@ -157,7 +157,7 @@ jobs:
       # The oldest MariaDB LTS still supported. The MySQL driver suite runs
       # against it too, so the documented floor is tested.
       mariadb-10-11:
-        image: public.ecr.aws/docker/library/mariadb:10.11
+        image: mirror.gcr.io/library/mariadb:10.11
         env:
           MARIADB_ROOT_PASSWORD: marko
           MARIADB_DATABASE: marko_test
@@ -169,7 +169,7 @@ jobs:
           --health-timeout 5s
           --health-retries 20
       redis:
-        image: public.ecr.aws/docker/library/redis:7
+        image: mirror.gcr.io/library/redis:7
         ports:
           - 6379:6379
         options: >-
