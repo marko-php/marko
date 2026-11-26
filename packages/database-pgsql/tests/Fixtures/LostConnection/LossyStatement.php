@@ -2,18 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Marko\Database\PgSql\Tests\Fixtures\Retry;
+namespace Marko\Database\PgSql\Tests\Fixtures\LostConnection;
 
 use PDOStatement;
 
 /**
- * The statement class of ScriptedPdo: execute() throws the failures scripted
- * on the PDO that prepared it, in order.
+ * The statement class of LossyPdo: execute() throws the failures scripted on its PDO.
  */
-class ScriptedStatement extends PDOStatement
+class LossyStatement extends PDOStatement
 {
     protected function __construct(
-        private readonly ScriptedPdo $pdo,
+        private readonly LossyPdo $pdo,
     ) {}
 
     public function execute(

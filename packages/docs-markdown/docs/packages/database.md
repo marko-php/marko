@@ -1590,7 +1590,7 @@ Retrying has one trade-off. If the reply to a statement was lost, the statement 
 
 ### Inside a Transaction
 
-Nothing is retried, because the transaction ended on the server with the session. The statement that found the loss throws `LostConnectionException`, and the connection is marked lost. Until you roll back every open level, each further statement, `commit()`, nested `beginTransaction()` and `lastInsertId()` throws `LostConnectionException` without sending any SQL. `rollback()` sends no SQL on a lost transaction. `transaction()` rolls back by itself when the callback throws. Once every level is closed, the next statement reconnects.
+Nothing is retried, because the transaction ended on the server with the session. The statement that found the loss throws `LostConnectionException`, and the connection is marked lost. Until you roll back every open level, each further statement, `commit()`, nested `beginTransaction()` and `lastInsertId()` throws `LostConnectionException` without sending any SQL. `rollback()` sends no SQL on a lost transaction. A `commit()` that throws this way also closes its level, as a failed commit always does, so don't call `rollback()` for that level again. `transaction()` rolls back by itself when the callback throws. Once every level is closed, the next statement reconnects.
 
 ```php
 use Marko\Database\Connection\TransactionInterface;

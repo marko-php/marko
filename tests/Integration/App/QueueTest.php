@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\PgSql\Connection\PgSqlConnection;
 use Marko\Integration\Fixture\Job\AlwaysFailingJob;
+use Marko\Integration\Fixture\Job\InsertAuthorJob;
 use Marko\Integration\Fixture\Job\InvalidBackoffJob;
 use Marko\Integration\Fixture\Job\PollingJob;
 use Marko\Integration\Fixture\Job\PrivatePropertyJob;
@@ -179,3 +182,26 @@ it('skips a duplicate unique job with a Redis lock and releases it once the work
         ->and(file_get_contents($marker))->toBe("unique job $key ran")
         ->and($afterRun->pushed)->toBeTrue();
 })->issue(534);
+
+it('runs a queued job after the server terminates the worker\'s database session', function (): void {
+    $container = $this->app->container;
+    $connection = $container->get(ConnectionInterface::class);
+    $failedJobs = $container->get(FailedJobRepositoryInterface::class);
+    $killer = new PgSqlConnection($container->get(DatabaseConfig::class));
+
+    try {
+        $workerPid = (int) $connection->query('SELECT pg_backend_pid() AS pid')[0]['pid'];
+        $terminated = $killer->query('SELECT pg_terminate_backend(:pid, 5000) AS terminated', ['pid' => $workerPid]);
+    } finally {
+        $killer->disconnect();
+    }
+
+    $container->get(QueueInterface::class)->push(new InsertAuthorJob('Written after the kill'));
+    $result = runIntegrationCommand($this->app, 'queue:work', ['--once']);
+
+    expect($terminated[0]['terminated'])->toBeTrue()
+        ->and($result['exitCode'])->toBe(0, $result['output'])
+        ->and($connection->query('SELECT name FROM authors'))->toBe([['name' => 'Written after the kill']])
+        ->and($failedJobs->count())->toBe(0)
+        ->and((int) $connection->query('SELECT pg_backend_pid() AS pid')[0]['pid'])->not->toBe($workerPid);
+})->issue(717);

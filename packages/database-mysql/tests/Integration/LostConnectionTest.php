@@ -24,7 +24,7 @@ use Marko\Database\MySql\Tests\Fixtures\IntegrationDatabase;
 function mysqlKillSession(
     MySqlConnection $victim,
     MySqlConnection $killer,
-): void {
+): int {
     $id = (int) $victim->query('SELECT CONNECTION_ID() AS id')[0]['id'];
     $killer->execute('KILL ' . $id);
 
@@ -38,6 +38,8 @@ function mysqlKillSession(
     }
 
     expect($killer->query('SELECT 1 FROM information_schema.PROCESSLIST WHERE ID = ?', [$id]))->toBeEmpty();
+
+    return $id;
 }
 
 pest()->group('integration-services');
@@ -106,6 +108,34 @@ describe('MySQL lost connection', function (): void {
                     ->and($this->victim->transactionLevel())->toBe(0)
                     ->and($this->victim->query('SELECT COUNT(*) AS total FROM lost_connection_items')[0]['total'])
                     ->toBe(0);
+            } finally {
+                $this->killer->execute('DROP TABLE IF EXISTS lost_connection_items');
+            }
+        },
+    );
+
+    it(
+        'reconnects when beginTransaction is the first call on a killed session',
+        function (): void {
+            $this->killer->execute('DROP TABLE IF EXISTS lost_connection_items');
+            $this->killer->execute('CREATE TABLE lost_connection_items (name VARCHAR(20)) ENGINE=InnoDB');
+
+            try {
+                $killedId = mysqlKillSession($this->victim, $this->killer);
+
+                $this->victim->beginTransaction();
+
+                expect($this->victim->transactionLevel())->toBe(1)
+                    ->and((int) $this->victim->query('SELECT CONNECTION_ID() AS id')[0]['id'])->not->toBe($killedId)
+                    ->and($this->victim->execute('INSERT INTO lost_connection_items (name) VALUES (?)', ['a']))->toBe(
+                        1,
+                    );
+
+                $this->victim->commit();
+
+                expect($this->victim->transactionLevel())->toBe(0)
+                    ->and($this->killer->query('SELECT COUNT(*) AS total FROM lost_connection_items')[0]['total'])
+                    ->toBe(1);
             } finally {
                 $this->killer->execute('DROP TABLE IF EXISTS lost_connection_items');
             }
