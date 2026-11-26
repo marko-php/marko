@@ -121,6 +121,8 @@ Rebuilds are direction-aware: the `down` of a native column drop is an add, whic
 
 A rebuild ends with a **foreign key guard**: the migration fails, and the whole transaction rolls back, if the rebuilt table leaves any foreign key violation in the database. `PRAGMA foreign_key_check` is the check, run through a temporary guard table so it fails the migration loudly.
 
+A migration itself runs without an outer transaction, because the rebuilds manage their own transaction and toggle `PRAGMA foreign_keys`, which cannot change inside one. `SqliteConnection` does not implement `TransactionalDdlInterface`, so a migration that fails halfway may be partly applied and is not recorded. See [Migration Transactions](/docs/packages/database/#migration-transactions).
+
 Rebuilds need the table's current definition, which `marko/database` supplies to the generator as `TableDiff::$currentTable`. Plain, unique and partial indexes are supported. A fulltext index throws a `MigrationException`, because SQLite has no fulltext index type.
 
 ## Query Builder

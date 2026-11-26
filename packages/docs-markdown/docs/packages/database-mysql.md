@@ -151,6 +151,10 @@ public ?array $settings = null;
 
 Values are serialized and deserialized automatically. The root value must be an array --- top-level JSON scalars are not supported. See [marko/database](/docs/packages/database/) for JSON query operators (`whereJsonContains`, arrow-path syntax, etc.) and indexing guidance.
 
+### Migrations Run Without a Transaction
+
+MySQL and MariaDB commit most schema changes immediately, so a transaction cannot protect a migration. `MySqlConnection` does not implement `TransactionalDdlInterface`, and migrations run without a transaction. A migration that fails halfway may be partly applied and is not recorded; the `MigrationException` message says so. `#[WithoutTransaction]` has no effect here. See [Migration Transactions](/docs/packages/database/#migration-transactions).
+
 ### Column Modifications
 
 When an entity changes a column's type, nullability or default, the migration restates the whole column with `MODIFY COLUMN`. Anything the statement leaves out, MySQL resets, so the generator restates what the database already has wherever the entity doesn't say otherwise:

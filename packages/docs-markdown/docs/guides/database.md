@@ -98,6 +98,8 @@ marko db:status
 
 `db:migrate` generates migrations only when `APP_ENV` is `development`, `dev` or `local`. In every other environment, including an unset `APP_ENV`, it applies the committed files and warns about drift; `db:rollback`, `db:reset`, `db:rebuild` and `db:seed` run freely only in development and testing (`testing`, `test`), need `--force` in any other environment such as `staging`, and are always refused in production. See [Environment Behaviour](/docs/packages/database/#environment-behaviour).
 
+On PostgreSQL, each migration runs in its own transaction, so a failure rolls that migration back; mark one that needs `CREATE INDEX CONCURRENTLY` or similar with `#[WithoutTransaction]`. MySQL and SQLite run migrations without a transaction. See [Migration Transactions](/docs/packages/database/#migration-transactions).
+
 ## Querying
 
 ### Query Builder

@@ -11,6 +11,7 @@ use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\PendingAfterCommitInterface;
 use Marko\Database\Connection\PrimaryReadInterface;
 use Marko\Database\Connection\StatementInterface;
+use Marko\Database\Connection\TransactionalDdlInterface;
 use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\Exceptions\TransactionConflictException;
 use Marko\Database\Exceptions\TransactionException;
@@ -24,6 +25,7 @@ class ReadWriteConnection implements
     TransactionInterface,
     PendingAfterCommitInterface,
     PrimaryReadInterface,
+    TransactionalDdlInterface,
     ResettableInterface
 {
     /**
@@ -126,6 +128,12 @@ class ReadWriteConnection implements
     public function supportsReturning(): bool
     {
         return $this->write->supportsReturning();
+    }
+
+    public function supportsTransactionalDdl(): bool
+    {
+        return $this->write instanceof TransactionalDdlInterface
+            && $this->write->supportsTransactionalDdl();
     }
 
     public function quoteIdentifier(

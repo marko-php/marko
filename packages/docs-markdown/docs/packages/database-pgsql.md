@@ -218,6 +218,10 @@ This generates `"id" UUID DEFAULT gen_random_uuid() PRIMARY KEY` (`gen_random_uu
 $article = $articleRepository->find('018e2b3c-d1a2-7000-a1b2-c3d4e5f60708');
 ```
 
+### Migrations Run in a Transaction
+
+Each migration runs in its own transaction, together with the write to the `migrations` table, so a failure rolls the whole migration back. Statements PostgreSQL refuses inside a transaction (`CREATE INDEX CONCURRENTLY`, `DROP INDEX CONCURRENTLY`, `VACUUM`, `ALTER TYPE ... ADD VALUE` used in the same migration) need `#[WithoutTransaction]` on the migration class. A migration that catches a failed statement and carries on fails too, because PostgreSQL aborts the transaction after any error. See [Migration Transactions](/docs/packages/database/#migration-transactions).
+
 ### Type Changes
 
 Without a `USING` clause, `ALTER COLUMN ... TYPE` only makes conversions PostgreSQL considers safe, so `VARCHAR` to `INTEGER` fails with `column "quantity" cannot be cast automatically to type integer`. A generated type change always casts explicitly, in both the up and the down migration:
@@ -298,7 +302,7 @@ On PostgreSQL a foreign key depends on the unique index it references. Renaming 
 
 ### PgSqlConnection
 
-Implements `ConnectionInterface`, `TransactionInterface`, `PendingAfterCommitInterface` and `ResettableInterface`. Connects lazily on first query. The driver module registers one shared instance per request (per worker under a long-running runtime), and `TransactionInterface` resolves to that same instance. See [Transactions](/docs/packages/database/#transactions).
+Implements `ConnectionInterface`, `TransactionInterface`, `PendingAfterCommitInterface`, `TransactionalDdlInterface` and `ResettableInterface`. Connects lazily on first query. The driver module registers one shared instance per request (per worker under a long-running runtime), and `TransactionInterface` resolves to that same instance. See [Transactions](/docs/packages/database/#transactions).
 
 | Method | Description |
 |---|---|
@@ -310,6 +314,7 @@ Implements `ConnectionInterface`, `TransactionInterface`, `PendingAfterCommitInt
 | `prepare(string $sql): StatementInterface` | Prepare a statement for repeated execution |
 | `lastInsertId(): int` | Get the last inserted ID |
 | `supportsReturning(): bool` | Always `true`: `INSERT ... RETURNING` is available, so repositories read generated keys back |
+| `supportsTransactionalDdl(): bool` | Always `true`: PostgreSQL rolls back schema changes, so each migration runs in one transaction. See [Migration Transactions](/docs/packages/database/#migration-transactions) |
 | `quoteIdentifier(string $identifier): string` | Quote a table or column name with double quotes through `PgSqlIdentifier` (`group` becomes `"group"`, and `displayName` keeps its case); needs no live connection |
 | `beginTransaction(): void` | Start a transaction, or a savepoint when one is open |
 | `commit(): void` | Commit the innermost level (`RELEASE SAVEPOINT` when nested); throws `TransactionException` when none is open |

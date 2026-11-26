@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Exceptions\LostConnectionException;
 use Marko\Database\Exceptions\MigrationException;
+use Marko\Database\Exceptions\QueryException;
 use Marko\Database\Migration\MigrationRepository;
 use Marko\Database\Migration\Migrator;
 use Marko\Database\Tests\Migration\Helpers;
+use Marko\Database\Tests\Migration\PluginProxiedConnection;
+use Marko\Database\Tests\Migration\TransactionalConnectionFake;
 
 describe('Migrator', function (): void {
     beforeEach(function (): void {
@@ -593,5 +597,254 @@ PHP;
         expect(fn () => $migrator->rollback())
             ->toThrow(MigrationException::class, "Migration file for '.hidden' not found")
             ->and(file_exists($marker))->toBeFalse();
+    });
+
+    describe('transactions', function (): void {
+        it(
+            'runs each pending migration with its record in its own transaction when the connection supports transactional DDL',
+            function (): void {
+                file_put_contents(
+                    $this->migrationsPath . '/2024_01_01_000000_first.php',
+                    Helpers::getStatementMigrationContent('CREATE TABLE a'),
+                );
+                file_put_contents(
+                    $this->migrationsPath . '/2024_01_02_000000_second.php',
+                    Helpers::getStatementMigrationContent('CREATE TABLE b'),
+                );
+                $connection = new TransactionalConnectionFake();
+
+                new Migrator($connection, new MigrationRepository(), $this->paths)->migrate();
+
+                expect($connection->transactions)->toHaveCount(2)
+                    ->and($connection->transactions[0])->toHaveCount(2)
+                    ->and($connection->transactions[0][0])->toBe('CREATE TABLE a')
+                    ->and($connection->transactions[0][1])->toContain('INSERT INTO "migrations"')
+                    ->and($connection->transactions[1])->toHaveCount(2)
+                    ->and($connection->transactions[1][0])->toBe('CREATE TABLE b')
+                    ->and($connection->transactions[1][1])->toContain('INSERT INTO "migrations"');
+            },
+        );
+
+        it('does not record a migration whose up fails inside the transaction', function (): void {
+            file_put_contents(
+                $this->migrationsPath . '/2024_01_01_000000_first.php',
+                Helpers::getStatementMigrationContent('CREATE TABLE a', failAfterStatement: true),
+            );
+            $connection = new TransactionalConnectionFake();
+            $migrator = new Migrator($connection, new MigrationRepository(), $this->paths);
+
+            expect(fn () => $migrator->migrate())
+                ->toThrow(MigrationException::class, 'boom')
+                ->and($connection->transactions)->toHaveCount(1)
+                ->and($connection->committed)->not->toContain('CREATE TABLE a')
+                ->and(implode("\n", $connection->committed))->not->toContain('INSERT INTO');
+        });
+
+        it('runs a rollback and its delete in one transaction', function (): void {
+            file_put_contents(
+                $this->migrationsPath . '/2024_01_01_000000_first.php',
+                Helpers::getStatementMigrationContent('CREATE TABLE a', 'DROP TABLE a'),
+            );
+            $connection = new TransactionalConnectionFake(applied: ['2024_01_01_000000_first']);
+
+            new Migrator($connection, new MigrationRepository(), $this->paths)->rollback();
+
+            expect($connection->transactions)->toHaveCount(1)
+                ->and($connection->transactions[0])->toHaveCount(2)
+                ->and($connection->transactions[0][0])->toBe('DROP TABLE a')
+                ->and($connection->transactions[0][1])->toContain('DELETE FROM "migrations"');
+        });
+
+        it('runs a reset one transaction per migration', function (): void {
+            file_put_contents(
+                $this->migrationsPath . '/2024_01_01_000000_first.php',
+                Helpers::getStatementMigrationContent('CREATE TABLE a', 'DROP TABLE a'),
+            );
+            file_put_contents(
+                $this->migrationsPath . '/2024_01_02_000000_second.php',
+                Helpers::getStatementMigrationContent('CREATE TABLE b', 'DROP TABLE b'),
+            );
+            $connection = new TransactionalConnectionFake(
+                applied: ['2024_01_01_000000_first', '2024_01_02_000000_second'],
+            );
+
+            new Migrator($connection, new MigrationRepository(), $this->paths)->reset();
+
+            expect($connection->transactions)->toHaveCount(2)
+                ->and($connection->transactions[0])->toHaveCount(2)
+                ->and($connection->transactions[0][0])->toBe('DROP TABLE b')
+                ->and($connection->transactions[0][1])->toContain('DELETE FROM "migrations"')
+                ->and($connection->transactions[1])->toHaveCount(2)
+                ->and($connection->transactions[1][0])->toBe('DROP TABLE a')
+                ->and($connection->transactions[1][1])->toContain('DELETE FROM "migrations"');
+        });
+
+        it('runs without a transaction on a connection that reports no transactional DDL support', function (): void {
+            file_put_contents(
+                $this->migrationsPath . '/2024_01_01_000000_first.php',
+                Helpers::getStatementMigrationContent('CREATE TABLE a'),
+            );
+            $connection = new TransactionalConnectionFake(supportsTransactionalDdl: false);
+
+            new Migrator($connection, new MigrationRepository(), $this->paths)->migrate();
+
+            expect($connection->transactions)->toBeEmpty()
+                ->and($connection->committed)->toContain('CREATE TABLE a');
+        });
+
+        it('runs a migration marked WithoutTransaction outside a transaction', function (): void {
+            file_put_contents(
+                $this->migrationsPath . '/2024_01_01_000000_first.php',
+                Helpers::getStatementMigrationContent('CREATE TABLE a', withoutTransaction: true),
+            );
+            $connection = new TransactionalConnectionFake();
+
+            new Migrator($connection, new MigrationRepository(), $this->paths)->migrate();
+
+            expect($connection->transactions)->toBeEmpty()
+                ->and($connection->committed)->toContain('CREATE TABLE a');
+        });
+
+        it(
+            'runs in a transaction on a plugin-proxied connection whose target supports transactional DDL',
+            function (): void {
+                file_put_contents(
+                    $this->migrationsPath . '/2024_01_01_000000_first.php',
+                    Helpers::getStatementMigrationContent('CREATE TABLE a'),
+                );
+                $target = new TransactionalConnectionFake();
+                $proxy = new PluginProxiedConnection($target);
+
+                new Migrator($proxy, new MigrationRepository(), $this->paths)->migrate();
+
+                expect($target->transactions)->toHaveCount(1)
+                    ->and($target->transactions[0][0])->toBe('CREATE TABLE a')
+                    ->and($proxy->seen)->toContain('CREATE TABLE a');
+            },
+        );
+
+        it('says the migration was rolled back when it failed inside a transaction', function (): void {
+            file_put_contents(
+                $this->migrationsPath . '/2024_01_01_000000_first.php',
+                Helpers::getStatementMigrationContent('CREATE TABLE a', failAfterStatement: true),
+            );
+            $migrator = new Migrator(new TransactionalConnectionFake(), new MigrationRepository(), $this->paths);
+
+            expect(fn () => $migrator->migrate())
+                ->toThrow(
+                    MigrationException::class,
+                    "Migration '2024_01_01_000000_first' failed: boom. The migration was rolled back: nothing from it "
+                    . 'was applied and it was not recorded. Fix it and run the migrations again.',
+                );
+        });
+
+        it(
+            'says the migration may be partly applied when the connection has no transactional DDL',
+            function (): void {
+                file_put_contents(
+                    $this->migrationsPath . '/2024_01_01_000000_first.php',
+                    Helpers::getStatementMigrationContent('CREATE TABLE a', failAfterStatement: true),
+                );
+                $connection = new TransactionalConnectionFake(supportsTransactionalDdl: false);
+                $migrator = new Migrator($connection, new MigrationRepository(), $this->paths);
+
+                expect(fn () => $migrator->migrate())
+                    ->toThrow(
+                        MigrationException::class,
+                        "Migration '2024_01_01_000000_first' failed: boom. The migration ran without a transaction, so "
+                        . 'statements before the failing one stay applied. It was not recorded. Check the database '
+                        . 'and repair it before running the migrations again.',
+                    );
+            },
+        );
+
+        it('says the migration may be partly applied when a WithoutTransaction migration fails', function (): void {
+            file_put_contents(
+                $this->migrationsPath . '/2024_01_01_000000_first.php',
+                Helpers::getStatementMigrationContent(
+                    'CREATE TABLE a',
+                    failAfterStatement: true,
+                    withoutTransaction: true,
+                ),
+            );
+            $migrator = new Migrator(new TransactionalConnectionFake(), new MigrationRepository(), $this->paths);
+
+            expect(fn () => $migrator->migrate())
+                ->toThrow(MigrationException::class, 'statements before the failing one stay applied');
+        });
+
+        it(
+            'says the outcome is unknown when the connection is lost while committing the migration',
+            function (): void {
+                file_put_contents(
+                    $this->migrationsPath . '/2024_01_01_000000_first.php',
+                    Helpers::getStatementMigrationContent('CREATE TABLE a'),
+                );
+                $lost = LostConnectionException::duringTransaction(
+                    new LostConnectionException(message: 'Database connection lost: server closed the connection'),
+                );
+                $connection = new TransactionalConnectionFake(
+                    commitFailure: new RuntimeException('commit failed', 0, $lost),
+                );
+                $migrator = new Migrator($connection, new MigrationRepository(), $this->paths);
+
+                expect(fn () => $migrator->migrate())
+                    ->toThrow(
+                        MigrationException::class,
+                        'The connection was lost while committing, so whether the migration was applied is unknown. '
+                        . 'Check the schema and the migrations table before running the migrations again.',
+                    );
+            },
+        );
+
+        it(
+            'suggests WithoutTransaction when the database refuses a statement inside a transaction block',
+            function (): void {
+                file_put_contents(
+                    $this->migrationsPath . '/2024_01_01_000000_first.php',
+                    Helpers::getStatementMigrationContent('CREATE INDEX CONCURRENTLY i ON t (c)'),
+                );
+                $refused = new QueryException(
+                    message: 'CREATE INDEX CONCURRENTLY cannot run inside a transaction block',
+                    sql: 'CREATE INDEX CONCURRENTLY i ON t (c)',
+                    sqlState: '25001',
+                );
+                $connection = new TransactionalConnectionFake(
+                    failingStatements: ['CREATE INDEX CONCURRENTLY i ON t (c)' => $refused],
+                );
+                $migrator = new Migrator($connection, new MigrationRepository(), $this->paths);
+
+                expect(fn () => $migrator->migrate())
+                    ->toThrow(
+                        MigrationException::class,
+                        'Mark the migration #[WithoutTransaction] to run it outside one',
+                    );
+            },
+        );
+
+        it(
+            'explains an aborted transaction when the migration carried on after a failed statement',
+            function (): void {
+                file_put_contents(
+                    $this->migrationsPath . '/2024_01_01_000000_first.php',
+                    Helpers::getStatementMigrationContent('CREATE TABLE a'),
+                );
+                $aborted = new QueryException(
+                    message: 'current transaction is aborted, commands ignored until end of transaction block',
+                    sql: 'CREATE TABLE a',
+                    sqlState: '25P02',
+                );
+                $connection = new TransactionalConnectionFake(failingStatements: ['CREATE TABLE a' => $aborted]);
+                $migrator = new Migrator($connection, new MigrationRepository(), $this->paths);
+
+                expect(fn () => $migrator->migrate())
+                    ->toThrow(
+                        MigrationException::class,
+                        'An earlier statement in this migration failed and the migration caught that error and carried '
+                        . 'on, which PostgreSQL does not allow inside a transaction. Remove the catch (use IF EXISTS or '
+                        . 'IF NOT EXISTS instead) or mark the migration #[WithoutTransaction].',
+                    );
+            },
+        );
     });
 });

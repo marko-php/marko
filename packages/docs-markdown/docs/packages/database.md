@@ -1793,6 +1793,61 @@ For isolating database tests (`RefreshDatabase`, `TruncateDatabase`), see [Datab
 
 `db:rollback` and `db:reset` read migration names from the `migrations` table, but only run files that a scan of `database/migrations/` finds. Before any migration is reverted, each name is checked: one containing `/`, `\`, `..` or a NUL byte throws `MigrationException::invalidMigrationName()`, and one with no matching file throws `MigrationException::migrationNotFound()`. Either error stops the command before anything is rolled back.
 
+### Migration Transactions
+
+On PostgreSQL, each schema migration and each data migration runs in its own transaction, together with the write that records it in (or removes it from) the `migrations` table. If any statement fails, the whole migration is rolled back: nothing from it is applied and it is not recorded. Earlier migrations of the same batch that already succeeded stay applied. This holds for `db:migrate`, `db:rollback`, `db:reset` and `db:rebuild`, which run migrations through the same code.
+
+| Driver | A migration runs | If it fails halfway |
+|--------|------------------|---------------------|
+| PostgreSQL | In one transaction | Rolled back; nothing is applied or recorded |
+| MySQL / MariaDB | Without a transaction, as before: most schema changes commit immediately | May be partly applied |
+| SQLite | Without an outer transaction, as before: its generated table rebuilds manage their own | May be partly applied |
+
+#### Opting Out With `#[WithoutTransaction]`
+
+PostgreSQL refuses some statements inside a transaction: `CREATE INDEX CONCURRENTLY`, `DROP INDEX CONCURRENTLY`, `VACUUM`, and `ALTER TYPE ... ADD VALUE` when the migration uses the new value. Put `#[WithoutTransaction]` on the migration class to run it outside one. It applies to both `up()` and `down()`:
+
+```php title="database/migrations/2026_11_26_120000_add_posts_slug_index.php"
+use Marko\Database\Attributes\WithoutTransaction;
+use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Migration\Migration;
+
+return new #[WithoutTransaction] class () extends Migration {
+    public function up(
+        ConnectionInterface $connection,
+    ): void {
+        $this->execute($connection, 'CREATE INDEX CONCURRENTLY posts_slug_idx ON posts (slug)');
+    }
+
+    public function down(
+        ConnectionInterface $connection,
+    ): void {
+        $this->execute($connection, 'DROP INDEX CONCURRENTLY posts_slug_idx');
+    }
+};
+```
+
+A migration that opts out and fails may be partly applied, and it is not recorded. Keep it to the one statement that needs it.
+
+#### Failure Messages
+
+The `MigrationException` message says what the failure left behind:
+
+| Outcome | Appended to the message |
+|---------|-------------------------|
+| Rolled back | `The migration was rolled back: nothing from it was applied and it was not recorded. Fix it and run the migrations again.` |
+| Ran without a transaction | `The migration ran without a transaction, so statements before the failing one stay applied. It was not recorded. Check the database and repair it before running the migrations again.` |
+| Connection lost while committing | `The connection was lost while committing, so whether the migration was applied is unknown. Check the schema and the migrations table before running the migrations again.` |
+
+Two PostgreSQL failures only happen because the migration ran in a transaction, and the exception's suggestion says what to do:
+
+- SQLSTATE `25001`: `The database refuses this statement inside a transaction. Mark the migration #[WithoutTransaction] to run it outside one.`
+- SQLSTATE `25P02`: the migration caught a failed statement and carried on, and PostgreSQL aborts the transaction after any error. The message says to remove the catch (use `IF EXISTS` or `IF NOT EXISTS` instead) or mark the migration `#[WithoutTransaction]`.
+
+#### Upgrading
+
+A PostgreSQL migration that relied on running outside a transaction (it ran `CREATE INDEX CONCURRENTLY`, caught a failed statement and carried on, or similar) now needs `#[WithoutTransaction]`. Without it, the migration fails and is rolled back.
+
 ### Environment Behaviour
 
 The commands read the environment from core's [`AppEnvironment`](/docs/packages/core/#application-environment) (`MARKO_ENV`, then `APP_ENV`). When neither is set the environment is `production`, so a deployment that forgets to set it fails safe.
@@ -2248,6 +2303,8 @@ A class that implements `ConnectionInterface` itself (a new driver, a decorator 
 `supportsReturning()` may connect: the repository calls it just before it runs the `INSERT`, so a driver whose answer depends on the server can ask the server once and keep the answer.
 
 A decorator delegates to the connection it wraps, as `ReadWriteConnection` delegates to its write connection.
+
+A connection can also implement optional capability interfaces. `Marko\Database\Connection\TransactionalDdlInterface` (`supportsTransactionalDdl(): bool`) says the database can undo schema changes together with data changes, so a whole migration runs in one transaction (see [Migration Transactions](#migration-transactions)). A connection that does not implement it, or answers `false`, runs migrations without a transaction. `PgSqlConnection` implements it, `ReadWriteConnection` answers for its primary, and the MySQL and SQLite connections do not. A connection must also implement `TransactionInterface` for migrations to use it.
 
 `quoteIdentifier()` is the only place a package's raw SQL gets its quoting rule. The search driver, the database queue and failed-job store, the session handler, both notification packages, the migrations table, `TruncateDatabase` and the admin-auth repositories all call it on the connection they were given, so a new driver or decorator only has to answer it once for all of them.
 

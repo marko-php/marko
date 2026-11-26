@@ -8,6 +8,7 @@ use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
+use Marko\Database\Connection\TransactionalDdlInterface;
 use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\PgSql\Connection\PgSqlConnection;
 use Marko\Database\PgSql\Exceptions\ConnectionException;
@@ -205,6 +206,14 @@ describe('PgSqlConnection', function (): void {
         $connection = new PgSqlConnection(createTestPgSqlConfig());
 
         expect($connection->supportsReturning())->toBeTrue()
+            ->and($connection->isConnected())->toBeFalse();
+    });
+
+    it('reports transactional DDL support on the PostgreSQL connection', function (): void {
+        $connection = new PgSqlConnection(createTestPgSqlConfig());
+
+        expect($connection)->toBeInstanceOf(TransactionalDdlInterface::class)
+            ->and($connection->supportsTransactionalDdl())->toBeTrue()
             ->and($connection->isConnected())->toBeFalse();
     });
 

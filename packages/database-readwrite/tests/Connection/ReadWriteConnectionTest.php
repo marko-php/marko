@@ -7,6 +7,7 @@ use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\PendingAfterCommitInterface;
 use Marko\Database\Connection\PrimaryReadInterface;
 use Marko\Database\Connection\StatementInterface;
+use Marko\Database\Connection\TransactionalDdlInterface;
 use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\Exceptions\TransactionException;
 use Marko\Database\ReadWrite\Connection\ReadWriteConnection;
@@ -158,6 +159,128 @@ function makeConnection(
         public function runPendingAfterCommitCallbacks(): void
         {
             $this->calls[] = 'runPendingAfterCommitCallbacks';
+        }
+    };
+}
+
+/**
+ * A write connection that also answers for transactional DDL, delegating
+ * everything else to a plain fake write connection.
+ */
+function makeTransactionalDdlConnection(
+    bool $supportsTransactionalDdl,
+): ConnectionInterface&TransactionInterface&TransactionalDdlInterface {
+    return new readonly class (makeConnection(), $supportsTransactionalDdl) implements ConnectionInterface, TransactionInterface, TransactionalDdlInterface
+    {
+        public function __construct(
+            private ConnectionInterface&TransactionInterface $inner,
+            private bool $supportsTransactionalDdl,
+        ) {}
+
+        public function supportsTransactionalDdl(): bool
+        {
+            return $this->supportsTransactionalDdl;
+        }
+
+        public function connect(): void
+        {
+            $this->inner->connect();
+        }
+
+        public function disconnect(): void
+        {
+            $this->inner->disconnect();
+        }
+
+        public function isConnected(): bool
+        {
+            return $this->inner->isConnected();
+        }
+
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array {
+            return $this->inner->query($sql, $bindings);
+        }
+
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int {
+            return $this->inner->execute($sql, $bindings);
+        }
+
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
+            return $this->inner->prepare($sql);
+        }
+
+        public function lastInsertId(): int
+        {
+            return $this->inner->lastInsertId();
+        }
+
+        public function driverName(): string
+        {
+            return $this->inner->driverName();
+        }
+
+        public function supportsReturning(): bool
+        {
+            return $this->inner->supportsReturning();
+        }
+
+        public function quoteIdentifier(
+            string $identifier,
+        ): string {
+            return $this->inner->quoteIdentifier($identifier);
+        }
+
+        public function beginTransaction(): void
+        {
+            $this->inner->beginTransaction();
+        }
+
+        public function commit(): void
+        {
+            $this->inner->commit();
+        }
+
+        public function rollback(): void
+        {
+            $this->inner->rollback();
+        }
+
+        public function inTransaction(): bool
+        {
+            return $this->inner->inTransaction();
+        }
+
+        public function transactionLevel(): int
+        {
+            return $this->inner->transactionLevel();
+        }
+
+        public function transaction(
+            callable $callback,
+            int $attempts = 1,
+            int|Closure|null $backoff = null,
+        ): mixed {
+            return $this->inner->transaction($callback, $attempts, $backoff);
+        }
+
+        public function afterCommit(
+            callable $callback,
+        ): void {
+            $this->inner->afterCommit($callback);
+        }
+
+        public function afterRollback(
+            callable $callback,
+        ): void {
+            $this->inner->afterRollback($callback);
         }
     };
 }
@@ -394,6 +517,35 @@ describe('ReadWriteConnection', function (): void {
             ->and($write->calls)->toContain('supportsReturning')
             ->and($replica->calls)->toBeEmpty();
     });
+
+    it(
+        'reports transactional DDL support on a read/write connection whose write connection supports it',
+        function (): void {
+            $replica = makeConnection();
+            $conn = new ReadWriteConnection(makeTransactionalDdlConnection(true), [$replica], makeSelector($replica));
+
+            expect($conn)->toBeInstanceOf(TransactionalDdlInterface::class)
+                ->and($conn->supportsTransactionalDdl())->toBeTrue()
+                ->and($replica->calls)->toBeEmpty();
+        },
+    );
+
+    it(
+        'reports no transactional DDL support on a read/write connection whose write connection does not',
+        function (): void {
+            $replica = makeConnection();
+            $withoutCapability = new ReadWriteConnection(makeConnection(), [$replica], makeSelector($replica));
+            $declined = new ReadWriteConnection(
+                makeTransactionalDdlConnection(false),
+                [$replica],
+                makeSelector($replica),
+            );
+
+            expect($withoutCapability->supportsTransactionalDdl())->toBeFalse()
+                ->and($declined->supportsTransactionalDdl())->toBeFalse()
+                ->and($replica->calls)->toBeEmpty();
+        },
+    );
 
     it('delegates quoteIdentifier to the write connection', function (): void {
         $write = makeConnection();
