@@ -399,6 +399,8 @@ A job fails for good when its last attempt throws or times out, when it reaches 
 
 The caller then deletes the job from its queue.
 
+Before `failed()` runs, the handler [logs](#worker-logs) the failure at `error` level, without a stack trace: `[marko/queue] Job {class} (id {id}) failed on queue {queue}: {exception class}: {exception message}`. A `failed()` hook that throws can therefore no longer hide the error that failed the job.
+
 #### When a Failed Job Cannot Be Stored
 
 If the failed-job repository throws while storing the job (the `failed_jobs` table is missing, the database is down), the failure isn't recorded anywhere, so `FailedJobHandler` throws a `FailedJobNotStoredException` (a `QueueException`) instead of logging and carrying on. Its message names the job class and id. Its context names the queue, the job's own exception and the storage error, and the storage error is its `getPrevious()`. Then:
@@ -605,10 +607,20 @@ The worker and `FailedJobHandler` log through Marko's `LoggerInterface` from [`m
 |-------|------|
 | `info` | `Worker stopping: ...`, once per run, with the [stop reason](#stop-reasons-and-exit-codes) |
 | `warning` | A job sets a timeout but `ext-pcntl` is not loaded, so it can't be enforced |
-| `error` | A pop failed and the worker will retry, a job exceeded its timeout, a timed-out job could not be released or failed, or a job's `failed()` threw |
-| `critical` | `Worker stopping: ...`, when a failed job [could not be stored](#when-a-failed-job-cannot-be-stored) |
+| `error` | A pop failed and the worker will retry, a job exceeded its timeout, a timed-out job could not be released or failed, a job failed for good (before its `failed()` runs), or a job's `failed()` threw |
+| `critical` | `Worker stopping: ...`, when a failed job [could not be stored](#when-a-failed-job-cannot-be-stored) or when [resettable services could not be reset](#state-reset-between-jobs) |
 
 To send worker logs somewhere else, bind your own `LoggerInterface` implementation or add a handler (see [`marko/log`](/docs/packages/log/)). In tests, pass a `FakeLogger` from [`marko/testing`](/docs/packages/testing/) to `Worker` and `FailedJobHandler` and assert on its entries.
+
+#### State Reset Between Jobs
+
+One `queue:work` process runs many jobs, so the worker resets per-unit-of-work state to keep one job from poisoning the next. Before it pops each job, it calls `Marko\Core\RequestStateResetter`, the mechanism the [RoadRunner](/docs/packages/roadrunner/#reset-lifecycle-and-the-stateful-singleton-rule) worker runs between requests. That resets every already-resolved `Marko\Core\Contracts\ResettableInterface` service (see [`marko/core`](/docs/packages/core/)): database connections roll back an open transaction and clear their transaction state, and the read/write sticky flag, the session, auth guards and similar per-request state are cleared.
+
+- **After a failed or self-released attempt**, the worker resets again before it releases the job or hands it to the failed-job handler. The retry bookkeeping, the failed-job store and the job's `failed()` hook run on clean state, not inside a transaction the job left open. A successful attempt is not reset on the spot: its job is deleted first, and the reset happens before the next pop.
+- **A job that returns, or fails, with a transaction still open** has that uncommitted work rolled back by the next reset. With the [database driver](/docs/packages/queue-database/), the job's own delete is rolled back with it, so the job runs again once its reservation expires. Use `transaction()` in jobs, which commits or rolls back by itself.
+- **A reset that throws stops the worker.** It logs at `critical` level and `queue:work` exits with a non-zero status, like a failed job that [cannot be stored](#when-a-failed-job-cannot-be-stored). After a failed attempt the job stays reserved and is retried once its reservation expires.
+- **The [sync driver](/docs/packages/queue-sync/) does not reset.** It runs jobs inline, inside the current request.
+- **Tests:** an application test that runs the worker in-process inside a `RefreshDatabase` test transaction has that transaction rolled back by the worker's reset.
 
 ### Worker Limits and Shutdown
 
@@ -824,6 +836,7 @@ When an async observer fires, `QueueAsyncObserverDispatcher` serializes the even
 `FailedJobHandler` reads the current time from the injected `Psr\Clock\ClockInterface` ([`marko/clock`](/docs/packages/clock/)) and stamps `FailedJob::$failedAt` with it, rather than calling `new DateTimeImmutable()`. In a test, pass a [`FakeClock`](/docs/packages/testing/#fakeclock) to freeze that time, and a [`FakeEventDispatcher`](/docs/packages/testing/) to see the lifecycle events:
 
 ```php
+use Marko\Core\RequestStateResetter;
 use Marko\Queue\Event\JobFailedEvent;
 use Marko\Queue\FailedJobHandler;
 use Marko\Queue\JobRunner;
@@ -846,6 +859,7 @@ it('records when a job failed', function (): void {
         new RetryPolicy($config, $clock),
         $clock,
         $logger,
+        new RequestStateResetter($container),
     );
 
     $worker->work(once: true);

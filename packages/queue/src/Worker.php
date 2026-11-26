@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Queue;
 
+use Marko\Core\RequestStateResetter;
 use Marko\Log\Contracts\LoggerInterface;
 use Marko\Queue\Exceptions\FailedJobNotStoredException;
 use Marko\Queue\Exceptions\JobTimedOutException;
@@ -29,6 +30,7 @@ class Worker implements WorkerInterface
         private readonly RetryPolicy $retryPolicy,
         private readonly ClockInterface $clock,
         private readonly LoggerInterface $logger,
+        private readonly RequestStateResetter $requestStateResetter,
         private readonly ProcessControlInterface $processControl = new PcntlProcessControl(),
     ) {}
 
@@ -38,8 +40,16 @@ class Worker implements WorkerInterface
      * of pulling more jobs while the failed-job store is broken. The job is left in its queue and is failed
      * again once its reservation expires.
      *
+     * Resettable services are reset before every pop. A reset that throws is logged at critical level and
+     * rethrown, so the worker stops without popping: a connection that could not roll back is in an unknown
+     * state, and only a fresh process is safe.
+     *
+     * A reset that throws after a failed or self-released attempt is logged at critical level with the job
+     * class and id, then rethrown before the job is released or failed: it stays reserved and is retried
+     * after its reservation expires.
+     *
      * @param list<string>|null $queues Queue names in priority order, or null for the default queue
-     * @throws FailedJobNotStoredException|QueueException|SerializationException
+     * @throws FailedJobNotStoredException|QueueException|SerializationException|Throwable
      */
     public function work(
         ?array $queues = null,
@@ -58,6 +68,10 @@ class Worker implements WorkerInterface
 
         try {
             while (true) {
+                // Reset before the pop, not after it: a previous job may have left a transaction open, and the
+                // next reservation would then run inside it and be rolled back while the job runs
+                $this->resetBeforeNextJob();
+
                 try {
                     [$job, $queue] = $this->popNextJob($queueNames);
                 } catch (FailedJobNotStoredException $e) {
@@ -124,7 +138,11 @@ class Worker implements WorkerInterface
      * too long and ends the worker process: a job stuck in a blocking call cannot be stopped safely
      * from inside the process.
      *
-     * @throws QueueException|SerializationException
+     * A failed or self-released attempt resets resettable services before the job is released or failed, so
+     * release(), the failed-job store and failed() never run inside state the attempt left behind. A
+     * successful attempt does not reset: that would roll back its work and then delete the job.
+     *
+     * @throws QueueException|SerializationException|Throwable
      */
     private function process(
         JobInterface $job,
@@ -166,12 +184,14 @@ class Worker implements WorkerInterface
         }
 
         if ($error !== null) {
+            $this->resetAfterAttempt($job);
             $this->handleFailedJob($job, $error, $queue);
 
             return;
         }
 
         if ($job->releaseDelay !== null) {
+            $this->resetAfterAttempt($job);
             $this->handleReleasedJob($job, $queue);
 
             return;
@@ -377,6 +397,52 @@ class Worker implements WorkerInterface
         }
 
         return [null, null];
+    }
+
+    /**
+     * Reset every resolved resettable service. A failure is logged at critical level and rethrown: no job is
+     * in hand yet, so nothing is released or failed.
+     *
+     * @throws Throwable
+     */
+    private function resetBeforeNextJob(): void
+    {
+        try {
+            $this->requestStateResetter->reset();
+        } catch (Throwable $e) {
+            $this->logger->critical(sprintf(
+                '[marko/queue] Worker stopping: could not reset resettable services before the next job: %s: %s',
+                $e::class,
+                $e->getMessage(),
+            ));
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Reset every resolved resettable service after an attempt, before the job is released or failed. A
+     * failure is logged at critical level and rethrown: nothing has handled the job yet, so it stays
+     * reserved and is retried once its reservation expires.
+     *
+     * @throws Throwable
+     */
+    private function resetAfterAttempt(
+        JobInterface $job,
+    ): void {
+        try {
+            $this->requestStateResetter->reset();
+        } catch (Throwable $e) {
+            $this->logger->critical(sprintf(
+                '[marko/queue] Worker stopping: could not reset resettable services after job %s (id %s): %s: %s',
+                $job::class,
+                $job->id,
+                $e::class,
+                $e->getMessage(),
+            ));
+
+            throw $e;
+        }
     }
 
     /**

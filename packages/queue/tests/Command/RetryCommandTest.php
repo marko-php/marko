@@ -7,6 +7,7 @@ use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
+use Marko\Core\RequestStateResetter;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\Command\RetryCommand;
 use Marko\Queue\ContainerAwareJobInterface;
@@ -669,6 +670,7 @@ function createRetryWorker(
         ])), new FakeClock()),
         clock: new FakeClock(),
         logger: new FakeLogger(),
+        requestStateResetter: new RequestStateResetter(new Container()),
     );
 }
 

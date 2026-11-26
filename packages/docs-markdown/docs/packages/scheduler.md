@@ -281,6 +281,8 @@ marko schedule:work
 
 `schedule:work` sleeps until the top of each minute, then runs the tasks due at that minute, using the same logic as `schedule:run`. A failing task is reported and the loop keeps going. Tasks run sequentially in the same process (except `runInBackground()` commands), so if a run takes longer than a minute, the scheduler waits for the next minute boundary rather than catching up on the minutes it missed.
 
+Before each run, `schedule:work` resets every already-resolved `Marko\Core\Contracts\ResettableInterface` service through `Marko\Core\RequestStateResetter` (the same mechanism the [RoadRunner](/docs/packages/roadrunner/#reset-lifecycle-and-the-stateful-singleton-rule) worker uses between requests). A transaction a task left open is rolled back, and session, auth and similar per-request state is cleared, so one run cannot poison the next. `schedule:run` is a one-shot process and is unchanged. If a reset throws, the exception ends the command before any task runs.
+
 Stop it with `Ctrl+C` (SIGINT) or SIGTERM. With the `pcntl` extension installed, the signal is handled gracefully: the current task finishes, the command prints `Scheduler stopped.` and exits `0`. Without `pcntl`, the signal terminates the process immediately.
 
 ### Querying Due Tasks

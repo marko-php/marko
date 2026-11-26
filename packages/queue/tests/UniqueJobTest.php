@@ -7,8 +7,10 @@ use Marko\Cache\Exceptions\NoDriverException;
 use Marko\Core\Attributes\Before;
 use Marko\Core\Attributes\Observer;
 use Marko\Core\Attributes\Plugin;
+use Marko\Core\Container\Container;
 use Marko\Core\Plugin\PluginDiscovery;
 use Marko\Core\Plugin\PluginRegistry;
+use Marko\Core\RequestStateResetter;
 use Marko\Queue\Event\JobFailedEvent;
 use Marko\Queue\Event\JobProcessedEvent;
 use Marko\Queue\Event\JobProcessingEvent;
@@ -92,6 +94,7 @@ function uniqueWorker(
         $stack->clock,
         processControl: $processControl,
         logger: new FakeLogger(),
+        requestStateResetter: new RequestStateResetter(new Container()),
     );
 }
 

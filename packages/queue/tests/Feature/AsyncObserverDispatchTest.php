@@ -8,6 +8,7 @@ use Marko\Core\Event\Event;
 use Marko\Core\Event\EventDispatcher;
 use Marko\Core\Event\ObserverDefinition;
 use Marko\Core\Event\ObserverRegistry;
+use Marko\Core\RequestStateResetter;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\AsyncObserverJob;
 use Marko\Queue\FailedJob;
@@ -163,6 +164,7 @@ describe('async observer dispatch through marko/queue', function (): void {
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
             logger: new FakeLogger(),
+            requestStateResetter: new RequestStateResetter(new Container()),
         )->work(
             once: true,
         );

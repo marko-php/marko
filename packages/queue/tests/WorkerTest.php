@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
+use Marko\Core\Contracts\ResettableInterface;
+use Marko\Core\RequestStateResetter;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Log\LogLevel;
 use Marko\Queue\AsyncObserverJob;
@@ -14,6 +17,7 @@ use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\FailableJobInterface;
 use Marko\Queue\FailedJob;
 use Marko\Queue\FailedJobHandler;
+use Marko\Queue\FailedJobHandlerInterface;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\Job;
 use Marko\Queue\JobEnvelope;
@@ -365,6 +369,7 @@ describe('Worker', function (): void {
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
             logger: new FakeLogger(),
+            requestStateResetter: new RequestStateResetter(new Container()),
         );
 
         expect($worker)->toBeInstanceOf(WorkerInterface::class);
@@ -474,6 +479,7 @@ describe('Worker', function (): void {
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
             logger: new FakeLogger(),
+            requestStateResetter: new RequestStateResetter(new Container()),
         );
 
         $worker->work(once: true);
@@ -577,6 +583,7 @@ describe('Worker', function (): void {
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
             logger: new FakeLogger(),
+            requestStateResetter: new RequestStateResetter(new Container()),
         );
 
         $worker->work(once: true);
@@ -620,6 +627,7 @@ describe('Worker', function (): void {
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
             logger: new FakeLogger(),
+            requestStateResetter: new RequestStateResetter(new Container()),
         );
         StopTestHelper::$worker = $worker;
 
@@ -720,6 +728,7 @@ describe('Worker', function (): void {
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
             logger: new FakeLogger(),
+            requestStateResetter: new RequestStateResetter(new Container()),
         );
 
         // With once=true, worker should process exactly one job and return
@@ -806,6 +815,7 @@ describe('Worker', function (): void {
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
             logger: new FakeLogger(),
+            requestStateResetter: new RequestStateResetter(new Container()),
         );
 
         // With once=true and no jobs, worker should return immediately
@@ -916,6 +926,7 @@ describe('Worker', function (): void {
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
             logger: new FakeLogger(),
+            requestStateResetter: new RequestStateResetter(new Container()),
         );
 
         // Process jobs (once each)
@@ -1041,6 +1052,7 @@ describe('Worker', function (): void {
                 new RetryPolicy($config, new FakeClock()),
                 clock: new FakeClock(),
                 logger: new FakeLogger(),
+                requestStateResetter: new RequestStateResetter(new Container()),
             );
             $worker->work(once: true);
 
@@ -1168,6 +1180,7 @@ function runFailingJobOnce(
         new RetryPolicy(createTestQueueConfig(['queue.max_attempts' => $configMaxAttempts]), new FakeClock()),
         clock: new FakeClock(),
         logger: new FakeLogger(),
+        requestStateResetter: new RequestStateResetter(new Container()),
     );
     $worker->work(once: true);
 
@@ -1425,6 +1438,7 @@ class PauseRecordingWorker extends Worker
         private readonly RecordingLog $log,
         private readonly int $stopAfterPauses = 1,
         FakeLogger $logger = new FakeLogger(),
+        ?RequestStateResetter $requestStateResetter = null,
     ) {
         $runner = new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher());
 
@@ -1443,6 +1457,7 @@ class PauseRecordingWorker extends Worker
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
             logger: $logger,
+            requestStateResetter: $requestStateResetter ?? new RequestStateResetter(new Container()),
         );
     }
 
@@ -1474,12 +1489,16 @@ function createPauseRecordingWorker(
     RecordingLog $log,
     ?FailedJobRepositoryInterface $failed = null,
     array $configValues = [],
+    FakeLogger $logger = new FakeLogger(),
+    ?RequestStateResetter $requestStateResetter = null,
 ): PauseRecordingWorker {
     return new PauseRecordingWorker(
         $queue,
         $failed ?? createTestFailedJobRepository(),
         createTestQueueConfig($configValues),
         $log,
+        logger: $logger,
+        requestStateResetter: $requestStateResetter,
     );
 }
 
@@ -1825,6 +1844,7 @@ function runJobsOnLastAttempt(
         new RetryPolicy(createTestQueueConfig(), new FakeClock()),
         clock: new FakeClock(),
         logger: new FakeLogger(),
+        requestStateResetter: new RequestStateResetter(new Container()),
     );
     $stopJob->worker = $worker;
 
@@ -1950,6 +1970,7 @@ function runJobsOnFirstAttempt(
         new RetryPolicy(createTestQueueConfig($configValues), new FakeClock()),
         clock: new FakeClock(),
         logger: new FakeLogger(),
+        requestStateResetter: new RequestStateResetter(new Container()),
     );
     $stopJob->worker = $worker;
 
@@ -2209,6 +2230,7 @@ describe('Worker and JobRunner', function (): void {
             new RetryPolicy(createTestQueueConfig(), new FakeClock()),
             clock: new FakeClock(),
             logger: new FakeLogger(),
+            requestStateResetter: new RequestStateResetter(new Container()),
         )->work(once: true);
 
         expect($runner->ran)->toBe([$job])
@@ -2238,6 +2260,7 @@ describe('Worker and JobRunner', function (): void {
             new RetryPolicy(createTestQueueConfig(), new FakeClock()),
             clock: new FakeClock(),
             logger: new FakeLogger(),
+            requestStateResetter: new RequestStateResetter(new Container()),
         );
 
         $worker->work(queues: ['default', 'engine'], once: true);
@@ -2273,6 +2296,7 @@ describe('Worker and JobRunner', function (): void {
             new RetryPolicy(createTestQueueConfig(['queue.max_attempts' => 3]), new FakeClock()),
             clock: new FakeClock(),
             logger: new FakeLogger(),
+            requestStateResetter: new RequestStateResetter(new Container()),
         )->work(once: true);
 
         expect($queue->releasedJobs)->toBe([$job])
@@ -2348,6 +2372,7 @@ function runFailableJobs(
         new RetryPolicy(createTestQueueConfig(['queue.max_attempts' => $maxAttempts]), new FakeClock()),
         clock: new FakeClock(),
         logger: $logger,
+        requestStateResetter: new RequestStateResetter(new Container()),
     );
     $stopJob->worker = $worker;
 
@@ -2413,4 +2438,261 @@ describe('Worker failure hook', function (): void {
             ->and($next->failedWith)->toHaveCount(1)
             ->and($result['queue']->deleted)->toBe(['job-0', 'job-1', 'stop-worker']);
     });
+});
+
+/**
+ * Resettable double that appends 'reset' to the shared log, or throws when told to.
+ */
+class RecordingResettable implements ResettableInterface
+{
+    public function __construct(
+        private readonly RecordingLog $log,
+        private readonly ?Throwable $failure = null,
+        private readonly int $failFromCall = 1,
+    ) {}
+
+    private int $calls = 0;
+
+    public function reset(): void
+    {
+        $this->log->entries[] = 'reset';
+        $this->calls++;
+
+        if (
+            $this->failure !== null
+            && $this->calls >= $this->failFromCall
+        ) {
+            throw $this->failure;
+        }
+    }
+}
+
+function createRecordingResetter(
+    RecordingLog $log,
+    ?Throwable $failure = null,
+    int $failFromCall = 1,
+): RequestStateResetter {
+    $container = new Container();
+    $container->instance(RecordingResettable::class, new RecordingResettable($log, $failure, $failFromCall));
+
+    return new RequestStateResetter($container);
+}
+
+describe('Worker state reset', function (): void {
+    it('resets resettable services before popping a job', function (): void {
+        $log = new RecordingLog();
+        $queue = new MultiQueueRecordingQueue(['default' => [namedJob('a', $log)]], $log);
+        $worker = createPauseRecordingWorker($queue, $log, requestStateResetter: createRecordingResetter($log));
+
+        $worker->work(once: true);
+
+        expect($log->entries)->toBe(['reset', 'pop:null', 'handle:a']);
+    });
+
+    it('resets before every pop when it processes several jobs and polls an empty queue', function (): void {
+        $log = new RecordingLog();
+        $queue = new MultiQueueRecordingQueue(['default' => [namedJob('a', $log), namedJob('b', $log)]], $log);
+        $worker = createPauseRecordingWorker($queue, $log, requestStateResetter: createRecordingResetter($log));
+
+        $worker->work(sleep: 4);
+
+        expect($log->entries)->toBe([
+            'reset',
+            'pop:null',
+            'handle:a',
+            'reset',
+            'pop:null',
+            'handle:b',
+            'reset',
+            'pop:null',
+            'sleep:4',
+        ]);
+    });
+
+    it('resets before handle so the job never sees the previous job\'s state', function (): void {
+        $log = new RecordingLog();
+        $queue = new MultiQueueRecordingQueue([
+            'default' => [namedJob('a', $log), namedJob('b', $log)],
+        ], $log);
+        $worker = createPauseRecordingWorker($queue, $log, requestStateResetter: createRecordingResetter($log));
+
+        $worker->work(sleep: 0);
+
+        $handleIndexes = array_keys(array_filter(
+            $log->entries,
+            fn (string $entry): bool => str_starts_with($entry, 'handle:'),
+        ));
+        $beforeEachHandle = array_map(
+            fn (int $index): string => $log->entries[$index - 2] . '>' . $log->entries[$index],
+            $handleIndexes,
+        );
+
+        expect($beforeEachHandle)->toBe(['reset>handle:a', 'reset>handle:b']);
+    });
+
+    it(
+        'logs at critical level and stops without popping when the reset throws, in once and long-running mode',
+        function (bool $once): void {
+            $log = new RecordingLog();
+            $logger = new FakeLogger();
+            $queue = new MultiQueueRecordingQueue(['default' => [namedJob('a', $log)]], $log);
+            $worker = createPauseRecordingWorker(
+                $queue,
+                $log,
+                logger: $logger,
+                requestStateResetter: createRecordingResetter($log, new RuntimeException('rollback failed')),
+            );
+
+            expect(fn () => $worker->work(once: $once))->toThrow(RuntimeException::class, 'rollback failed');
+
+            $critical = $logger->entriesForLevel(LogLevel::Critical);
+
+            expect($log->entries)->toBe(['reset'])
+                ->and($critical)->toHaveCount(1)
+                ->and($critical[0]['message'])->toBe(
+                    '[marko/queue] Worker stopping: could not reset resettable services before the next job: '
+                    . 'RuntimeException: rollback failed',
+                );
+        },
+    )->with([
+        'once' => [true],
+        'long-running' => [false],
+    ]);
+});
+
+class ReleasingRecordingJob extends Job
+{
+    public function __construct(
+        private readonly RecordingLog $log,
+    ) {}
+
+    public function handle(): void
+    {
+        $this->log->entries[] = 'handle:releasing';
+        $this->release();
+    }
+}
+
+/**
+ * Queue that records release and delete in the shared log, next to the pops.
+ */
+class OrderRecordingQueue extends MultiQueueRecordingQueue
+{
+    public function __construct(
+        array $jobs,
+        private readonly RecordingLog $orderLog,
+    ) {
+        parent::__construct($jobs, $orderLog);
+    }
+
+    public function delete(
+        string $jobId,
+    ): bool {
+        $this->orderLog->entries[] = 'delete';
+
+        return true;
+    }
+
+    public function release(
+        JobInterface $job,
+        int $delay = 0,
+    ): bool {
+        $this->orderLog->entries[] = 'release';
+
+        return true;
+    }
+}
+
+readonly class OrderRecordingFailedJobHandler implements FailedJobHandlerInterface
+{
+    public function __construct(
+        private RecordingLog $log,
+    ) {}
+
+    public function handle(
+        JobInterface $job,
+        string $queue,
+        Throwable $exception,
+        string $note = '',
+    ): void {
+        $this->log->entries[] = 'store';
+    }
+}
+
+/**
+ * Run one job once through a worker whose queue, failed-job handler and resettable share one log.
+ */
+function runOrderRecordedJob(
+    JobInterface $job,
+    RecordingLog $log,
+    int $maxAttempts = 3,
+    ?Throwable $resetFailure = null,
+    int $failResetFromCall = 1,
+    FakeLogger $logger = new FakeLogger(),
+): void {
+    $config = createTestQueueConfig(['queue.max_attempts' => $maxAttempts]);
+
+    new Worker(
+        new OrderRecordingQueue(['default' => [$job]], $log),
+        new OrderRecordingFailedJobHandler($log),
+        $config,
+        new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
+        new RetryPolicy($config, new FakeClock()),
+        clock: new FakeClock(),
+        logger: $logger,
+        requestStateResetter: createRecordingResetter($log, $resetFailure, $failResetFromCall),
+    )->work(once: true);
+}
+
+describe('Worker state reset after an attempt', function (): void {
+    it('resets after a failed attempt before releasing the job for retry', function (): void {
+        $log = new RecordingLog();
+
+        runOrderRecordedJob(namedJob('a', $log, fails: true), $log);
+
+        expect($log->entries)->toBe(['reset', 'pop:null', 'handle:a', 'reset', 'release']);
+    });
+
+    it('resets after a failed attempt before the failed job handler runs', function (): void {
+        $log = new RecordingLog();
+
+        runOrderRecordedJob(namedJob('a', $log, fails: true), $log, maxAttempts: 1);
+
+        expect($log->entries)->toBe(['reset', 'pop:null', 'handle:a', 'reset', 'store', 'delete']);
+    });
+
+    it('resets after a job that released itself before releasing it', function (): void {
+        $log = new RecordingLog();
+        $job = new ReleasingRecordingJob($log);
+        $job->setId('releasing');
+
+        runOrderRecordedJob($job, $log);
+
+        expect($log->entries)->toBe(['reset', 'pop:null', 'handle:releasing', 'reset', 'release']);
+    });
+
+    it(
+        'logs at critical level and stops the worker without releasing or failing the job when the reset after an attempt throws',
+        function (): void {
+            $log = new RecordingLog();
+            $logger = new FakeLogger();
+
+            expect(fn () => runOrderRecordedJob(
+                namedJob('a', $log, fails: true),
+                $log,
+                resetFailure: new RuntimeException('rollback failed'),
+                failResetFromCall: 2,
+                logger: $logger,
+            ))->toThrow(RuntimeException::class, 'rollback failed');
+
+            $critical = $logger->entriesForLevel(LogLevel::Critical);
+
+            expect($log->entries)->toBe(['reset', 'pop:null', 'handle:a', 'reset'])
+                ->and($critical)->toHaveCount(1)
+                ->and($critical[0]['message'])->toBe(
+                    '[marko/queue] Worker stopping: could not reset resettable services after job '
+                    . 'NamedRecordingJob (id a): RuntimeException: rollback failed',
+                );
+        },
+    );
 });

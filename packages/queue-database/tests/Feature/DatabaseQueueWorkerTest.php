@@ -8,6 +8,7 @@ use Marko\Core\Command\Output;
 use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
+use Marko\Core\Contracts\ResettableInterface;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Database\Config\DatabaseTimezoneConfig;
@@ -113,11 +114,35 @@ function countRows(
     return (int) $connection->query("SELECT COUNT(*) AS count FROM $table")[0]['count'];
 }
 
+class ResetCountingService implements ResettableInterface
+{
+    public int $resets = 0;
+
+    public function reset(): void
+    {
+        $this->resets++;
+    }
+}
+
 beforeEach(function (): void {
     AlwaysFailingJob::$handled = 0;
 });
 
 describe('database queue worker regressions', function (): void {
+    it(
+        'resets the container\'s resolved resettables when the worker is resolved from the container',
+        function (): void {
+            $connection = SqliteConnection::withQueueTables();
+            $container = workerTestContainer($connection);
+            $service = new ResetCountingService();
+            $container->instance(ResetCountingService::class, $service);
+
+            $container->get(WorkerInterface::class)->work(once: true);
+
+            expect($service->resets)->toBe(1);
+        },
+    );
+
     it('attempts an always-failing job exactly maxAttempts times then moves it to failed_jobs', function (): void {
         $connection = SqliteConnection::withQueueTables();
         $container = workerTestContainer($connection);

@@ -135,6 +135,27 @@ class HandlerFailableJob extends Job implements FailableJobInterface
     }
 }
 
+/**
+ * Failable job that records what the logger held at the moment failed() ran.
+ */
+class HandlerLoggerProbeJob extends Job implements FailableJobInterface
+{
+    /** @var list<array<string, mixed>> */
+    public array $loggedBeforeFailed = [];
+
+    public function __construct(
+        private readonly FakeLogger $logger,
+    ) {}
+
+    public function handle(): void {}
+
+    public function failed(
+        Throwable $exception,
+    ): void {
+        $this->loggedBeforeFailed = $this->logger->entries;
+    }
+}
+
 class HandlerContainerAwareFailableJob extends Job implements ContainerAwareJobInterface, FailableJobInterface
 {
     private ?ContainerInterface $container = null;
@@ -281,9 +302,10 @@ describe('FailedJobHandler', function (): void {
             $handler->handle($job, 'default', new RuntimeException('boom'));
 
             $errors = $logger->entriesForLevel(LogLevel::Error);
-            $logged = $errors[0]['message'] ?? '';
+            $logged = $errors[1]['message'] ?? '';
 
-            expect($errors)->toHaveCount(1)
+            expect($errors)->toHaveCount(2)
+                ->and($errors[0]['message'])->toContain('failed on queue default: RuntimeException: boom')
                 ->and($logged)->toContain('HandlerFailableJob')
                 ->and($logged)->toContain('job-9')
                 ->and($logged)->toContain('LogicException: cleanup broke')
@@ -291,6 +313,64 @@ describe('FailedJobHandler', function (): void {
                 ->and($repository->find('job-9'))->not->toBeNull();
         },
     );
+
+    it('logs the original exception with the job class, id and queue when a job fails', function (): void {
+        ['handler' => $handler, 'logger' => $logger] = createLoggingFailedJobHandler();
+        $job = new HandlerFailableJob();
+        $job->setId('job-7');
+
+        $handler->handle($job, 'emails', new RuntimeException('smtp down'));
+
+        expect($logger->entriesForLevel(LogLevel::Error)[0]['message'] ?? '')
+            ->toBe(sprintf(
+                '[marko/queue] Job %s (id job-7) failed on queue emails: RuntimeException: smtp down',
+                HandlerFailableJob::class,
+            ));
+    });
+
+    it('logs the original exception before calling the failed hook', function (): void {
+        ['handler' => $handler, 'logger' => $logger] = createLoggingFailedJobHandler();
+        $job = new HandlerLoggerProbeJob($logger);
+        $job->setId('job-8');
+
+        $handler->handle($job, 'emails', new RuntimeException('smtp down'));
+
+        expect($job->loggedBeforeFailed)->toHaveCount(1)
+            ->and($job->loggedBeforeFailed[0]['message'])->toContain(
+                'failed on queue emails: RuntimeException: smtp down',
+            );
+    });
+
+    it('keeps the original exception in the log when the failed hook throws', function (): void {
+        ['handler' => $handler, 'logger' => $logger] = createLoggingFailedJobHandler();
+        $job = new HandlerFailableJob(failedThrows: true);
+        $job->setId('job-9');
+
+        $handler->handle($job, 'emails', new RuntimeException('smtp down'));
+
+        $errors = $logger->entriesForLevel(LogLevel::Error);
+
+        expect($errors)->toHaveCount(2)
+            ->and($errors[0]['message'])->toContain('failed on queue emails: RuntimeException: smtp down')
+            ->and($errors[1]['message'])->toContain('failed() of job')
+            ->and($errors[1]['message'])->toContain('LogicException: cleanup broke');
+    });
+
+    it('logs the failure for a job that has no failed hook', function (): void {
+        ['handler' => $handler, 'logger' => $logger] = createLoggingFailedJobHandler();
+        $job = new class () extends Job
+        {
+            public function handle(): void {}
+        };
+        $job->setId('plain');
+
+        $handler->handle($job, 'default', new RuntimeException('boom'));
+
+        $errors = $logger->entriesForLevel(LogLevel::Error);
+
+        expect($errors)->toHaveCount(1)
+            ->and($errors[0]['message'])->toContain('(id plain) failed on queue default: RuntimeException: boom');
+    });
 
     it('gives a container-aware job its container while failed() runs, then releases it', function (): void {
         $service = new HandlerCleanupService();

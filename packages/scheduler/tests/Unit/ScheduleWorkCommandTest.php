@@ -6,12 +6,41 @@ use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
+use Marko\Core\Container\Container;
+use Marko\Core\Contracts\ResettableInterface;
+use Marko\Core\RequestStateResetter;
 use Marko\Scheduler\Command\ScheduleWorkCommand;
 use Marko\Scheduler\Mutex\FileTaskMutex;
 use Marko\Scheduler\Tests\Fixtures\SchedulerFactory;
 use Marko\Testing\Fake\FakeClock;
 
+class ScheduleWorkRecordingResettable implements ResettableInterface
+{
+    public ?Throwable $failure = null;
+
+    /**
+     * @param array<int, string> $events
+     */
+    public function __construct(
+        /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
+        private array &$events,
+    ) {}
+
+    public function reset(): void
+    {
+        $this->events[] = 'reset';
+
+        if ($this->failure !== null) {
+            throw $this->failure;
+        }
+    }
+}
+
 beforeEach(function (): void {
+    $this->events = [];
+    $this->resettable = new ScheduleWorkRecordingResettable($this->events);
+    $container = new Container();
+    $container->instance(ScheduleWorkRecordingResettable::class, $this->resettable);
     $this->schedule = SchedulerFactory::schedule();
     $this->clock = new FakeClock('2026-10-05 12:00:30');
     $this->sleeps = [];
@@ -22,8 +51,10 @@ beforeEach(function (): void {
             new FileTaskMutex(sys_get_temp_dir() . '/marko-scheduler-unused', $this->clock),
         ),
         $this->clock,
+        new RequestStateResetter($container),
         function (int $seconds): void {
             $this->sleeps[] = $seconds;
+            $this->events[] = "sleep:$seconds";
             $this->clock->travel("+$seconds seconds");
 
             if ($this->onSleep !== null) {
@@ -142,4 +173,51 @@ it('stops when stop is called', function (): void {
 
     expect($exitCode)->toBe(0)
         ->and(($this->outputContent)())->toContain('Scheduler stopped.');
+});
+
+it('resets once before each scheduler run and never while sleeping', function (): void {
+    $runs = 0;
+    $this->schedule->call(function () use (&$runs): void {
+        $this->events[] = 'run';
+        $runs++;
+
+        if ($runs === 2) {
+            $this->command->stop();
+        }
+    })->everyMinute()->description('Tick');
+
+    ($this->work)();
+
+    expect($this->events)->toBe(['sleep:30', 'reset', 'run', 'sleep:60', 'reset', 'run']);
+});
+
+it('resets before the run so tasks never see the previous run\'s state', function (): void {
+    $seen = [];
+    $this->schedule->call(function () use (&$seen): void {
+        $seen[] = $this->events;
+        $this->events[] = 'run';
+
+        if (count($seen) === 2) {
+            $this->command->stop();
+        }
+    })->everyMinute()->description('Tick');
+
+    ($this->work)();
+
+    expect($seen)->toBe([
+        ['sleep:30', 'reset'],
+        ['sleep:30', 'reset', 'run', 'sleep:60', 'reset'],
+    ]);
+});
+
+it('rethrows and runs no tasks when the reset throws', function (): void {
+    $ran = false;
+    $this->schedule->call(function () use (&$ran): void {
+        $ran = true;
+    })->everyMinute()->description('Tick');
+    $this->resettable->failure = new RuntimeException('rollback failed');
+
+    expect(fn () => ($this->work)())->toThrow(RuntimeException::class, 'rollback failed')
+        ->and($ran)->toBeFalse()
+        ->and($this->events)->toBe(['sleep:30', 'reset']);
 });

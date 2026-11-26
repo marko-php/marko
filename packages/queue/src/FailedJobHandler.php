@@ -39,6 +39,7 @@ class FailedJobHandler implements FailedJobHandlerInterface
         string $note = '',
     ): void {
         $this->store($job, $queue, $exception, $note);
+        $this->logFailure($job, $queue, $exception);
 
         if ($job instanceof FailableJobInterface) {
             $this->callFailedHook($job, $exception);
@@ -88,6 +89,25 @@ class FailedJobHandler implements FailedJobHandlerInterface
         } catch (Throwable $storageError) {
             throw FailedJobNotStoredException::failedJobNotStored($job::class, $job->id, $queue, $e, $storageError);
         }
+    }
+
+    /**
+     * Log the exception that failed the job, without its trace (call arguments can hold secrets), so
+     * a failed() hook that throws later cannot hide the real cause.
+     */
+    private function logFailure(
+        JobInterface $job,
+        string $queue,
+        Throwable $exception,
+    ): void {
+        $this->logger->error(sprintf(
+            '[marko/queue] Job %s (id %s) failed on queue %s: %s: %s',
+            $job::class,
+            $job->id ?? 'none',
+            $queue,
+            $exception::class,
+            $exception->getMessage(),
+        ));
     }
 
     /**

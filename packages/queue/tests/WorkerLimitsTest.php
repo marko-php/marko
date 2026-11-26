@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Core\Container\Container;
+use Marko\Core\RequestStateResetter;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Log\LogLevel;
 use Marko\Queue\Exceptions\JobTimedOutException;
@@ -238,6 +239,7 @@ function createLimitsWorker(
             'queue.max_attempts' => 3,
         ])), new FakeClock()),
         logger: $logger,
+        requestStateResetter: new RequestStateResetter(new Container()),
         processControl: $processControl,
         clock: $clock,
     );
@@ -749,8 +751,9 @@ describe('Worker stop reasons', function (): void {
 
         $errors = array_column($logger->entriesForLevel(LogLevel::Error), 'message');
 
-        expect($errors)->toHaveCount(1)
-            ->and($errors[0])->toStartWith("[marko/queue] Job 'LimitsCallbackJob' exceeded the 5-second timeout.");
+        expect($errors)->toHaveCount(2)
+            ->and($errors[0])->toContain('failed on queue default: ')
+            ->and($errors[1])->toStartWith("[marko/queue] Job 'LimitsCallbackJob' exceeded the 5-second timeout.");
         $logger->assertLogged(
             '[marko/queue] Worker stopping: ' . WorkerStopReason::TimedOut->message(),
             LogLevel::Info,

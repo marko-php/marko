@@ -11,6 +11,7 @@ use Marko\Integration\Fixture\Job\InvalidBackoffJob;
 use Marko\Integration\Fixture\Job\PollingJob;
 use Marko\Integration\Fixture\Job\PrivatePropertyJob;
 use Marko\Integration\Fixture\Job\RecordingJob;
+use Marko\Integration\Fixture\Job\TransactionLeakingJob;
 use Marko\Integration\Fixture\Job\UniqueRecordingJob;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\QueueInterface;
@@ -205,3 +206,90 @@ it('runs a queued job after the server terminates the worker\'s database session
         ->and($failedJobs->count())->toBe(0)
         ->and((int) $connection->query('SELECT pg_backend_pid() AS pid')[0]['pid'])->not->toBe($workerPid);
 })->issue(717);
+
+/**
+ * Pushes a TransactionLeakingJob on the default queue and an InsertAuthorJob on
+ * its own queue before the leaky job runs: after a returning job the container's
+ * connection is still inside the leaked transaction, and a push made then would
+ * be rolled back with it. `pid` is the container connection's session before the
+ * leaky job ran.
+ *
+ * @return array{leaky: array{exitCode: int, output: string}, next: array{exitCode: int, output: string}, pid: int}
+ */
+function runLeakyJobThenNextJob(
+    object $test,
+    string $mode,
+): array {
+    $container = $test->app->container;
+    $queue = $container->get(QueueInterface::class);
+    $queue->push(new TransactionLeakingJob($mode));
+    $queue->push(new InsertAuthorJob('Written by the next job'), 'next');
+
+    $pid = (int) $container->get(ConnectionInterface::class)->query('SELECT pg_backend_pid() AS pid')[0]['pid'];
+    $leaky = runIntegrationCommand($test->app, 'queue:work', ['--once']);
+    $next = runIntegrationCommand($test->app, 'queue:work', ['--once', '--queue=next']);
+
+    return ['leaky' => $leaky, 'next' => $next, 'pid' => $pid];
+}
+
+/**
+ * Reads from a second, separately built connection, so only committed rows show.
+ *
+ * @return array{authors: array<int, string>, jobs: int, failedJobs: int}
+ */
+function committedQueueState(
+    object $test,
+): array {
+    $reader = new PgSqlConnection($test->app->container->get(DatabaseConfig::class));
+
+    try {
+        return [
+            'authors' => array_column($reader->query('SELECT name FROM authors ORDER BY id'), 'name'),
+            'jobs' => count($reader->query('SELECT id FROM jobs')),
+            'failedJobs' => count($reader->query('SELECT id FROM failed_jobs')),
+        ];
+    } finally {
+        $reader->disconnect();
+    }
+}
+
+it(
+    'commits the next job\'s writes and the failed hook\'s after a job threw with a transaction open',
+    function (): void {
+        $run = runLeakyJobThenNextJob($this, TransactionLeakingJob::MODE_THROW);
+        $state = committedQueueState($this);
+
+        expect($run['leaky']['exitCode'])->toBe(0, $run['leaky']['output'])
+            ->and($run['next']['exitCode'])->toBe(0, $run['next']['output'])
+            ->and($state['authors'])->toBe([TransactionLeakingJob::FAILED_MARKER, 'Written by the next job'])
+            ->and($state['failedJobs'])->toBe(1)
+            ->and($state['jobs'])->toBe(0);
+    },
+)->issue(721);
+
+it('runs the next job after a job lost its connection inside a transaction', function (): void {
+    $run = runLeakyJobThenNextJob($this, TransactionLeakingJob::MODE_TERMINATE);
+    $state = committedQueueState($this);
+    $pidAfter = (int) $this->app->container->get(ConnectionInterface::class)
+        ->query('SELECT pg_backend_pid() AS pid')[0]['pid'];
+
+    expect($run['leaky']['exitCode'])->toBe(0, $run['leaky']['output'])
+        ->and($run['next']['exitCode'])->toBe(0, $run['next']['output'])
+        ->and($state['authors'])->toBe([TransactionLeakingJob::FAILED_MARKER, 'Written by the next job'])
+        ->and($state['failedJobs'])->toBe(1)
+        ->and($state['jobs'])->toBe(0)
+        ->and($pidAfter)->not->toBe($run['pid']);
+})->issue(721);
+
+it('runs the next job on a clean connection after a job returned with a transaction open', function (): void {
+    $run = runLeakyJobThenNextJob($this, TransactionLeakingJob::MODE_RETURN);
+    $state = committedQueueState($this);
+
+    // The leaky job's delete() was rolled back with its leaked transaction, so it
+    // is still in jobs and runs again once its reservation expires.
+    expect($run['leaky']['exitCode'])->toBe(0, $run['leaky']['output'])
+        ->and($run['next']['exitCode'])->toBe(0, $run['next']['output'])
+        ->and($state['authors'])->toBe(['Written by the next job'])
+        ->and($state['failedJobs'])->toBe(0)
+        ->and($state['jobs'])->toBe(1);
+})->issue(721);
