@@ -69,6 +69,8 @@ class PaymentAuditPlugin
 }
 ```
 
+A plugin that needs to know which instance a call ran on marks the first parameter of its `#[Before]` or `#[After]` method with `#[Subject]` (`Marko\Core\Attributes\Subject`), for example `afterQuery(#[Subject] ConnectionInterface $connection, array $result, string $sql, array $bindings = [])`. The subject is the instance the application holds, so calls on it go back through the plugin chain, and a plugin must not call the method it is hooked on. See [Plugins](/docs/concepts/plugins/#receiving-the-intercepted-instance) for details and errors.
+
 ### Reacting to Events
 
 Decouple "something happened" from "react to it":
@@ -695,6 +697,7 @@ Every framework setting that takes a filesystem path resolves it this way, inclu
 #[Plugin(target: ClassName::class)]            // Mark class as plugin
 #[Before]                                       // Run before target method
 #[After]                                        // Run after target method
+#[Subject]                                      // On the first parameter of a #[Before]/#[After] method: receive the intercepted instance
 #[Observer(event: EventClass::class)]           // React to events (synchronous)
 #[Observer(event: EventClass::class, async: true)] // Queue it (needs marko/queue; throws EventException without it)
 #[Command(name: 'cmd:name', description: '', aliases: [], flags: [], options: [])] // Register CLI command; flags never take a value, options do; any other option is refused

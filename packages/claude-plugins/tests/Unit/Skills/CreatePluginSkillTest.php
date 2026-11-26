@@ -79,6 +79,30 @@ describe('create-plugin skill', function (): void {
     });
 
     it(
+        'SKILL.md explains that the first parameter of a plugin method may be marked #[Subject] to receive the intercepted instance',
+        function (): void {
+            expect($this->skillContent)->toContain('Getting the intercepted instance')
+                ->toContain('use Marko\Core\Attributes\Subject;')
+                ->toContain('#[Subject]')
+                ->toContain('first parameter');
+        },
+    );
+
+    it('SKILL.md warns that calling the hooked method on the subject recurses', function (): void {
+        expect($this->skillContent)->toContain('intercepted again')
+            ->toContain('never call the hooked method')
+            ->toContain('recurses');
+    });
+
+    it('PluginClass.php.tmpl shows the optional #[Subject] first parameter', function (): void {
+        $tmplPath = $this->skillRoot . '/assets/PluginClass.php.tmpl';
+        $content = file_exists($tmplPath) ? file_get_contents($tmplPath) : '';
+
+        expect(file_exists($tmplPath))->toBeTrue()
+            ->and($content)->toContain('#[Subject] {{TargetClass}} $subject');
+    });
+
+    it(
         'the original SKILL.md at packages/devai/resources/ai/skills/marko-create-plugin/ is deleted',
         function (): void {
             $originalPath = dirname(__DIR__, 4) . '/devai/resources/ai/skills/marko-create-plugin/SKILL.md';

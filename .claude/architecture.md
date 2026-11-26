@@ -838,6 +838,24 @@ Sort order determines execution sequence when multiple plugins target the same m
 
 Plugins are discovered via the `#[Plugin]` attribute on classes. Methods with `#[Before]` or `#[After]` attributes are interceptors. The method name determines which target method is intercepted — a method named `save()` with `#[Before]` intercepts `save()` on the target. Use `#[Before(method: 'targetMethod')]` to target a specific method when the plugin method has a different name. Before plugins have three return behaviors: `null` (pass through), `array` (modify arguments), or any other non-null value (short-circuit). After plugins receive the result and must return the (possibly modified) result; when multiple after plugins target the same method they chain — each one's return value becomes the next one's input.
 
+### The Intercepted Instance (`#[Subject]`)
+
+Plugin methods do not receive the intercepted instance by default: a before plugin takes the target's arguments, an after plugin takes `$result` and then the arguments. A plugin that needs the instance it is running on marks its **first** parameter `#[Subject]`; the rest of the signature is unchanged.
+
+```php
+#[After(method: 'query')]
+public function afterQuery(
+    #[Subject] ConnectionInterface $connection,
+    array $result,
+    string $sql,
+    array $bindings = [],
+): array {
+    // ...
+}
+```
+
+The subject is the object the application holds for that service (the interceptor the container returned), so calls made on it go back through the plugin chain: a plugin must not call the method it is hooked on. Use it when one plugin intercepts several live instances of the same target and has to tell them apart; for a singleton, injecting the target's interface through the plugin constructor still works. Misuse (not the first parameter, variadic or by-reference, on a non-hook method, a type that cannot hold the target) fails at discovery with a `PluginException`.
+
 ---
 
 ## Event System
@@ -1090,6 +1108,7 @@ Attributes are wrong for system wiring and environment configuration:
 | `#[Plugin]`               | Class        | Marks class as a plugin for another class |
 | `#[Before]`               | Method       | Plugin method runs before target          |
 | `#[After]`                | Method       | Plugin method runs after target           |
+| `#[Subject]`              | Parameter    | Plugin method receives the intercepted instance |
 | `#[Observer]`             | Class        | Reacts to dispatched events               |
 | `#[Preference]`           | Class        | Replaces another class globally           |
 | `#[Get]`, `#[Post]`, etc. | Method       | Defines HTTP route                        |

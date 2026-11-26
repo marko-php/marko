@@ -61,6 +61,59 @@ class PluginException extends MarkoException
         );
     }
 
+    public static function subjectNotFirstParameter(
+        string $pluginClass,
+        string $method,
+        string $parameter,
+        int $position,
+    ): self {
+        return new self(
+            message: "Parameter '\$$parameter' at position $position of '$pluginClass::$method()' is marked #[Subject], but #[Subject] is only allowed on the first parameter",
+            context: "While parsing plugin class '$pluginClass'",
+            suggestion: "Move '\$$parameter' to the first parameter of '$method()'; the target's arguments (and \$result for after plugins) follow it",
+        );
+    }
+
+    public static function subjectNotPlainParameter(
+        string $pluginClass,
+        string $method,
+        string $parameter,
+        int $position,
+    ): self {
+        return new self(
+            message: "Parameter '\$$parameter' at position $position of '$pluginClass::$method()' is marked #[Subject], but #[Subject] cannot be variadic or passed by reference",
+            context: "While parsing plugin class '$pluginClass'",
+            suggestion: "Declare '\$$parameter' as a plain by-value parameter, for example '#[Subject] TargetClass \$$parameter'",
+        );
+    }
+
+    public static function subjectOnNonHookMethod(
+        string $pluginClass,
+        string $method,
+        string $parameter,
+        int $position,
+    ): self {
+        return new self(
+            message: "Parameter '\$$parameter' at position $position of '$pluginClass::$method()' is marked #[Subject], but '$method()' has neither #[Before] nor #[After], so the subject would never be passed",
+            context: "While parsing plugin class '$pluginClass'",
+            suggestion: "Add #[Before] or #[After] to '$method()', or remove #[Subject] from '\$$parameter'",
+        );
+    }
+
+    public static function subjectTypeMismatch(
+        string $pluginClass,
+        string $method,
+        string $parameter,
+        string $declaredType,
+        string $targetClass,
+    ): self {
+        return new self(
+            message: "Parameter '\$$parameter' of '$pluginClass::$method()' is marked #[Subject] and declared as '$declaredType', which cannot hold the intercepted '$targetClass'",
+            context: "While parsing plugin class '$pluginClass'",
+            suggestion: "Declare '\$$parameter' as '$targetClass' (or a parent class, an interface it implements, 'object' or 'mixed')",
+        );
+    }
+
     public static function cannotTargetPlugin(
         string $pluginClass,
         string $targetClass,

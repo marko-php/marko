@@ -132,7 +132,7 @@ class PluginRegistry
      * Get sorted before methods for a specific target method.
      *
      * @param class-string $targetClass
-     * @return array<array{pluginClass: class-string, method: string, sortOrder: int}>
+     * @return array<array{pluginClass: class-string, method: string, sortOrder: int, subject: bool}>
      */
     public function getBeforeMethodsFor(
         string $targetClass,
@@ -145,7 +145,7 @@ class PluginRegistry
      * Get sorted after methods for a specific target method.
      *
      * @param class-string $targetClass
-     * @return array<array{pluginClass: class-string, method: string, sortOrder: int}>
+     * @return array<array{pluginClass: class-string, method: string, sortOrder: int, subject: bool}>
      */
     public function getAfterMethodsFor(
         string $targetClass,
@@ -207,7 +207,7 @@ class PluginRegistry
      * @param string $targetClass
      * @param string $targetMethod
      * @param 'before'|'after' $type
-     * @return array<array{pluginClass: class-string, method: string, sortOrder: int}>
+     * @return array<array{pluginClass: class-string, method: string, sortOrder: int, subject: bool}>
      */
     private function getSortedMethodsFor(
         string $targetClass,
@@ -226,6 +226,7 @@ class PluginRegistry
                         'pluginClass' => $plugin->pluginClass,
                         'method' => $entry['pluginMethod'],
                         'sortOrder' => $entry['sortOrder'],
+                        'subject' => $entry['subject'] ?? false,
                     ];
                 }
             }
