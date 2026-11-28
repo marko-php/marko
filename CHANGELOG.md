@@ -8,6 +8,27 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 <!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->
 
+## [0.15.0] - 2026-11-28
+
+### Breaking Changes
+* fix: reset resettable services between queue jobs and scheduler runs by @markshust in https://github.com/marko-php/marko/pull/723
+* feat: run each migration in a transaction on postgresql by @markshust in https://github.com/marko-php/marko/pull/724
+* fix: plugin interface wrappers keep the target's other interfaces by @markshust in https://github.com/marko-php/marko/pull/727
+### New Features
+* feat: split the release announcement summary into short paragraphs by @markshust in https://github.com/marko-php/marko/pull/713
+* feat: post release announcements as the marko knight and split the changelog by section by @markshust in https://github.com/marko-php/marko/pull/714
+* feat: opt-in #[Subject] parameter for plugins by @markshust in https://github.com/marko-php/marko/pull/725
+### Bug Fixes
+* fix: stop the release announcement rejecting php attribute names as markdown by @markshust in https://github.com/marko-php/marko/pull/712
+* fix(database-pgsql): read index columns back without postgres's quotes by @etienne-scherrer in https://github.com/marko-php/marko/pull/715
+* fix: reconnect after a lost database connection by @markshust in https://github.com/marko-php/marko/pull/720
+### Documentation
+* docs: use feature/ for every branch in CONTRIBUTING.md by @markshust in https://github.com/marko-php/marko/pull/719
+### CI
+* ci: pull service images from the google mirror of docker hub by @markshust in https://github.com/marko-php/marko/pull/722
+* ci: require roadrunner-cli 3.1 so the roadrunner binary installs again by @markshust in https://github.com/marko-php/marko/pull/728
+
+
 ## [0.14.0] - 2026-11-18
 
 ### Breaking Changes
