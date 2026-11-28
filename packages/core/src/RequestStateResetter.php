@@ -17,7 +17,10 @@ use Marko\Core\Plugin\PluginInterceptedInterface;
  * generically via ContainerInterface::resolvedInstances(), never by a
  * hardcoded per-package list. Only instances the container has already
  * built are touched, since resolvedInstances() never forces instantiation:
- * a service no request used is never constructed just to reset it.
+ * a service no request used is never constructed just to reset it. For each
+ * resolved instance, only the outermost resettable object in its plugin proxy
+ * chain is reset (the proxy itself when it is resettable, else the first
+ * resettable service behind it), so one binding never resets twice.
  *
  * Reset order is fixed and deterministic — ascending by container binding
  * identifier — so it never depends on which services happened to be
@@ -34,7 +37,8 @@ readonly class RequestStateResetter
     /**
      * @param ResettableInterface ...$except Instances to leave alone, matched by
      *     identity whatever binding id they were resolved under (the marko/testing
-     *     RefreshDatabase helper keeps its test transaction open this way)
+     *     RefreshDatabase helper keeps its test transaction open this way). A plugin
+     *     proxy is skipped when it, or anything it wraps, is passed here.
      */
     public function reset(
         ResettableInterface ...$except,
@@ -43,34 +47,41 @@ readonly class RequestStateResetter
         ksort($instances);
 
         foreach ($instances as $instance) {
-            $resettable = $this->resettableBehind($instance);
+            $chain = $this->proxyChain($instance);
 
-            if (
-                $resettable === null
-                || in_array($resettable, $except, true)
-            ) {
+            if (array_any($chain, fn (object $link): bool => in_array($link, $except, true))) {
                 continue;
             }
 
-            $resettable->reset();
+            $resettable = array_find(
+                $chain,
+                fn (object $link): bool => $link instanceof ResettableInterface,
+            );
+
+            $resettable?->reset();
         }
     }
 
     /**
-     * A plugin interface proxy implements only the plugged interface, so the
-     * resettable service it wraps would otherwise keep one request's state.
-     * A concrete subclass proxy is itself resettable and holds the state.
+     * The instance followed by every object a plugin proxy wraps, outermost
+     * first. A plugin interface proxy implements the plugged interface and
+     * only those other interfaces it can reproduce, so a resettable service it
+     * wraps may be reachable only through the chain. A concrete subclass proxy
+     * of a resettable class is itself resettable and holds the copied state, so
+     * it is the one reset.
+     *
+     * @return array<int, object>
      */
-    private function resettableBehind(
+    private function proxyChain(
         object $instance,
-    ): ?ResettableInterface {
-        while (
-            $instance instanceof PluginInterceptedInterface
-            && !$instance instanceof ResettableInterface
-        ) {
+    ): array {
+        $chain = [$instance];
+
+        while ($instance instanceof PluginInterceptedInterface) {
             $instance = $instance->getPluginTarget();
+            $chain[] = $instance;
         }
 
-        return $instance instanceof ResettableInterface ? $instance : null;
+        return $chain;
     }
 }

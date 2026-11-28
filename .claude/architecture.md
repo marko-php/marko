@@ -838,6 +838,12 @@ Sort order determines execution sequence when multiple plugins target the same m
 
 Plugins are discovered via the `#[Plugin]` attribute on classes. Methods with `#[Before]` or `#[After]` attributes are interceptors. The method name determines which target method is intercepted — a method named `save()` with `#[Before]` intercepts `save()` on the target. Use `#[Before(method: 'targetMethod')]` to target a specific method when the plugin method has a different name. Before plugins have three return behaviors: `null` (pass through), `array` (modify arguments), or any other non-null value (short-circuit). After plugins receive the result and must return the (possibly modified) result; when multiple after plugins target the same method they chain — each one's return value becomes the next one's input.
 
+### Interface Targets Keep the Target's Other Interfaces
+
+When a plugin targets an interface, the container returns a generated wrapper around the real object. The wrapper implements the plugged interface and also the other interfaces of the concrete class behind it, so `instanceof` checks on a plugged service keep working (a plugin on `ConnectionInterface` does not stop the connection being a `TransactionInterface`). Only methods of the plugged interface go through the plugin chain; methods of the other interfaces are passed straight to the real object.
+
+An interface is left out of the wrapper when it cannot be reproduced exactly: it has plugins of its own, it is a PHP built-in interface, it declares properties or static, by-reference-returning or `static`-returning methods, or its methods or constants clash with another interface's. Code that must reach the real object can still use `PluginInterceptedInterface::getPluginTarget()`.
+
 ### The Intercepted Instance (`#[Subject]`)
 
 Plugin methods do not receive the intercepted instance by default: a before plugin takes the target's arguments, an after plugin takes `$result` and then the arguments. A plugin that needs the instance it is running on marks its **first** parameter `#[Subject]`; the rest of the signature is unchanged.

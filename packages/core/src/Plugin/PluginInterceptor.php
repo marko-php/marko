@@ -65,6 +65,7 @@ readonly class PluginInterceptor
             $className = $this->generator->generateInterfaceWrapper(
                 $originalId,
                 $this->registry,
+                $target::class,
             );
 
             /** @var PluginInterceptedInterface&object $instance */
@@ -85,6 +86,7 @@ readonly class PluginInterceptor
             $className = $this->generator->generateInterfaceWrapper(
                 $effectiveTarget,
                 $this->registry,
+                $target::class,
             );
 
             /** @var PluginInterceptedInterface&object $instance */
