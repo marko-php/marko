@@ -15,8 +15,37 @@ use ReflectionType;
 use ReflectionUnionType;
 use UnitEnum;
 
+/**
+ * Generates the classes that put plugins around a service.
+ *
+ * An interface wrapper implements the plugged interface and intercepts its methods. Given the
+ * concrete class behind it, the wrapper also implements that class's other interfaces, so the
+ * proxy still satisfies type checks against them; their methods call the target directly and
+ * bypass plugins, and a method the plugged interface also declares stays intercepted.
+ *
+ * An other interface is left out when it, or a parent the plugged interface does not cover, is
+ * internal to PHP or has plugins of its own; when it declares a property (its own or inherited);
+ * when one of its methods is static, returns by
+ * reference, uses a reserved name, returns static or has an object default; or when a method
+ * signature or constant clashes with one already emitted (plugged interface first, then the
+ * other interfaces by name). Leaving one out keeps the behaviour from before other interfaces
+ * were kept. A declaration the wrapper cannot reproduce would be a fatal error in eval(), so
+ * each interface is checked by reflection before any code is generated.
+ */
 class InterceptorClassGenerator
 {
+    /**
+     * Method names the interception trait and marker interface already define on the wrapper.
+     */
+    private const array RESERVED_METHOD_NAMES = [
+        'initInterception',
+        'getPluginTarget',
+        'interceptCall',
+        'interceptParentCall',
+        'runBeforePlugins',
+        'runAfterPlugins',
+    ];
+
     /**
      * @var array<string, string> Cache of target class => generated class name
      */
@@ -26,19 +55,22 @@ class InterceptorClassGenerator
      * Generate and eval an interface wrapper class, returning the generated class name.
      *
      * @param class-string $interfaceName
+     * @param class-string|null $concreteClass The class behind the interface; its other interfaces
+     *     are kept where the wrapper can reproduce them
      * @throws PluginException|ReflectionException
      */
     public function generateInterfaceWrapper(
         string $interfaceName,
         PluginRegistry $pluginRegistry,
+        ?string $concreteClass = null,
     ): string {
-        $cacheKey = 'wrapper:' . $interfaceName;
+        $cacheKey = 'wrapper:' . $interfaceName . ($concreteClass === null ? '' : ':' . $concreteClass);
 
         if (isset($this->cache[$cacheKey])) {
             return $this->cache[$cacheKey];
         }
 
-        $code = $this->generateInterfaceWrapperCode($interfaceName, $pluginRegistry);
+        $code = $this->generateInterfaceWrapperCode($interfaceName, $pluginRegistry, $concreteClass);
         $className = $this->extractClassName($code);
 
         if (!class_exists($className)) {
@@ -54,23 +86,44 @@ class InterceptorClassGenerator
      * Generate the PHP code string for an interface wrapper class.
      *
      * @param class-string $interfaceName
+     * @param class-string|null $concreteClass The class behind the interface; its other interfaces
+     *     are kept where the wrapper can reproduce them
      * @throws PluginException|ReflectionException
      */
     public function generateInterfaceWrapperCode(
         string $interfaceName,
         PluginRegistry $pluginRegistry,
+        ?string $concreteClass = null,
     ): string {
-        $className = $this->buildClassName($interfaceName);
         $reflection = new ReflectionClass($interfaceName);
+        $otherInterfaces = $this->collectOtherInterfaces($reflection, $concreteClass, $pluginRegistry);
+        $className = $this->buildClassName($interfaceName);
 
-        $methods = $this->collectInterfaceMethods($reflection);
-        $methodCode = implode("\n\n", array_map(
-            fn (ReflectionMethod $m) => $this->generateWrapperMethod($m),
-            $methods,
+        if ($otherInterfaces !== []) {
+            $className .= '_' . substr(md5(implode(',', $otherInterfaces)), 0, 8);
+        }
+
+        $implements = implode(', ', array_map(
+            fn (string $name) => '\\' . $name,
+            [$interfaceName, ...$otherInterfaces],
         ));
 
+        $methods = [];
+
+        foreach ($this->collectInterfaceMethods($reflection) as $method) {
+            $methods[$method->getName()] = $this->generateWrapperMethod($method);
+        }
+
+        foreach ($otherInterfaces as $otherInterface) {
+            foreach ($this->collectInterfaceMethods(new ReflectionClass($otherInterface)) as $method) {
+                $methods[$method->getName()] ??= $this->generateDelegatedMethod($method);
+            }
+        }
+
+        $methodCode = implode("\n\n", $methods);
+
         return <<<PHP
-        class $className implements \\$interfaceName, \\Marko\\Core\\Plugin\\PluginInterceptedInterface
+        class $className implements $implements, \\Marko\\Core\\Plugin\\PluginInterceptedInterface
         {
             use \\Marko\\Core\\Plugin\\PluginInterception;
 
@@ -187,6 +240,234 @@ class InterceptorClassGenerator
     }
 
     /**
+     * Collect the other interfaces of the concrete class that the wrapper keeps, sorted by name.
+     *
+     * The plugged interface, its parents and the marker interface are already on the wrapper.
+     * Each remaining interface is kept only if canKeepInterface() accepts it and it does not
+     * clash with the plugged interface or one kept before it; an interface left out behaves as
+     * it did before.
+     *
+     * @param ReflectionClass<object> $pluggedInterface
+     * @param class-string|null $concreteClass
+     *
+     * @return array<class-string>
+     * @throws PluginException|ReflectionException
+     */
+    private function collectOtherInterfaces(
+        ReflectionClass $pluggedInterface,
+        ?string $concreteClass,
+        PluginRegistry $pluginRegistry,
+    ): array {
+        if ($concreteClass === null) {
+            return [];
+        }
+
+        $excluded = [
+            ...$pluggedInterface->getInterfaceNames(),
+            $pluggedInterface->getName(),
+            PluginInterceptedInterface::class,
+        ];
+        $others = array_values(array_filter(
+            array_diff(class_implements($concreteClass), $excluded),
+            fn (string $interface) => $this->canKeepInterface($interface, $excluded, $pluginRegistry),
+        ));
+        sort($others);
+
+        return $this->dropClashingInterfaces($pluggedInterface, $others);
+    }
+
+    /**
+     * Drop each interface that declares a method already emitted with a different signature,
+     * or a constant already declared by a different emitted interface.
+     *
+     * @param ReflectionClass<object> $pluggedInterface
+     * @param array<class-string> $candidates Sorted by name
+     *
+     * @return array<class-string>
+     * @throws PluginException|ReflectionException
+     */
+    private function dropClashingInterfaces(
+        ReflectionClass $pluggedInterface,
+        array $candidates,
+    ): array {
+        $signatures = $this->collectSignatures($pluggedInterface);
+        $constantOwners = $this->collectConstantOwners($pluggedInterface);
+        $kept = [];
+
+        foreach ($candidates as $candidate) {
+            $candidateReflection = new ReflectionClass($candidate);
+            $candidateSignatures = $this->collectSignatures($candidateReflection);
+            $candidateOwners = $this->collectConstantOwners($candidateReflection);
+
+            if (
+                array_any(
+                    $candidateSignatures,
+                    fn (string $signature, string $name) => isset($signatures[$name])
+                        && $signatures[$name] !== $signature,
+                )
+                || array_any(
+                    $candidateOwners,
+                    fn (string $owner, string $name) => isset($constantOwners[$name])
+                        && $constantOwners[$name] !== $owner,
+                )
+            ) {
+                continue;
+            }
+
+            $signatures += $candidateSignatures;
+            $constantOwners += $candidateOwners;
+            $kept[] = $candidate;
+        }
+
+        return $kept;
+    }
+
+    /**
+     * Map each constant name of an interface to the interface that declares it.
+     *
+     * @param ReflectionClass<object> $interface
+     *
+     * @return array<string, string>
+     */
+    private function collectConstantOwners(
+        ReflectionClass $interface,
+    ): array {
+        $owners = [];
+
+        foreach ($interface->getReflectionConstants() as $constant) {
+            $owners[$constant->getName()] = $constant->getDeclaringClass()->getName();
+        }
+
+        return $owners;
+    }
+
+    /**
+     * Map each method name of an interface to its delegated signature.
+     *
+     * @param ReflectionClass<object> $interface
+     *
+     * @return array<string, string>
+     * @throws PluginException|ReflectionException
+     */
+    private function collectSignatures(
+        ReflectionClass $interface,
+    ): array {
+        $signatures = [];
+
+        foreach ($this->collectInterfaceMethods($interface) as $method) {
+            $signatures[$method->getName()] = $this->renderParameters($method, delegated: true)
+                . $this->renderReturnType($method);
+        }
+
+        return $signatures;
+    }
+
+    /**
+     * Decide whether the wrapper can safely implement another interface of the concrete class.
+     *
+     * Refused when the interface or any parent is internal to PHP, when it or an uncovered parent
+     * has plugins of its own (delegating would skip them), when it declares a property (own or
+     * inherited; the wrapper reproduces methods only), or when any of its methods is unreproducible. Deciding here, by reflection, avoids a fatal error in eval().
+     *
+     * @param class-string $interface
+     * @param array<class-string> $coveredInterfaces The plugged interface, its parents and the marker interface
+     * @throws ReflectionException
+     */
+    private function canKeepInterface(
+        string $interface,
+        array $coveredInterfaces,
+        PluginRegistry $pluginRegistry,
+    ): bool {
+        $hierarchy = [$interface, ...array_values(class_implements($interface))];
+
+        if (array_any($hierarchy, fn (string $name) => new ReflectionClass($name)->isInternal())) {
+            return false;
+        }
+
+        if (array_any(
+            array_diff($hierarchy, $coveredInterfaces),
+            fn (string $name) => $pluginRegistry->hasPluginsFor($name),
+        )) {
+            return false;
+        }
+
+        $reflection = new ReflectionClass($interface);
+
+        if ($reflection->getProperties() !== []) {
+            return false;
+        }
+
+        return !array_any(
+            $this->collectInterfaceMethods($reflection),
+            fn (ReflectionMethod $method) => $this->isUnreproducible($method),
+        );
+    }
+
+    /**
+     * Check if a delegated method has a shape the generated wrapper cannot declare exactly.
+     *
+     * Static methods have no target instance to call, reserved names collide with the
+     * interception trait, a static return would get the target instead of the wrapper, and
+     * object defaults cannot be rendered as a constant expression.
+     *
+     * @throws ReflectionException
+     */
+    private function isUnreproducible(
+        ReflectionMethod $method,
+    ): bool {
+        return $method->isStatic()
+            || $method->returnsReference()
+            || in_array($method->getName(), self::RESERVED_METHOD_NAMES, true)
+            || $this->containsStaticType($method->getReturnType())
+            || array_any($method->getParameters(), fn (ReflectionParameter $p) => $this->hasObjectDefault($p));
+    }
+
+    /**
+     * Check if a type is or contains `static`.
+     */
+    private function containsStaticType(
+        ?ReflectionType $type,
+    ): bool {
+        if ($type instanceof ReflectionNamedType) {
+            return $type->getName() === 'static';
+        }
+
+        if (
+            $type instanceof ReflectionUnionType
+            || $type instanceof ReflectionIntersectionType
+        ) {
+            return array_any($type->getTypes(), fn (ReflectionType $t) => $this->containsStaticType($t));
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if a parameter default is, or holds, an object that renderValue() would refuse.
+     *
+     * @throws ReflectionException
+     */
+    private function hasObjectDefault(
+        ReflectionParameter $param,
+    ): bool {
+        return !$param->isVariadic()
+            && $param->isOptional()
+            && $param->isDefaultValueAvailable()
+            && $this->containsObject($param->getDefaultValue());
+    }
+
+    private function containsObject(
+        mixed $value,
+    ): bool {
+        if (is_array($value)) {
+            return array_any($value, fn (mixed $item) => $this->containsObject($item));
+        }
+
+        return is_object($value)
+            && !($value instanceof UnitEnum);
+    }
+
+    /**
      * Collect all methods from a reflected interface, including inherited ones.
      *
      * @param ReflectionClass<object> $reflection
@@ -227,6 +508,34 @@ class InterceptorClassGenerator
     }
 
     /**
+     * Generate a method that calls the target directly, bypassing the plugin chain.
+     *
+     * @throws PluginException|ReflectionException
+     */
+    private function generateDelegatedMethod(
+        ReflectionMethod $method,
+    ): string {
+        $name = $method->getName();
+        $params = $this->renderParameters($method, delegated: true);
+        $returnType = $this->renderReturnType($method);
+        $args = implode(', ', array_map(
+            fn (ReflectionParameter $p) => ($p->isVariadic() ? '...' : '') . '$' . $p->getName(),
+            $method->getParameters(),
+        ));
+        $call = "\$this->pluginTarget->$name($args);";
+        $body = $this->returnsNothing($method)
+            ? $call
+            : "return $call";
+
+        return <<<PHP
+                public function $name($params)$returnType
+                {
+                    $body
+                }
+        PHP;
+    }
+
+    /**
      * Generate a single overridden method for the concrete subclass strategy.
      */
     private function generateSubclassMethod(
@@ -252,21 +561,30 @@ class InterceptorClassGenerator
 
     /**
      * Render method parameters as a string for a method signature.
+     *
+     * @throws PluginException|ReflectionException
      */
     private function renderParameters(
         ReflectionMethod $method,
+        bool $delegated = false,
     ): string {
         return implode(', ', array_map(
-            fn (ReflectionParameter $p) => $this->renderParameter($p),
+            fn (ReflectionParameter $p) => $this->renderParameter($p, $delegated),
             $method->getParameters(),
         ));
     }
 
     /**
      * Render a single parameter declaration.
+     *
+     * Only a delegated method keeps by-reference markers, since it passes its arguments straight
+     * to the target; the intercepted wrapper's output is unchanged.
+     *
+     * @throws PluginException|ReflectionException
      */
     private function renderParameter(
         ReflectionParameter $param,
+        bool $delegated = false,
     ): string {
         $parts = [];
 
@@ -274,8 +592,11 @@ class InterceptorClassGenerator
             $parts[] = $this->renderType($param->getType());
         }
 
+        $referencePrefix = ($delegated && $param->isPassedByReference())
+            ? '&'
+            : '';
         $variadicPrefix = $param->isVariadic() ? '...' : '';
-        $parts[] = $variadicPrefix . '$' . $param->getName();
+        $parts[] = $referencePrefix . $variadicPrefix . '$' . $param->getName();
 
         if (
             !$param->isVariadic()
@@ -433,6 +754,18 @@ class InterceptorClassGenerator
         );
 
         return '[' . implode(', ', $parts) . ']';
+    }
+
+    /**
+     * Check if a method returns nothing to its caller: a void or never return type.
+     */
+    private function returnsNothing(
+        ReflectionMethod $method,
+    ): bool {
+        $type = $method->getReturnType();
+
+        return $type instanceof ReflectionNamedType
+            && in_array($type->getName(), ['void', 'never'], true);
     }
 
     /**

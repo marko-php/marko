@@ -91,6 +91,164 @@ readonly class ReadonlySampleClass
     }
 }
 
+// Fixtures for wrappers that also implement the concrete target's other interfaces
+interface WrapPluggedInterface
+{
+    public function plugged(
+        string $value,
+    ): string;
+}
+
+interface WrapOtherInterface
+{
+    public function other(
+        string $value,
+    ): string;
+
+    public function notify(
+        string ...$tags,
+    ): void;
+}
+
+interface WrapSharedInterface
+{
+    public function plugged(
+        string $value,
+    ): string;
+}
+
+interface WrapOwnPluginInterface
+{
+    public function own(): string;
+}
+
+class WrapConcrete implements WrapPluggedInterface, WrapOtherInterface
+{
+    /** @var array<string> */
+    public array $notified = [];
+
+    public function plugged(
+        string $value,
+    ): string {
+        return 'plugged:' . $value;
+    }
+
+    public function other(
+        string $value,
+    ): string {
+        return 'other:' . $value;
+    }
+
+    public function notify(
+        string ...$tags,
+    ): void {
+        $this->notified = $tags;
+    }
+}
+
+class WrapSharedConcrete implements WrapPluggedInterface, WrapSharedInterface
+{
+    public function plugged(
+        string $value,
+    ): string {
+        return 'plugged:' . $value;
+    }
+}
+
+class WrapOwnPluginConcrete implements WrapPluggedInterface, WrapOwnPluginInterface
+{
+    public function plugged(
+        string $value,
+    ): string {
+        return 'plugged:' . $value;
+    }
+
+    public function own(): string
+    {
+        return 'own';
+    }
+}
+
+class WrapPlainConcrete implements WrapPluggedInterface
+{
+    public function plugged(
+        string $value,
+    ): string {
+        return 'plugged:' . $value;
+    }
+}
+
+class WrapShortCircuitPlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function beforeShortCircuit(): string
+    {
+        return 'short-circuited';
+    }
+}
+
+/**
+ * Build an interceptor instance from a generated interface wrapper class.
+ */
+function wrapInstance(
+    string $wrapperClass,
+    object $target,
+    PluginRegistry $registry,
+    ContainerInterface $container,
+): object {
+    $instance = new $wrapperClass();
+    $instance->initInterception(
+        pluginTarget: $target,
+        pluginTargetClass: WrapPluggedInterface::class,
+        pluginContainer: $container,
+        pluginRegistry: $registry,
+    );
+
+    return $instance;
+}
+
+/**
+ * A registry with a short-circuiting before plugin on the given interface method.
+ */
+function wrapRegistryShortCircuiting(
+    string $targetClass,
+    string $method,
+): PluginRegistry {
+    $registry = new PluginRegistry();
+    $registry->register(new PluginDefinition(
+        pluginClass: WrapShortCircuitPlugin::class,
+        targetClass: $targetClass,
+        beforeMethods: [$method => ['pluginMethod' => 'beforeShortCircuit', 'sortOrder' => 10]],
+    ));
+
+    return $registry;
+}
+
+interface WrapCountingInterface extends Countable {}
+
+interface WrapChildOfOwnPluginInterface extends WrapOwnPluginInterface {}
+
+class WrapChildOfOwnPluginConcrete extends WrapOwnPluginConcrete implements WrapChildOfOwnPluginInterface {}
+
+class WrapInternalInterfacesConcrete implements WrapPluggedInterface, WrapCountingInterface, IteratorAggregate
+{
+    public function plugged(
+        string $value,
+    ): string {
+        return $value;
+    }
+
+    public function count(): int
+    {
+        return 0;
+    }
+
+    public function getIterator(): Iterator
+    {
+        return new ArrayIterator([]);
+    }
+}
+
 // Helper to build a PluginRegistry with a plugin for ConcreteSampleClass::pluggedMethod
 function makeRegistryWithPlugin(
     string $targetClass,
@@ -632,4 +790,565 @@ it('throws PluginException at generation time when an array default contains an 
 
     expect(fn () => $generator->generateConcreteSubclassCode(DefaultValueObjectInArrayClass::class, $registry))
         ->toThrow(PluginException::class, 'parameter $objects has an object default value (DefaultValueObject)');
+});
+
+// ─────────────────────────────────────────────────────────────
+// Interface wrapper keeping the concrete target's other interfaces
+// ─────────────────────────────────────────────────────────────
+
+it('generates a wrapper that also implements the other interfaces of the concrete class', function (): void {
+    $className = new InterceptorClassGenerator()->generateInterfaceWrapper(
+        WrapPluggedInterface::class,
+        new PluginRegistry(),
+        WrapConcrete::class,
+    );
+
+    expect(new ReflectionClass($className)->getInterfaceNames())
+        ->toContain(WrapPluggedInterface::class)
+        ->toContain(WrapOtherInterface::class)
+        ->toContain(PluginInterceptedInterface::class)
+        ->and(method_exists($className, 'other'))->toBeTrue()
+        ->and(method_exists($className, 'plugged'))->toBeTrue();
+});
+
+it('delegates a method of another interface straight to the target without running plugins', function (): void {
+    $registry = wrapRegistryShortCircuiting(WrapPluggedInterface::class, 'other');
+    $container = $this->createStub(ContainerInterface::class);
+    $container->method('get')->willReturn(new WrapShortCircuitPlugin());
+    $target = new WrapConcrete();
+
+    $className = new InterceptorClassGenerator()->generateInterfaceWrapper(
+        WrapPluggedInterface::class,
+        $registry,
+        WrapConcrete::class,
+    );
+    $wrapper = wrapInstance($className, $target, $registry, $container);
+
+    /** @var WrapOtherInterface $wrapper */
+    $result = $wrapper->other('x');
+    $wrapper->notify('a', 'b');
+
+    expect($result)->toBe('other:x')
+        ->and($target->notified)->toBe(['a', 'b']);
+});
+
+it(
+    'generates a method declared by the plugged interface and another interface once, as a plugged method',
+    function (): void {
+        $registry = wrapRegistryShortCircuiting(WrapPluggedInterface::class, 'plugged');
+        $container = $this->createStub(ContainerInterface::class);
+        $container->method('get')->willReturn(new WrapShortCircuitPlugin());
+
+        $className = new InterceptorClassGenerator()->generateInterfaceWrapper(
+            WrapPluggedInterface::class,
+            $registry,
+            WrapSharedConcrete::class,
+        );
+        $wrapper = wrapInstance($className, new WrapSharedConcrete(), $registry, $container);
+
+        /** @var WrapSharedInterface $wrapper */
+        expect($wrapper)->toBeInstanceOf(WrapSharedInterface::class)
+            ->and($wrapper->plugged('x'))->toBe('short-circuited');
+    },
+);
+
+it('leaves out another interface that has plugins of its own', function (): void {
+    $registry = wrapRegistryShortCircuiting(WrapOwnPluginInterface::class, 'own');
+
+    $className = new InterceptorClassGenerator()->generateInterfaceWrapper(
+        WrapPluggedInterface::class,
+        $registry,
+        WrapOwnPluginConcrete::class,
+    );
+
+    expect(new ReflectionClass($className)->getInterfaceNames())
+        ->toContain(WrapPluggedInterface::class)
+        ->not->toContain(WrapOwnPluginInterface::class);
+});
+
+it('leaves out PHP internal interfaces and interfaces that extend them', function (): void {
+    $className = new InterceptorClassGenerator()->generateInterfaceWrapper(
+        WrapPluggedInterface::class,
+        new PluginRegistry(),
+        WrapInternalInterfacesConcrete::class,
+    );
+
+    expect(array_values(new ReflectionClass($className)->getInterfaceNames()))
+        ->toBe([WrapPluggedInterface::class, PluginInterceptedInterface::class]);
+});
+
+it('leaves out another interface whose parent has plugins of its own', function (): void {
+    $registry = wrapRegistryShortCircuiting(WrapOwnPluginInterface::class, 'own');
+
+    $className = new InterceptorClassGenerator()->generateInterfaceWrapper(
+        WrapPluggedInterface::class,
+        $registry,
+        WrapChildOfOwnPluginConcrete::class,
+    );
+
+    expect(array_values(new ReflectionClass($className)->getInterfaceNames()))
+        ->toBe([WrapPluggedInterface::class, PluginInterceptedInterface::class]);
+});
+
+it(
+    'generates the same code and class name as today when the concrete class has no other interface',
+    function (): void {
+        $generator = new InterceptorClassGenerator();
+        $registry = new PluginRegistry();
+
+        $codeToday = $generator->generateInterfaceWrapperCode(WrapPluggedInterface::class, $registry);
+        $codeWithConcrete = $generator->generateInterfaceWrapperCode(
+            WrapPluggedInterface::class,
+            $registry,
+            concreteClass: WrapPlainConcrete::class,
+        );
+        $classToday = $generator->generateInterfaceWrapper(WrapPluggedInterface::class, $registry);
+        $classWithConcrete = new InterceptorClassGenerator()->generateInterfaceWrapper(
+            WrapPluggedInterface::class,
+            $registry,
+            concreteClass: WrapPlainConcrete::class,
+        );
+
+        expect($codeWithConcrete)->toBe($codeToday)
+            ->and($classWithConcrete)->toBe($classToday);
+    },
+);
+
+it(
+    'names wrappers by their emitted interfaces, so different interface sets get different classes and an anonymous concrete class works',
+    function (): void {
+        $generator = new InterceptorClassGenerator();
+        $registry = new PluginRegistry();
+        $anonymous = new class () implements
+            WrapPluggedInterface,
+            WrapOtherInterface
+        {
+            public function plugged(
+                string $value,
+            ): string {
+                return $value;
+            }
+
+            public function other(
+                string $value,
+            ): string {
+                return $value;
+            }
+
+            public function notify(
+                string ...$tags,
+            ): void {}
+        };
+
+        $withOther = $generator->generateInterfaceWrapper(WrapPluggedInterface::class, $registry, WrapConcrete::class);
+        $withOwn = $generator->generateInterfaceWrapper(
+            WrapPluggedInterface::class,
+            $registry,
+            WrapOwnPluginConcrete::class,
+        );
+        $plain = $generator->generateInterfaceWrapper(
+            WrapPluggedInterface::class,
+            $registry,
+            WrapPlainConcrete::class,
+        );
+        $forAnonymous = $generator->generateInterfaceWrapper(
+            WrapPluggedInterface::class,
+            $registry,
+            $anonymous::class,
+        );
+
+        expect($withOther)->not->toBe($withOwn)
+            ->and($withOther)->not->toBe($plain)
+            ->and($withOwn)->not->toBe($plain)
+            ->and($forAnonymous)->toBe($withOther)
+            ->and(new ReflectionClass($withOwn)->implementsInterface(WrapOwnPluginInterface::class))->toBeTrue()
+            ->and(new ReflectionClass($withOwn)->implementsInterface(WrapOtherInterface::class))->toBeFalse()
+            ->and(new ReflectionClass($forAnonymous)->implementsInterface(WrapOtherInterface::class))->toBeTrue()
+            ->and($forAnonymous)->not->toContain('class@anonymous');
+    },
+);
+
+// ─────────────────────────────────────────────────────────────
+// Exact signatures for the other interfaces' methods
+// ─────────────────────────────────────────────────────────────
+
+interface WrapSigRefInterface
+{
+    public function fill(
+        array &$bucket,
+        string $label = 'x',
+        int &...$counters,
+    ): void;
+}
+
+class WrapSigRefConcrete implements WrapPluggedInterface, WrapSigRefInterface
+{
+    public function plugged(
+        string $value,
+    ): string {
+        return $value;
+    }
+
+    public function fill(
+        array &$bucket,
+        string $label = 'x',
+        int &...$counters,
+    ): void {
+        $bucket[] = $label;
+
+        foreach ($counters as &$counter) {
+            $counter++;
+        }
+    }
+}
+
+/**
+ * Build a wrapper for WrapPluggedInterface around the target, keeping the target's other interfaces.
+ */
+function wrapSigWrapper(
+    object $target,
+    ContainerInterface $container,
+): object {
+    $registry = new PluginRegistry();
+    $className = new InterceptorClassGenerator()->generateInterfaceWrapper(
+        WrapPluggedInterface::class,
+        $registry,
+        $target::class,
+    );
+
+    return wrapInstance($className, $target, $registry, $container);
+}
+
+it('keeps by-reference, variadic and default parameters of another interface\'s methods', function (): void {
+    $wrapper = wrapSigWrapper(new WrapSigRefConcrete(), $this->createStub(ContainerInterface::class));
+    $bucket = [];
+    $first = 1;
+    $second = 10;
+
+    /** @var WrapSigRefInterface $wrapper */
+    $wrapper->fill($bucket, 'a', $first, $second);
+    $wrapper->fill($bucket);
+
+    expect($bucket)->toBe(['a', 'x'])
+        ->and($first)->toBe(2)
+        ->and($second)->toBe(11);
+});
+
+interface WrapSigSelfInterface
+{
+    public function merge(
+        self|int $other,
+    ): ?self;
+}
+
+class WrapSigSelfConcrete implements WrapPluggedInterface, WrapSigSelfInterface
+{
+    public function plugged(
+        string $value,
+    ): string {
+        return $value;
+    }
+
+    public function merge(
+        WrapSigSelfInterface|int $other,
+    ): ?WrapSigSelfInterface {
+        return $other instanceof WrapSigSelfInterface ? $other : null;
+    }
+}
+
+it('renders self in another interface\'s method as that interface', function (): void {
+    $wrapper = wrapSigWrapper(new WrapSigSelfConcrete(), $this->createStub(ContainerInterface::class));
+    $other = new WrapSigSelfConcrete();
+
+    /** @var WrapSigSelfInterface $wrapper */
+    expect($wrapper->merge($other))->toBe($other)
+        ->and($wrapper->merge(3))->toBeNull();
+});
+
+interface WrapSigNeverInterface
+{
+    public function abort(
+        string $reason,
+    ): never;
+}
+
+class WrapSigNeverConcrete implements WrapPluggedInterface, WrapSigNeverInterface
+{
+    public function plugged(
+        string $value,
+    ): string {
+        return $value;
+    }
+
+    public function abort(
+        string $reason,
+    ): never {
+        throw new RuntimeException($reason);
+    }
+}
+
+it('delegates a never-returning method of another interface', function (): void {
+    $wrapper = wrapSigWrapper(new WrapSigNeverConcrete(), $this->createStub(ContainerInterface::class));
+
+    /** @var WrapSigNeverInterface $wrapper */
+    expect(fn () => $wrapper->abort('stop'))->toThrow(RuntimeException::class, 'stop');
+});
+
+interface WrapSigStaticMethodInterface
+{
+    public static function make(): string;
+}
+
+interface WrapSigStaticReturnInterface
+{
+    public function fluent(): static;
+}
+
+interface WrapSigReferenceReturnInterface
+{
+    public function &items(): array;
+}
+
+interface WrapSigObjectDefaultInterface
+{
+    public function with(
+        object $subject = new stdClass(),
+    ): object;
+}
+
+interface WrapSigReservedNameInterface
+{
+    public function getPluginTarget(): object;
+}
+
+abstract class WrapSigBaseConcrete implements WrapPluggedInterface
+{
+    public function plugged(
+        string $value,
+    ): string {
+        return $value;
+    }
+}
+
+class WrapSigStaticMethodConcrete extends WrapSigBaseConcrete implements WrapSigStaticMethodInterface
+{
+    public static function make(): string
+    {
+        return 'made';
+    }
+}
+
+class WrapSigStaticReturnConcrete extends WrapSigBaseConcrete implements WrapSigStaticReturnInterface
+{
+    public function fluent(): static
+    {
+        return $this;
+    }
+}
+
+class WrapSigReferenceReturnConcrete extends WrapSigBaseConcrete implements WrapSigReferenceReturnInterface
+{
+    /** @var array<string> */
+    private array $items = [];
+
+    public function &items(): array
+    {
+        return $this->items;
+    }
+}
+
+class WrapSigObjectDefaultConcrete extends WrapSigBaseConcrete implements WrapSigObjectDefaultInterface
+{
+    public function with(
+        object $subject = new stdClass(),
+    ): object {
+        return $subject;
+    }
+}
+
+class WrapSigReservedNameConcrete extends WrapSigBaseConcrete implements WrapSigReservedNameInterface
+{
+    public function getPluginTarget(): object
+    {
+        return $this;
+    }
+}
+
+it('leaves out another interface whose methods it cannot reproduce', function (string $concrete): void {
+    $className = new InterceptorClassGenerator()->generateInterfaceWrapper(
+        WrapPluggedInterface::class,
+        new PluginRegistry(),
+        $concrete,
+    );
+
+    expect(array_values(new ReflectionClass($className)->getInterfaceNames()))
+        ->toBe([WrapPluggedInterface::class, PluginInterceptedInterface::class]);
+})->with([
+    'static method' => [WrapSigStaticMethodConcrete::class],
+    'static return' => [WrapSigStaticReturnConcrete::class],
+    'return by reference' => [WrapSigReferenceReturnConcrete::class],
+    'object default' => [WrapSigObjectDefaultConcrete::class],
+    'reserved method name' => [WrapSigReservedNameConcrete::class],
+]);
+
+interface WrapSigClashInterface
+{
+    public function plugged(
+        int|string $value,
+    ): string;
+}
+
+class WrapSigClashConcrete implements WrapPluggedInterface, WrapSigClashInterface
+{
+    public function plugged(
+        int|string $value,
+    ): string {
+        return 'plugged:' . $value;
+    }
+}
+
+interface WrapSigAlphaInterface
+{
+    public function shared(
+        string $value,
+    ): string;
+}
+
+interface WrapSigBetaInterface
+{
+    public function shared(
+        int $value,
+    ): string;
+}
+
+class WrapSigSharedMethodConcrete extends WrapSigBaseConcrete implements WrapSigAlphaInterface, WrapSigBetaInterface
+{
+    public function shared(
+        int|string $value,
+    ): string {
+        return 'shared:' . $value;
+    }
+}
+
+interface WrapSigFirstConstantInterface
+{
+    public const string LABEL = 'label';
+}
+
+interface WrapSigSecondConstantInterface
+{
+    public const string LABEL = 'label';
+}
+
+class WrapSigSharedConstantConcrete extends WrapSigBaseConcrete implements
+    WrapSigFirstConstantInterface,
+    WrapSigSecondConstantInterface
+{
+    public const string LABEL = 'label';
+}
+
+it(
+    'leaves out the second of two other interfaces that declare the same method with different signatures, or the same constant',
+    function (string $concrete, string $kept, string $dropped): void {
+        $className = new InterceptorClassGenerator()->generateInterfaceWrapper(
+            WrapPluggedInterface::class,
+            new PluginRegistry(),
+            $concrete,
+        );
+
+        expect(array_values(new ReflectionClass($className)->getInterfaceNames()))
+            ->toBe([WrapPluggedInterface::class, $kept, PluginInterceptedInterface::class])
+            ->not->toContain($dropped);
+    },
+)->with([
+    'same method' => [WrapSigSharedMethodConcrete::class, WrapSigAlphaInterface::class, WrapSigBetaInterface::class],
+    'same constant' => [
+        WrapSigSharedConstantConcrete::class,
+        WrapSigFirstConstantInterface::class,
+        WrapSigSecondConstantInterface::class,
+    ],
+]);
+
+it('leaves out another interface that declares a plugged method with a different signature', function (): void {
+    $className = new InterceptorClassGenerator()->generateInterfaceWrapper(
+        WrapPluggedInterface::class,
+        new PluginRegistry(),
+        WrapSigClashConcrete::class,
+    );
+
+    expect(array_values(new ReflectionClass($className)->getInterfaceNames()))
+        ->toBe([WrapPluggedInterface::class, PluginInterceptedInterface::class]);
+});
+
+interface WrapPropNamedInterface
+{
+    public string $name { get; }
+}
+
+class WrapPropNamedConcrete extends WrapSigBaseConcrete implements WrapPropNamedInterface
+{
+    public string $name = 'named';
+}
+
+it('leaves out another interface that declares a property', function (): void {
+    $className = new InterceptorClassGenerator()->generateInterfaceWrapper(
+        WrapPluggedInterface::class,
+        new PluginRegistry(),
+        WrapPropNamedConcrete::class,
+    );
+
+    expect(array_values(new ReflectionClass($className)->getInterfaceNames()))
+        ->toBe([WrapPluggedInterface::class, PluginInterceptedInterface::class]);
+});
+
+interface WrapPropChildInterface extends WrapPropNamedInterface
+{
+    public function describe(): string;
+}
+
+class WrapPropChildConcrete extends WrapSigBaseConcrete implements WrapPropChildInterface
+{
+    public string $name = 'child';
+
+    public function describe(): string
+    {
+        return $this->name;
+    }
+}
+
+class WrapPropMixedConcrete extends WrapSigBaseConcrete implements WrapOtherInterface, WrapPropNamedInterface
+{
+    public string $name = 'mixed';
+
+    public function other(
+        string $value,
+    ): string {
+        return 'other:' . $value;
+    }
+
+    public function notify(
+        string ...$tags,
+    ): void {}
+}
+
+it('still keeps the other interfaces of the same class that it can reproduce', function (): void {
+    $className = new InterceptorClassGenerator()->generateInterfaceWrapper(
+        WrapPluggedInterface::class,
+        new PluginRegistry(),
+        WrapPropMixedConcrete::class,
+    );
+
+    expect(array_values(new ReflectionClass($className)->getInterfaceNames()))
+        ->toBe([WrapPluggedInterface::class, WrapOtherInterface::class, PluginInterceptedInterface::class]);
+});
+
+it('leaves out another interface that inherits a property from a parent interface', function (): void {
+    $className = new InterceptorClassGenerator()->generateInterfaceWrapper(
+        WrapPluggedInterface::class,
+        new PluginRegistry(),
+        WrapPropChildConcrete::class,
+    );
+
+    expect(array_values(new ReflectionClass($className)->getInterfaceNames()))
+        ->toBe([WrapPluggedInterface::class, PluginInterceptedInterface::class]);
 });

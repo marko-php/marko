@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Attributes\Subject;
 use Marko\Core\Container\Container;
 use Marko\Core\Exceptions\PluginException;
 use Marko\Core\Plugin\InterceptorClassGenerator;
@@ -1073,3 +1074,161 @@ it('creates interceptor implementing PluginInterceptedInterface', function (): v
     expect($proxy)->toBeInstanceOf(PluginInterceptedInterface::class)
         ->and($proxy->getPluginTarget())->toBe($target);
 });
+
+// ---------------------------------------------------------------------------
+// Other-interface fixtures (interface wrapper keeps the target's interfaces)
+// ---------------------------------------------------------------------------
+
+interface PIT_PluggedInterface
+{
+    public function ping(): string;
+}
+
+interface PIT_OtherInterface
+{
+    public function other(
+        string $value,
+    ): string;
+}
+
+interface PIT_SecondOtherInterface
+{
+    public function second(): string;
+}
+
+class PIT_PluggedWithOther implements PIT_PluggedInterface, PIT_OtherInterface
+{
+    public function ping(): string
+    {
+        return 'pong';
+    }
+
+    public function other(
+        string $value,
+    ): string {
+        return 'other:' . $value;
+    }
+}
+
+class PIT_PluggedWithSecondOther implements PIT_PluggedInterface, PIT_SecondOtherInterface
+{
+    public function ping(): string
+    {
+        return 'pong';
+    }
+
+    public function second(): string
+    {
+        return 'second';
+    }
+}
+
+class PIT_PingPlugin
+{
+    public static ?object $subject = null;
+
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function ping(
+        #[Subject]
+        ?object $subject = null,
+    ): null {
+        self::$subject = $subject;
+
+        return null;
+    }
+}
+
+function pitPluggedRegistry(
+    bool $subject = false,
+): PluginRegistry {
+    $registry = new PluginRegistry();
+    $registry->register(new PluginDefinition(
+        pluginClass: PIT_PingPlugin::class,
+        targetClass: PIT_PluggedInterface::class,
+        beforeMethods: ['ping' => ['pluginMethod' => 'ping', 'sortOrder' => 10, 'subject' => $subject]],
+    ));
+
+    return $registry;
+}
+
+it('returns a proxy that is an instance of the target\'s other interfaces', function (): void {
+    $proxy = makePluginInterceptor(new Container(), pitPluggedRegistry())->createProxy(
+        PIT_PluggedInterface::class,
+        PIT_PluggedWithOther::class,
+        new PIT_PluggedWithOther(),
+    );
+
+    expect($proxy)->toBeInstanceOf(PIT_PluggedInterface::class)
+        ->toBeInstanceOf(PIT_OtherInterface::class)
+        ->toBeInstanceOf(PluginInterceptedInterface::class);
+});
+
+it('reaches the target through a method of another interface', function (): void {
+    $target = new PIT_PluggedWithOther();
+    $proxy = makePluginInterceptor(new Container(), pitPluggedRegistry())->createProxy(
+        PIT_PluggedInterface::class,
+        PIT_PluggedWithOther::class,
+        $target,
+    );
+
+    expect($proxy->other('abc'))->toBe('other:abc')
+        ->and($proxy->ping())->toBe('pong')
+        ->and($proxy->getPluginTarget())->toBe($target);
+});
+
+it('gives two concrete classes behind one plugged interface their own interfaces', function (): void {
+    $interceptor = makePluginInterceptor(new Container(), pitPluggedRegistry());
+    $first = $interceptor->createProxy(
+        PIT_PluggedInterface::class,
+        PIT_PluggedWithOther::class,
+        new PIT_PluggedWithOther(),
+    );
+    $second = $interceptor->createProxy(
+        PIT_PluggedInterface::class,
+        PIT_PluggedWithSecondOther::class,
+        new PIT_PluggedWithSecondOther(),
+    );
+
+    expect($first)->toBeInstanceOf(PIT_OtherInterface::class)
+        ->not->toBeInstanceOf(PIT_SecondOtherInterface::class)
+        ->and($second)->toBeInstanceOf(PIT_SecondOtherInterface::class)
+        ->not->toBeInstanceOf(PIT_OtherInterface::class)
+        ->and($second->second())->toBe('second');
+});
+
+it('passes a Subject that satisfies the target\'s other interfaces', function (): void {
+    PIT_PingPlugin::$subject = null;
+    $proxy = makePluginInterceptor(new Container(), pitPluggedRegistry(subject: true))->createProxy(
+        PIT_PluggedInterface::class,
+        PIT_PluggedWithOther::class,
+        new PIT_PluggedWithOther(),
+    );
+    $proxy->ping();
+
+    expect(PIT_PingPlugin::$subject)->toBe($proxy)
+        ->toBeInstanceOf(PIT_OtherInterface::class);
+});
+
+it(
+    'resolves a closure-bound service whose binding checks another interface of the plugged service',
+    function (): void {
+        $container = new Container();
+        $container->setPluginInterceptor(makePluginInterceptor($container, pitPluggedRegistry()));
+        $container->bind(PIT_PluggedInterface::class, PIT_PluggedWithOther::class);
+        $container->singleton(PIT_PluggedInterface::class);
+        $container->bind(PIT_OtherInterface::class, function (Container $container): PIT_OtherInterface {
+            $plugged = $container->get(PIT_PluggedInterface::class);
+
+            if (!$plugged instanceof PIT_OtherInterface) {
+                throw new RuntimeException('The plugged service is not a PIT_OtherInterface');
+            }
+
+            return $plugged;
+        });
+
+        $other = $container->get(PIT_OtherInterface::class);
+
+        expect($other)->toBeInstanceOf(PluginInterceptedInterface::class)
+            ->and($other->other('x'))->toBe('other:x');
+    },
+);

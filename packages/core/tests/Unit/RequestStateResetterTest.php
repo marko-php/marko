@@ -198,6 +198,21 @@ describe('RequestStateResetter', function (): void {
         expect($user->name())->toBe('Kira Spielmann');
     });
 
+    it('skips a wrapped service when its target or the proxy itself is passed as an exception', function (): void {
+        $container = resetterContainerPlugging(ResetterCurrentUserInterface::class);
+        $user = $container->get(ResetterCurrentUserInterface::class);
+        $user->remember('Kira Spielmann');
+
+        new RequestStateResetter($container)->reset($user->getPluginTarget());
+        $keptWhenTargetPassed = $user->name();
+
+        new RequestStateResetter($container)->reset($user);
+
+        expect($user)->toBeInstanceOf(ResettableInterface::class)
+            ->and($keptWhenTargetPassed)->toBe('Kira Spielmann')
+            ->and($user->name())->toBe('Kira Spielmann');
+    });
+
     it('skips the instances passed as exceptions', function (): void {
         $log = [];
         $container = new Container();

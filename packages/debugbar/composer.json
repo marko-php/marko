@@ -21,6 +21,7 @@
         "marko/view": "self.version"
     },
     "require-dev": {
+        "marko/database-sqlite": "self.version",
         "marko/testing": "self.version"
     },
     "autoload": {

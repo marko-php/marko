@@ -310,11 +310,25 @@ When a plugin targets an interface, it fires regardless of which concrete implem
 - **Target the concrete class** when your plugin is specific to one implementation (e.g., tuning bcrypt cost)
 :::
 
+### Other interfaces of the target
+
+The object the container returns for an interface plugin also implements the other interfaces of the concrete class behind it. Say a plugin targets `ConnectionInterface` (as `marko/debugbar` does) and the real connection also implements `TransactionInterface`. Code that checks `$connection instanceof TransactionInterface`, or injects `TransactionInterface`, still works.
+
+Only methods of the plugged interface go through the plugin chain. Methods of the other interfaces are passed straight to the real object.
+
+An interface is left out, and the wrapper then does not implement it, when any of these hold:
+
+- it has plugins of its own
+- it is a PHP built-in interface, or extends one
+- it declares a property, a static method, a method that returns by reference, a method that returns `static`, a method whose name the interceptor reserves for itself, or a parameter whose default is an object
+- its methods or constants clash with those of another interface the wrapper implements
+
 ### Constraints
 
 - **Readonly classes cannot be targeted directly.** If a concrete class is `readonly`, target its interface instead. Marko will throw a helpful error explaining this.
 - **Final classes and final methods cannot be targeted directly.** `final` forbids extending the class or overriding the method, which is how a concrete-class interceptor works. Marko refuses the plugin when it registers it, at boot, and names the plugin, class and method. Target an interface the class implements instead: the interface interceptor wraps the instance rather than extending it, so a final class is fine there.
 - **One interface at a time.** If a class implements multiple interfaces and plugins are registered on more than one, Marko throws an error rather than silently picking a winner. Target the concrete class directly in this case.
+- **Plugged interfaces are not carried across.** The wrapper is built for the interface the service was resolved through. An interface that has plugins of its own is not carried onto another interface's wrapper, so the wrapper does not implement it.
 - **Intercepted methods cannot use object defaults.** The interceptor re-declares each intercepted method with the same default values, so a caller who omits an argument gets exactly the default you wrote. Scalars, arrays, enum cases and constants are all supported. A `new Foo()` default cannot be reproduced, so Marko throws a `PluginException` when it generates the interceptor. Use a nullable parameter instead: `?Foo $foo = null`, then `$foo ??= new Foo()` in the method body.
 
 ## How Plugins Work
@@ -328,6 +342,7 @@ Container resolves HasherInterface
     → Finds BcryptHasher (via binding or Preference)
     → Checks: any plugins registered for HasherInterface?
     → Yes → Generates an interceptor class that implements HasherInterface
+            (and the other interfaces of BcryptHasher)
     → Returns the interceptor (which wraps BcryptHasher internally)
 
 Your code calls $hasher->hash('password')
@@ -347,12 +362,12 @@ The strategy depends on the target:
 
 | Target | Strategy |
 |---|---|
-| Interface (e.g., `HasherInterface`) | Generated class `implements` the interface |
+| Interface (e.g., `HasherInterface`) | Generated class `implements` the interface and the other interfaces of the concrete class behind it, so `instanceof` checks on the plugged service keep working |
 | Non-readonly, non-final concrete class | Generated class `extends` the concrete class --- works even when the constructor has mandatory promoted dependencies resolved via DI |
 | Readonly concrete class | Error — target the interface instead |
 | Final class, or a hook on a final method | Error at registration — target the interface instead |
 
-In all cases, the generated class implements `PluginInterceptedInterface`, which provides `getPluginTarget()` for code that needs access to the underlying real instance.
+In all cases, the generated class implements `PluginInterceptedInterface`, which provides `getPluginTarget()` for code that needs access to the underlying real instance. You rarely need it, because `instanceof` works on the returned object. For a concrete-class target, the returned object is the instance the interceptor was created from, not the live one: the interceptor itself holds the state. Do not read state from it.
 
 ### Zero overhead for non-plugged classes
 
